@@ -34,7 +34,32 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .logout-btn{border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:700;font-size:12px;margin-left:8px}
 .app.hidden-app{display:none}.role-hidden{display:none!important}
 @media(max-width:850px){.login-screen{grid-template-columns:1fr}.login-brand{display:none}}
-</style></head>
+
+.launch-bg{position:fixed;inset:0;background:rgba(10,31,48,.48);display:none;align-items:center;justify-content:center;padding:12px;z-index:1500}.launch-bg.show{display:flex}
+.launch-modal{width:min(1240px,98vw);height:min(875px,96vh);background:#fff;border:1px solid rgba(255,255,255,.5);border-radius:20px;box-shadow:0 28px 80px rgba(13,36,54,.28);overflow:hidden;display:flex;flex-direction:column}
+.launch-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border);padding:17px 24px;background:#fff}
+.launch-head:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:#de941c}.launch-title{font-size:18px;font-weight:800;margin:0}.launch-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.launch-tag{display:inline-block;border-radius:999px;background:#edf3f8;color:#0e4268;padding:5px 10px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.launch-close{width:38px;height:38px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:18px;cursor:pointer;color:var(--muted)}
+.launch-grid{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(390px,.9fr);flex:1;min-height:0}
+.launch-left{overflow-y:auto;padding:20px 24px 26px;background:#fff}.launch-right{border-left:1px solid var(--border);background:#f7f9fb;display:flex;flex-direction:column;min-height:0}
+.launch-tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--border);border-radius:13px;background:#f7f8fa;margin-bottom:20px}.launch-tab{flex:1;border:0;background:transparent;padding:11px;border-radius:9px;font-weight:700;color:#718096;cursor:pointer}.launch-tab.active{background:#fff;color:#0d4368;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.launch-section{margin-top:20px}.launch-section:first-of-type{margin-top:0}.launch-section-head{border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:13px}.launch-section-head b{font-size:12px}.launch-section-head small{display:block;color:var(--muted);font-size:9.5px;margin-top:3px}
+.launch-formgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}.lf{display:flex;flex-direction:column;gap:6px}.lf label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#607086}.lf input,.lf select{height:41px;border:1px solid #dce4ec;border-radius:9px;padding:0 12px;background:#fff;font:inherit;color:#1e293b}.lf input:focus,.lf select:focus{outline:0;border-color:#7895aa;box-shadow:0 0 0 4px rgba(13,67,104,.05)}
+.c12{grid-column:span 12}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}.c3{grid-column:span 3}
+.segment-row{display:flex;align-items:center;gap:20px;padding:12px 15px;border:1px solid var(--border);background:#fafbfc;border-radius:12px;font-size:11px}.segment-row .hint{margin-left:auto;color:var(--muted);font-size:10px}
+.pay-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px}.seg{display:flex;background:#f7f8fa;border:1px solid var(--border);padding:3px;border-radius:9px}.seg button{border:0;background:transparent;padding:7px 12px;border-radius:6px;color:#718096;cursor:pointer}.seg button.active{background:#fff;color:#0d4368;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.doc-top{padding:17px 16px 15px;background:#fff;border-bottom:1px solid var(--border)}.doc-top b{font-size:12px}.doc-top small{display:block;color:var(--muted);font-size:9px;margin-top:4px}
+.upload-zone{margin-top:10px;border:1px dashed #c6d4df;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:12px;cursor:pointer;background:#fbfcfd}.upload-icon{width:38px;height:38px;border-radius:10px;background:#0b456f;color:#fff;display:grid;place-items:center;font-size:22px}.upload-zone strong{font-size:10px}.upload-zone span{display:block;font-size:9px;color:var(--muted);margin-top:3px}
+.doc-preview{flex:1;min-height:0;display:grid;place-items:center;padding:14px;overflow:auto}.doc-empty{text-align:center;color:#607086;max-width:290px}.doc-empty .ico{width:62px;height:62px;border:1px dashed #bdcbd6;border-radius:15px;background:#fff;display:grid;place-items:center;margin:0 auto 18px;font-size:26px}.doc-empty b{display:block;font-size:12px;color:#1f2937;margin-bottom:8px}.doc-empty span{font-size:11px;line-height:1.7}.preview-frame{width:100%;height:100%;border:0;border-radius:8px;background:#fff}.preview-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}.preview-xml{white-space:pre-wrap;font:11px/1.5 Consolas,monospace;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;width:100%;align-self:stretch}
+.read-status{font-size:10px;padding:9px 12px;border-radius:9px;margin-top:9px;background:#eef7f1;color:#276749;display:none}.read-status.show{display:block}.read-status.err{background:#fff1f1;color:#a53f45}
+.launch-foot{border-top:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:#fff}.launch-foot small{color:var(--muted);font-size:9px}.launch-actions{display:flex;gap:9px}
+.parcel-box{border:1px solid var(--border);border-radius:11px;overflow:hidden}.parcel-row{display:grid;grid-template-columns:60px 1fr 1fr 42px;gap:8px;align-items:center;padding:9px 12px;border-top:1px solid var(--border)}.parcel-row:first-child{border-top:0;background:#f7f8fa;font-size:9px;font-weight:900;text-transform:uppercase;color:var(--muted)}.parcel-row input{height:34px;border:1px solid var(--border);border-radius:7px;padding:0 8px}.parcel-add{margin:10px 0 0;border:0;background:#0d4368;color:#fff;border-radius:8px;padding:8px 11px;font-size:10px;font-weight:700;cursor:pointer}
+@media(max-width:950px){.launch-grid{grid-template-columns:1fr}.launch-right{display:none}.c3,.c4,.c5,.c6,.c7{grid-column:span 12}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
 <body>
 <div id="loginScreen" class="login-screen">
   <section class="login-brand">
@@ -61,7 +86,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </div>
 <div id="appShell" class="app hidden-app">
 <aside class="sidebar"><div class="brand"><div class="logo">S</div>Seu BPO</div><div class="nav">
-<button class="active" data-screen="dashboard">▣ Dashboard</button><button data-screen="pagar">💸 A Pagar</button><button data-screen="reembolsos">↩ Reembolsos</button><button data-screen="fluxo">📈 Fluxo de Caixa</button><button data-screen="dre">📊 DRE</button>
+<button class="active" data-screen="dashboard">▣ Dashboard</button><button data-screen="pagar">💸 A Pagar</button><button data-screen="receber">💰 A Receber</button><button data-screen="reembolsos">↩ Reembolsos</button><button data-screen="fluxo">📈 Fluxo de Caixa</button><button data-screen="dre">📊 DRE</button>
 <div class="nav-title">Cadastros</div><button data-screen="plano">🗂 Plano de Contas</button><button data-screen="clientes">👥 Clientes</button><button data-screen="fornecedores">🏭 Fornecedores</button><button data-screen="boletos">🧾 Boletos</button><button data-screen="nf">📄 Notas Fiscais</button>
 <div class="nav-title admin-access">Gestão BPO</div><button class="admin-access" data-screen="empresas">🏢 Empresas</button><button class="admin-access" data-screen="usuarios">🔐 Usuários e Acessos</button></div></aside>
 <main class="main"><div class="header"><div><select id="company" class="company-select"><option value="all">Todas as empresas</option><option value="dpmz">DPMZ</option><option value="tugao">Tugão Imóveis</option><option value="iza">IZA Comunica</option><option value="aurora">Clínica Aurora</option></select> <span class="pill">Acesso BPO</span></div><div class="user"><div class="avatar" id="userAvatar">ES</div><div><b id="userName">Ester</b><div class="sub" id="userRole">Administrador</div></div><button id="logoutBtn" class="logout-btn">Sair</button></div></div>
@@ -70,7 +95,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <div class="cards"><div class="card"><div class="label">A receber</div><div class="value" id="r">R$ 92.450</div></div><div class="card"><div class="label">A pagar</div><div class="value" id="p">R$ 61.300</div></div><div class="card"><div class="label">Inadimplência</div><div class="value red" id="i">R$ 14.200</div></div><div class="card"><div class="label">Saldo</div><div class="value green" id="s">R$ 84.930</div></div><div class="card"><div class="label" id="l5">Empresas ativas</div><div class="value" id="v5">4</div></div></div>
 <div id="all" class="grid2"><div class="card"><div class="section-title">Resumo por empresa</div><table><thead><tr><th>Empresa</th><th>A receber</th><th>A pagar</th><th>Inadimplência</th><th>Status</th></tr></thead><tbody><tr><td><b>DPMZ</b></td><td>R$ 28.600</td><td>R$ 17.800</td><td>R$ 2.300</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Tugão Imóveis</b></td><td>R$ 24.300</td><td>R$ 16.100</td><td>R$ 6.100</td><td><span class="status warn">Atenção</span></td></tr><tr><td><b>IZA Comunica</b></td><td>R$ 18.900</td><td>R$ 13.500</td><td>R$ 3.400</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Clínica Aurora</b></td><td>R$ 20.650</td><td>R$ 13.900</td><td>R$ 2.400</td><td><span class="status ok">Saudável</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Pendências da carteira</div><table><tbody><tr><td>Conciliações pendentes</td><td><b>3 empresas</b></td></tr><tr><td>NF pendentes de vínculo</td><td><b>8 notas</b></td></tr><tr><td>Títulos vencidos</td><td class="red"><b>19</b></td></tr><tr><td>Documentos pendentes</td><td><b>11</b></td></tr></tbody></table></div></div>
 <div id="one" class="grid2" style="display:none"><div class="card"><div class="section-title">Últimos lançamentos</div><table><tbody><tr><td>29/09</td><td>Recebimento Cliente A</td><td class="green">R$ 3.500</td><td><span class="status ok">Recebido</span></td></tr><tr><td>29/09</td><td>Fornecedor X</td><td class="red">R$ 1.200</td><td><span class="status warn">Em aberto</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Ações rápidas</div><p>+ Novo pagamento</p><p>+ Novo recebimento</p><p>Baixar título</p><p>Gerar relatório</p></div></div></section>
-<section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-add="pagar">+ Novo pagamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
+<section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
+<section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
@@ -82,6 +108,87 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <section id="empresas" class="screen"><div class="page-title"><div><h1>Empresas</h1><div class="sub">Gestão da carteira do BPO</div></div><button class="btn primary" data-add="empresas">+ Nova empresa</button></div><div class="card"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="empresasBody"></tbody></table></div></section>
 <section id="usuarios" class="screen"><div class="page-title"><div><h1>Usuários e Acessos</h1><div class="sub">Permissões por empresa</div></div><button class="btn primary" data-add="usuarios">+ Novo usuário</button></div><div class="card"><table><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Empresa</th><th>Ações</th></tr></thead><tbody id="usuariosBody"></tbody></table></div></section>
 </div></main></div>
+
+<div id="launchBg" class="launch-bg">
+  <div class="launch-modal">
+    <div class="launch-head">
+      <div>
+        <span id="launchTag" class="launch-tag">Conta a pagar</span>
+        <h3 id="launchTitle" class="launch-title">Novo lançamento</h3>
+        <div class="launch-sub">Documento e dados financeiros na mesma tela.</div>
+      </div>
+      <button id="launchClose" class="launch-close" type="button">×</button>
+    </div>
+    <div class="launch-grid">
+      <div class="launch-left">
+        <div class="launch-tabs">
+          <button type="button" class="launch-tab active" data-launch-type="pagar">A pagar</button>
+          <button type="button" class="launch-tab" data-launch-type="receber">A receber</button>
+        </div>
+
+        <section class="launch-section">
+          <div class="launch-section-head"><b>Dados do documento</b><small>Campos principais da nota, boleto ou lançamento.</small></div>
+          <div class="launch-formgrid">
+            <div class="lf c12"><label id="parteLabel">Fornecedor</label><input id="lfParte" placeholder="Nome ou razão social"></div>
+            <div class="lf c3"><label>Data de emissão</label><input id="lfEmissao" type="date"></div>
+            <div class="lf c3"><label>Data de vencimento</label><input id="lfVencimento" type="date"></div>
+            <div class="lf c3"><label>Valor R$</label><input id="lfValor" inputmode="decimal" placeholder="0,00"></div>
+            <div class="lf c3"><label>Nº documento</label><input id="lfNumero" placeholder="Ex.: 179017"></div>
+            <div class="lf c7"><label>Chave de acesso</label><input id="lfChave" placeholder="44 dígitos da NF-e"></div>
+            <div class="lf c5"><label>Linha digitável</label><input id="lfLinha" placeholder="Código do boleto, quando houver"></div>
+            <div class="lf c12"><label>Histórico</label><input id="lfHistorico" placeholder="Descrição do lançamento"></div>
+          </div>
+        </section>
+
+        <section class="launch-section">
+          <div class="launch-section-head"><b>Competência</b><small>Escolha qual data define a competência financeira.</small></div>
+          <div class="segment-row">
+            <label><input type="radio" name="lfCompetencia" value="emissao" checked> Emissão</label>
+            <label><input type="radio" name="lfCompetencia" value="vencimento"> Vencimento</label>
+            <span id="lfCompetenciaHint" class="hint">Informe a emissão</span>
+          </div>
+        </section>
+
+        <section class="launch-section">
+          <div class="pay-head">
+            <div><b style="font-size:12px">Prazo de pagamento</b><div class="sub" style="font-size:9.5px;margin-top:3px">Lançamento único ou parcelado.</div></div>
+            <div class="seg"><button id="lfUnico" type="button" class="active">Único</button><button id="lfParcelado" type="button">Parcelado</button></div>
+          </div>
+          <div id="lfParcelasBox" style="display:none">
+            <div class="parcel-box" id="lfParcelas">
+              <div class="parcel-row"><div>Parc.</div><div>Vencimento</div><div>Valor</div><div></div></div>
+            </div>
+            <button type="button" class="parcel-add" id="lfAddParcela">+ Adicionar parcela</button>
+          </div>
+          <div id="lfUnicoBox" class="launch-formgrid">
+            <div class="lf c6"><label>Conta contábil</label><select id="lfConta"><option value="">Selecione uma conta</option></select></div>
+            <div class="lf c6"><label>Banco</label><select id="lfBanco"><option>Sicredi</option><option>Sicoob</option><option>Inter</option><option>Outros</option></select></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="launch-right">
+        <div class="doc-top">
+          <b>Documento do lançamento</b>
+          <small>PDF, XML, JPG, PNG ou WEBP · até 20 MB</small>
+          <label class="upload-zone">
+            <div class="upload-icon">↑</div>
+            <div><strong id="uploadText">Selecionar documento</strong><span>Lê NF-e, NFC-e, recibos, cupons e boletos automaticamente</span></div>
+            <input id="lfFile" type="file" accept=".pdf,.xml,.jpg,.jpeg,.png,.webp,application/pdf,text/xml,application/xml,image/*" hidden>
+          </label>
+          <div id="readStatus" class="read-status"></div>
+        </div>
+        <div id="docPreview" class="doc-preview">
+          <div class="doc-empty"><div class="ico">▧</div><b>Pré-visualização do documento</b><span>Anexe PDF, XML, nota fiscal, boleto, recibo ou comprovante para conferir o documento enquanto preenche o lançamento.</span></div>
+        </div>
+      </aside>
+    </div>
+    <div class="launch-foot">
+      <small>O documento permanece visível durante o lançamento.</small>
+      <div class="launch-actions"><button id="launchCancel" class="btn" type="button">Fechar</button><button id="launchSave" class="btn primary" type="button">Salvar lançamento</button></div>
+    </div>
+  </div>
+</div>
 <div id="modalBg" class="modal-backdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Cadastro</h3><button class="iconbtn" id="modalX">✕</button></div><div class="modal-body"><div id="modalForm" class="formgrid"></div></div><div class="modal-foot"><button class="btn" id="modalCancel">Cancelar</button><button class="btn primary" id="modalSave">Salvar</button></div></div></div><div id="toast" class="toast"></div>
 <script>
 const bs=[...document.querySelectorAll('[data-screen]')],ss=[...document.querySelectorAll('.screen')];bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;bs.forEach(x=>x.classList.remove('active'));b.classList.add('active');ss.forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active')});
@@ -110,12 +217,14 @@ const seed={
  clientes:[{id:1,nome:'Cliente A',documento:'00.000.000/0001-00',contato:'financeiro@cliente.com'}],
  fornecedores:[{id:1,nome:'Fornecedor X',documento:'11.111.111/0001-11',categoria:'Serviços'}],
  plano:[{id:1,grupo:'Receitas',conta:'Receita de Serviços',tipo:'Entrada'},{id:2,grupo:'Despesas',conta:'Software',tipo:'Saída'}],
- pagar:[{id:1,vencimento:'2026-09-29',fornecedor:'Fornecedor X',descricao:'Prestação de serviços',categoria:'Serviços',valor:'1200,00',status:'Em aberto'}],
+ pagar:[{id:1,vencimento:'2026-09-29',data_emissao:'2026-09-20',fornecedor:'Fornecedor X',descricao:'Prestação de serviços',categoria:'Serviços',valor:'1200,00',status:'Em aberto'}],
+ receber:[{id:1,vencimento:'2026-09-30',data_emissao:'2026-09-20',cliente:'Cliente A',descricao:'Honorários mensais',categoria:'Receita de Serviços',valor:'3500,00',status:'Em aberto'}],
  reembolsos:[{id:1,data:'2026-09-27',solicitante:'Colaborador A',descricao:'Despesa operacional',valor:'184,90',status:'Pendente'}],
  boletos:[{id:1,cliente:'Cliente A',vencimento:'2026-09-29',valor:'3500,00',status:'Recebido'}],
  nf:[{id:1,data:'2026-09-29',tipo:'Emitida',numero:'0000187',pessoa:'Cliente A',valor:'3500,00',status:'Emitida'}]
 };
 let store=JSON.parse(localStorage.getItem(DBKEY)||'null')||seed;
+if(!Array.isArray(store.receber)) store.receber=structuredClone(seed.receber);
 function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll()}
 function money(v){if(!v)return'';let n=Number(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?v:n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -127,6 +236,7 @@ function renderAll(){
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
  pagarBody.innerHTML=store.pagar.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
+ receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,'<button class="iconbtn" onclick="toggleStatus(\'receber\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
@@ -151,11 +261,12 @@ const schemas={
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
  plano:[['grupo','Grupo','select',['Receitas','Custos','Despesas','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
  pagar:[['vencimento','Vencimento','date'],['fornecedor','Fornecedor','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Pago','Vencido']]],
+ receber:[['vencimento','Vencimento','date'],['cliente','Cliente','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Recebido','Vencido']]],
  reembolsos:[['data','Data','date'],['solicitante','Solicitante','text'],['descricao','Descrição','text'],['valor','Valor','text'],['status','Status','select',['Pendente','Pago']]],
  boletos:[['cliente','Cliente','text'],['vencimento','Vencimento','date'],['valor','Valor','text'],['status','Status','select',['Em aberto','Recebido parcial','Recebido','Vencido']]],
  nf:[['data','Data','date'],['tipo','Tipo','select',['Emitida','Recebida']],['numero','Número da NF','text'],['pessoa','Cliente / Fornecedor','text'],['valor','Valor','text'],['status','Status','select',['Emitida','Vinculada','Pendente de vínculo','Cancelada']]]
 };
-const names={empresas:'Empresa',usuarios:'Usuário',clientes:'Cliente',fornecedores:'Fornecedor',plano:'Conta',pagar:'Pagamento',reembolsos:'Reembolso',boletos:'Boleto',nf:'Nota Fiscal'};
+const names={empresas:'Empresa',usuarios:'Usuário',clientes:'Cliente',fornecedores:'Fornecedor',plano:'Conta',pagar:'Pagamento',receber:'Recebimento',reembolsos:'Reembolso',boletos:'Boleto',nf:'Nota Fiscal'};
 let modalState={type:null,id:null};
 function openModal(type,id=null){
  modalState={type,id}; let item=id?store[type].find(x=>x.id===id):{};
@@ -177,7 +288,157 @@ modalSave.onclick=()=>{
  if(!id)store[type].push(obj);
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
 };
-window.editItem=(t,id)=>openModal(t,id);
+
+let launchState={tipo:'pagar',id:null,arquivo:null,previewUrl:null,parcelado:false,parcelas:[]};
+
+function dataISO(v){
+  if(!v)return '';
+  let m=String(v).match(/(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m=String(v).match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(m){let a=m[3].length===2?'20'+m[3]:m[3];return a+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')}
+  return '';
+}
+function numeroValor(v){
+  if(!v)return null;
+  let s=String(v).replace(/R\$/gi,'').replace(/\s/g,'').replace(/[^0-9,.-]/g,'');
+  if(s.includes(',')&&s.includes('.')) s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');
+  else if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  let n=Number(s); return Number.isFinite(n)?n:null;
+}
+function formatValor(n){return n==null?'':Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function linhaPareceFornecedor(l){
+  const n=norm(l);
+  if(l.length<3||l.length>90)return false;
+  if(/danfe|nota fiscal|documento auxiliar|chave de acesso|consulta|protocolo|cnpj|cpf|inscri[cç][aã]o|endere[cç]o|telefone|cep|data|valor|total|vencimento|boleto|pagador|sacado/.test(n))return false;
+  if((l.match(/\d/g)||[]).length>l.length*.45)return false;
+  return /[a-zA-ZÀ-ÿ]{3}/.test(l);
+}
+function fornecedorTexto(texto){
+  const linhas=texto.split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(x=>x.length>=3&&x.length<=120);
+  for(const l of linhas){
+    let m=l.match(/(?:benefici[aá]rio|cedente|raz[aã]o\s+social|emitente|estabelecimento|fornecedor)\s*[:\-]\s*(.+)$/i);
+    if(m&&m[1].trim().length>=3)return m[1].trim();
+  }
+  const idx=linhas.findIndex(l=>/cnpj\s*[:\-]?\s*\d/i.test(l));
+  if(idx>0){for(let i=idx-1;i>=Math.max(0,idx-3);i--)if(linhaPareceFornecedor(linhas[i]))return linhas[i]}
+  for(const l of linhas.slice(0,14))if(linhaPareceFornecedor(l))return l;
+  return '';
+}
+function dataRotulo(texto,rotulos){
+  for(const r of rotulos){const re=new RegExp(r+'[^0-9]{0,24}(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4})','i');const m=texto.match(re);const d=dataISO(m&&m[1]);if(d)return d}
+  return '';
+}
+function extrairTexto(texto){
+  texto=String(texto||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').trim();
+  const fornecedor=fornecedorTexto(texto);
+  const emissao=dataRotulo(texto,['data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o','data\\s+da\\s+compra','data\\s+do\\s+documento'])||dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]);
+  const venc=dataRotulo(texto,['data\\s+(?:de\\s+)?vencimento','vencimento','venc']);
+  let valor=null;
+  for(const re of [/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,/(?:r\$)\s*([0-9][0-9.,]*)/i]){let m=texto.match(re);valor=numeroValor(m&&m[1]);if(valor&&valor>0)break}
+  const num=(texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
+  const chave=((texto.match(/(?:\d[ .-]*){44}/)||[])[0]||'').replace(/\D/g,'');
+  const linha=((texto.match(/(?:\d[ .-]*){47,48}/)||[])[0]||'').replace(/\D/g,'');
+  return {fornecedor,dataEmissao:emissao,vencimento:venc||emissao,valor,numeroDocumento:num,chaveAcesso:chave.length===44?chave:'',linhaDigitavel:(linha.length===47||linha.length===48)?linha:''};
+}
+async function lerDocumento(file){
+  const nome=file.name.toLowerCase();
+  if(file.size>20*1024*1024) throw new Error('O arquivo ultrapassa 20 MB.');
+  if(file.type.includes('xml')||nome.endsWith('.xml')){
+    const xml=await file.text(); const doc=new DOMParser().parseFromString(xml,'application/xml');
+    if(doc.querySelector('parsererror'))throw new Error('O XML não pôde ser lido.');
+    const tx=(root,tags)=>{for(const tag of tags){const v=root.querySelector(tag)?.textContent?.trim();if(v)return v}return ''};
+    const emit=doc.querySelector('emit')||doc, ide=doc.querySelector('ide')||doc, total=doc.querySelector('ICMSTot')||doc.querySelector('total')||doc, dup=doc.querySelector('dup')||doc;
+    const emissao=dataISO(tx(ide,['dhEmi','dEmi']));
+    const vencimento=dataISO(tx(dup,['dVenc']))||emissao;
+    const inf=doc.querySelector('infNFe'); let chave=(inf?.getAttribute('Id')||'').replace(/^NFe/,'')||tx(doc,['chNFe']);
+    return {fornecedor:tx(emit,['xNome','xFant']),dataEmissao:emissao,vencimento,valor:numeroValor(tx(total,['vNF','vLiq','vOrig'])),numeroDocumento:tx(ide,['nNF','nNFe']),chaveAcesso:chave};
+  }
+  if(file.type==='application/pdf'||nome.endsWith('.pdf')){
+    if(!window.pdfjsLib)throw new Error('Leitor de PDF ainda não carregou. Tente novamente em alguns segundos.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+    let partes=[];
+    for(let p=1;p<=Math.min(pdf.numPages,4);p++){const pg=await pdf.getPage(p),ct=await pg.getTextContent();partes.push(ct.items.map(i=>i.str||'').join(' '))}
+    let texto=partes.join('\n');
+    if(texto.replace(/\s/g,'').length<80 && window.Tesseract){
+      partes=[];
+      for(let p=1;p<=Math.min(pdf.numPages,2);p++){const pg=await pdf.getPage(p),vp=pg.getViewport({scale:1.6}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;const o=await Tesseract.recognize(cv,'por');partes.push(o.data.text||'')}
+      texto=partes.join('\n');
+    }
+    return extrairTexto(texto);
+  }
+  if(file.type.startsWith('image/')||/\.(jpe?g|png|webp)$/i.test(nome)){
+    if(!window.Tesseract)throw new Error('Leitor de imagem ainda não carregou. Tente novamente em alguns segundos.');
+    const o=await Tesseract.recognize(file,'por'); return extrairTexto(o.data.text||'');
+  }
+  return {};
+}
+function resetLaunch(){
+  ['lfParte','lfEmissao','lfVencimento','lfValor','lfNumero','lfChave','lfLinha','lfHistorico'].forEach(id=>document.getElementById(id).value='');
+  lfConta.value=''; lfBanco.value='Sicredi'; lfFile.value=''; uploadText.textContent='Selecionar documento'; readStatus.className='read-status'; readStatus.textContent='';
+  if(launchState.previewUrl) URL.revokeObjectURL(launchState.previewUrl); launchState.previewUrl=null; launchState.arquivo=null; launchState.parcelado=false; launchState.parcelas=[];
+  lfUnico.classList.add('active');lfParcelado.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none';
+  docPreview.innerHTML='<div class="doc-empty"><div class="ico">▧</div><b>Pré-visualização do documento</b><span>Anexe PDF, XML, nota fiscal, boleto, recibo ou comprovante para conferir o documento enquanto preenche o lançamento.</span></div>';
+}
+function setLaunchType(tipo){
+  launchState.tipo=tipo;
+  document.querySelectorAll('[data-launch-type]').forEach(b=>b.classList.toggle('active',b.dataset.launchType===tipo));
+  launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber'; parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
+}
+function fillContaOptions(){
+  lfConta.innerHTML='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
+}
+function openLaunchModal(tipo,id=null){
+  resetLaunch();fillContaOptions();launchState.id=id;setLaunchType(tipo);
+  if(id){
+    const x=store[tipo].find(r=>r.id===id);
+    if(x){lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';}
+    launchTitle.textContent='Editar lançamento';
+  }else launchTitle.textContent='Novo lançamento';
+  launchBg.classList.add('show');
+  updateCompetenciaHint();
+}
+function closeLaunch(){launchBg.classList.remove('show');resetLaunch()}
+function updateCompetenciaHint(){const t=document.querySelector('input[name="lfCompetencia"]:checked')?.value;lfCompetenciaHint.textContent=t==='vencimento'?(lfVencimento.value||'Informe o vencimento'):(lfEmissao.value||'Informe a emissão')}
+document.querySelectorAll('[data-open-launch]').forEach(b=>b.onclick=()=>openLaunchModal(b.dataset.openLaunch));
+document.querySelectorAll('[data-launch-type]').forEach(b=>b.onclick=()=>setLaunchType(b.dataset.launchType));
+launchClose.onclick=launchCancel.onclick=closeLaunch;
+launchBg.onclick=e=>{if(e.target===launchBg)closeLaunch()};
+lfEmissao.onchange=()=>{if(!lfVencimento.value)lfVencimento.value=lfEmissao.value;updateCompetenciaHint()};
+lfVencimento.onchange=updateCompetenciaHint;document.querySelectorAll('input[name="lfCompetencia"]').forEach(r=>r.onchange=updateCompetenciaHint);
+lfUnico.onclick=()=>{launchState.parcelado=false;lfUnico.classList.add('active');lfParcelado.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none'};
+function renderParcelas(){
+  lfParcelas.querySelectorAll('.parcel-row:not(:first-child)').forEach(x=>x.remove());
+  launchState.parcelas.forEach((p,i)=>{const row=document.createElement('div');row.className='parcel-row';row.innerHTML='<div><b>'+(i+1)+'/'+launchState.parcelas.length+'</b></div><input type="date" value="'+esc(p.vencimento)+'"><input value="'+esc(p.valor)+'"><button class="iconbtn danger" type="button">×</button>';const ins=row.querySelectorAll('input');ins[0].oninput=e=>p.vencimento=e.target.value;ins[1].oninput=e=>p.valor=e.target.value;row.querySelector('button').onclick=()=>{if(launchState.parcelas.length>2){launchState.parcelas.splice(i,1);renderParcelas()}};lfParcelas.appendChild(row)});
+}
+lfParcelado.onclick=()=>{launchState.parcelado=true;lfParcelado.classList.add('active');lfUnico.classList.remove('active');lfUnicoBox.style.display='none';lfParcelasBox.style.display='block';if(launchState.parcelas.length<2){const total=numeroValor(lfValor.value)||0,b=(total/2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});launchState.parcelas=[{vencimento:lfVencimento.value,valor:b},{vencimento:lfVencimento.value,valor:b}]}renderParcelas()};
+lfAddParcela.onclick=()=>{launchState.parcelas.push({vencimento:lfVencimento.value,valor:'0,00'});renderParcelas()};
+lfFile.onchange=async()=>{
+  const file=lfFile.files?.[0]; if(!file)return; launchState.arquivo=file;uploadText.textContent=file.name;readStatus.textContent='Lendo documento e preenchendo os campos...';readStatus.className='read-status show';
+  if(launchState.previewUrl)URL.revokeObjectURL(launchState.previewUrl);launchState.previewUrl=URL.createObjectURL(file);
+  const n=file.name.toLowerCase();
+  if(file.type==='application/pdf'||n.endsWith('.pdf'))docPreview.innerHTML='<iframe class="preview-frame" src="'+launchState.previewUrl+'"></iframe>';
+  else if(file.type.startsWith('image/'))docPreview.innerHTML='<img class="preview-img" src="'+launchState.previewUrl+'">';
+  else if(n.endsWith('.xml')){const tx=await file.text();docPreview.innerHTML='<pre class="preview-xml">'+esc(tx.slice(0,25000))+'</pre>'}
+  try{
+    const d=await lerDocumento(file);
+    if(d.fornecedor)lfParte.value=d.fornecedor;if(d.dataEmissao)lfEmissao.value=d.dataEmissao;lfVencimento.value=d.vencimento||d.dataEmissao||lfVencimento.value;if(d.valor!=null)lfValor.value=formatValor(d.valor);if(d.numeroDocumento)lfNumero.value=d.numeroDocumento;if(d.chaveAcesso)lfChave.value=d.chaveAcesso;if(d.linhaDigitavel)lfLinha.value=d.linhaDigitavel;
+    if(!lfHistorico.value && d.fornecedor)lfHistorico.value=(d.numeroDocumento?'Documento '+d.numeroDocumento+' - ':'')+d.fornecedor;
+    readStatus.textContent='Documento lido automaticamente. Confira os campos antes de salvar.';readStatus.className='read-status show';updateCompetenciaHint();
+  }catch(err){readStatus.textContent=err?.message||'Não foi possível ler o documento automaticamente.';readStatus.className='read-status show err'}
+};
+launchSave.onclick=()=>{
+  const tipo=launchState.tipo, parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
+  if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
+  let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
+  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:tipo==='pagar'?'Em aberto':'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao',tipo_pagamento:launchState.parcelado?'parcelado':'unico',parcelas:launchState.parcelado?structuredClone(launchState.parcelas):[]});
+  if(tipo==='pagar'){obj.fornecedor=parte;delete obj.cliente}else{obj.cliente=parte;delete obj.fornecedor}
+  if(!launchState.id)store[tipo].push(obj);persist();closeLaunch();notify(launchState.id?'Lançamento atualizado.':'Lançamento salvo.');
+};
+
+window.editItem=(t,id)=>{if(t==='pagar'||t==='receber')openLaunchModal(t,id);else openModal(t,id)};
 window.delItem=(t,id)=>{if(confirm('Excluir este registro?')){store[t]=store[t].filter(x=>x.id!==id);persist();notify('Registro excluído.')}};
 window.toggleStatus=(t,id,status)=>{let x=store[t].find(x=>x.id===id);if(x){x.status=status;persist();notify('Status atualizado.')}};
 function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
