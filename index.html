@@ -59,6 +59,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -80,7 +81,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
         <button class="login-btn" type="submit">Entrar</button>
         <div id="loginError" class="login-error">E-mail ou senha inválidos.</div>
       </form>
-      <div class="login-hint"><b>Acesso de teste da Ester</b><br>ester@seubpo.app.br<br>Senha: 123456</div>
+      <div class="login-hint"><b>Login real</b><br>Use o mesmo e-mail e senha cadastrados no acesso do DPMZ/Supabase. A Ester entra como administradora do Seu BPO.</div>
     </div>
   </section>
 </div>
@@ -211,6 +212,12 @@ document.getElementById('company').onchange=function(){
   renderClientes();
 }
 
+const SUPABASE_URL='https://dnigyxgvavgrggmzteju.supabase.co';
+const SUPABASE_KEY='sb_publishable_9SlH8bNy9pRZAJlByTCtCA_xIoty9rE';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let cloudCompanies=[];
+let cloudUsers=[];
+
 const DBKEY='seubpo_demo_v2';
 const seed={
  empresas:[{id:1,nome:'DPMZ',cnpj:'00.000.000/0001-00',responsavel:'Ester'},{id:2,nome:'Tugão Imóveis',cnpj:'11.111.111/0001-11',responsavel:'Ester'},{id:3,nome:'IZA Comunica',cnpj:'22.222.222/0001-22',responsavel:'Ester'},{id:4,nome:'FIUZA',cnpj:'',responsavel:'Ester'}],
@@ -235,7 +242,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function acts(type,id,extra=''){return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+extra+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>'}
 function renderAll(){
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
- usuariosBody.innerHTML=store.usuarios.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email)+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa)+'</td><td>'+acts('usuarios',x.id)+'</td></tr>').join('');
+ renderUsuarios();
  renderClientes();
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
@@ -249,15 +256,54 @@ function renderAll(){
 function refreshCompanySelect(){
   let cur=company.value;
   const isAdmin=!currentUser || currentUser.perfil==='Administrador' || currentUser.perfil==='Gestor';
+  const source=(cloudCompanies.length?cloudCompanies:store.empresas).map(x=>({id:x.id,nome:x.nome}));
   if(isAdmin){
-    company.innerHTML='<option value="all">Todas as empresas</option>'+store.empresas.map(x=>'<option value="emp_'+x.id+'">'+esc(x.nome)+'</option>').join('');
+    company.innerHTML='<option value="all">Todas as empresas</option>'+source.map(x=>'<option value="emp_'+x.id+'">'+esc(x.nome)+'</option>').join('');
     if([...company.options].some(o=>o.value===cur))company.value=cur;
   }else{
-    const emp=findCompanyByName(currentUser.empresa);
+    const emp=source.find(e=>e.nome===currentUser.empresa);
     company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(currentUser.empresa||'Minha empresa')+'</option>';
     company.disabled=true;
   }
 }
+async function loadCloudAccess(){
+  const {data:emp,error:empErr}=await sb.from('seubpo_empresas').select('id,nome,cnpj,ativo').eq('ativo',true).order('nome');
+  if(!empErr&&emp) cloudCompanies=emp;
+
+  if(currentUser && (currentUser.perfil==='Administrador'||currentUser.perfil==='Gestor')){
+    const {data:perfis}=await sb.from('seubpo_perfis').select('user_id,nome,perfil,ativo').order('nome');
+    const {data:links}=await sb.from('seubpo_usuario_empresas').select('user_id,empresa_id');
+    cloudUsers=(perfis||[]).map(p=>{
+      const l=(links||[]).find(x=>x.user_id===p.user_id);
+      const e=cloudCompanies.find(x=>x.id===l?.empresa_id);
+      return {...p,empresa:e?.nome||'Todas'};
+    });
+  } else cloudUsers=[];
+  refreshCompanySelect();
+  renderUsuarios();
+  renderClientes();
+}
+
+function renderUsuarios(){
+  if(!window.usuariosBody)return;
+  const src=cloudUsers.length?cloudUsers:store.usuarios;
+  usuariosBody.innerHTML=src.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email||'')+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa||'Todas')+'</td><td><span class="sub">'+(x.user_id?'Login real':'Local')+'</span></td></tr>').join('');
+}
+
+async function loadCurrentProfile(authUser){
+  const {data:profile,error}=await sb.from('seubpo_perfis').select('user_id,nome,perfil,ativo').eq('user_id',authUser.id).maybeSingle();
+  if(error||!profile||!profile.ativo) throw new Error('Seu usuário não possui acesso ao Seu BPO.');
+  let empresa='Todas';
+  if(profile.perfil==='Cliente'){
+    const {data:link}=await sb.from('seubpo_usuario_empresas').select('empresa_id').eq('user_id',authUser.id).maybeSingle();
+    if(link?.empresa_id){
+      const {data:emp}=await sb.from('seubpo_empresas').select('nome').eq('id',link.empresa_id).maybeSingle();
+      empresa=emp?.nome||'Minha empresa';
+    }
+  }
+  return {id:authUser.id,nome:profile.nome,email:authUser.email||'',perfil:profile.perfil,empresa};
+}
+
 function selectedCompanyName(){
   return company?.options?.[company.selectedIndex]?.textContent?.trim()||'';
 }
@@ -297,13 +343,22 @@ const schemas={
 const names={empresas:'Empresa',usuarios:'Usuário',clientes:'Cliente',fiuzaClientes:'Cliente FIUZA',fornecedores:'Fornecedor',plano:'Conta',pagar:'Pagamento',receber:'Recebimento',reembolsos:'Reembolso',boletos:'Boleto',nf:'Nota Fiscal'};
 let modalState={type:null,id:null};
 function openModal(type,id=null){
- modalState={type,id}; let item=id?store[type].find(x=>x.id===id):{};
+ modalState={type,id}; let item=id?store[type]?.find(x=>x.id===id):{};
  modalTitle.textContent=(id?'Editar ':'Novo ')+names[type];
- modalForm.innerHTML=schemas[type].map(([key,label,tp,opts])=>{
-   let val=item?.[key]??'';
-   if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option '+(o===val?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
-   return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'" value="'+esc(val)+'"></div>'
- }).join('');
+ if(type==='usuarios'&&!id){
+   modalForm.innerHTML=
+    '<div class="field"><label>Nome</label><input type="text" data-field="nome"></div>'+
+    '<div class="field"><label>E-mail</label><input type="email" data-field="email"></div>'+
+    '<div class="field"><label>Senha</label><input type="password" data-field="senha" minlength="6"></div>'+
+    '<div class="field"><label>Perfil</label><select data-field="perfil"><option>Cliente</option><option>Gestor</option><option>Administrador</option></select></div>'+
+    '<div class="field full"><label>Empresa</label><select data-field="empresa_id"><option value="">Selecione a empresa</option>'+cloudCompanies.map(e=>'<option value="'+e.id+'">'+esc(e.nome)+'</option>').join('')+'</select></div>';
+ } else {
+   modalForm.innerHTML=schemas[type].map(([key,label,tp,opts])=>{
+     let val=item?.[key]??'';
+     if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option '+(o===val?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+     return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'" value="'+esc(val)+'"></div>'
+   }).join('');
+ }
  modalBg.classList.add('show');
 }
 function closeModal(){modalBg.classList.remove('show')}
@@ -311,8 +366,29 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dat
 novoClienteBtn.onclick=()=>openModal(isFiuzaSelected()?'fiuzaClientes':'clientes');
 modalX.onclick=modalCancel.onclick=closeModal;
 modalBg.onclick=e=>{if(e.target===modalBg)closeModal()};
-modalSave.onclick=()=>{
- const {type,id}=modalState; let obj=id?store[type].find(x=>x.id===id):{id:Date.now()};
+modalSave.onclick=async()=>{
+ const {type,id}=modalState;
+ if(type==='usuarios'&&!id){
+   const vals={}; modalForm.querySelectorAll('[data-field]').forEach(el=>vals[el.dataset.field]=el.value.trim());
+   if(!vals.nome||!vals.email||!vals.senha){notify('Preencha nome, e-mail e senha.');return}
+   if(vals.perfil==='Cliente'&&!vals.empresa_id){notify('Selecione a empresa do cliente.');return}
+   modalSave.disabled=true; modalSave.textContent='Criando...';
+   try{
+     const {data:{session}}=await sb.auth.getSession();
+     if(!session)throw new Error('Sessão expirada. Entre novamente.');
+     const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-create-user',{
+       method:'POST',
+       headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+       body:JSON.stringify({nome:vals.nome,email:vals.email,password:vals.senha,perfil:vals.perfil,empresa_id:vals.empresa_id||null})
+     });
+     const out=await resp.json();
+     if(!resp.ok)throw new Error(out.error||'Não foi possível criar o usuário.');
+     closeModal();notify('Usuário criado com login real.');await loadCloudAccess();
+   }catch(e){notify(e.message||'Erro ao criar usuário.')}
+   finally{modalSave.disabled=false;modalSave.textContent='Salvar'}
+   return;
+ }
+ const obj=id?store[type].find(x=>x.id===id):{id:Date.now()};
  modalForm.querySelectorAll('[data-field]').forEach(el=>obj[el.dataset.field]=el.value.trim());
  if(!id)store[type].push(obj);
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
@@ -474,81 +550,59 @@ function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeou
 document.querySelectorAll('#fluxo .btn,#dre .btn').forEach(b=>b.onclick=()=>window.print());
 document.querySelectorAll('#one p').forEach(p=>{p.style.cursor='pointer';p.onclick=()=>notify(p.textContent+' aberto para teste.')});
 
-const SESSIONKEY='seubpo_session_v1';
-let currentUser=null;
 
+let currentUser=null;
 function initials(name){return String(name||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
-function findCompanyByName(name){return store.empresas.find(e=>e.nome===name)}
+function findCompanyByName(name){const src=cloudCompanies.length?cloudCompanies:store.empresas;return src.find(e=>e.nome===name)}
 function goDashboard(){
   bs.forEach(x=>x.classList.remove('active'));
   const db=bs.find(x=>x.dataset.screen==='dashboard'); if(db) db.classList.add('active');
   ss.forEach(x=>x.classList.remove('active')); document.getElementById('dashboard').classList.add('active');
 }
-function applyAccess(user){
+async function applyAccess(user){
   currentUser=user;
   loginScreen.style.display='none';
   appShell.classList.remove('hidden-app');
-  userName.textContent=user.nome;
-  userRole.textContent=user.perfil;
-  userAvatar.textContent=initials(user.nome);
-
-  const isAdmin=user.perfil==='Administrador' || user.perfil==='Gestor';
+  userName.textContent=user.nome; userRole.textContent=user.perfil; userAvatar.textContent=initials(user.nome);
+  const isAdmin=user.perfil==='Administrador'||user.perfil==='Gestor';
   document.querySelectorAll('.admin-access').forEach(el=>el.classList.toggle('role-hidden',!isAdmin));
-
-  refreshCompanySelect();
+  await loadCloudAccess();
   if(isAdmin){
-    company.disabled=false;
-    if(!company.querySelector('option[value="all"]')){
-      refreshCompanySelect();
-    }
-    company.value='all';
-    company.dispatchEvent(new Event('change'));
+    company.disabled=false; company.value='all'; company.dispatchEvent(new Event('change'));
   }else{
     const emp=findCompanyByName(user.empresa);
-    company.innerHTML='';
-    const opt=document.createElement('option');
-    opt.value=emp?'emp_'+emp.id:'client_company';
-    opt.textContent=user.empresa || 'Minha empresa';
-    company.appendChild(opt);
-    company.disabled=true;
-    all.style.display='none';
-    one.style.display='grid';
-    dashTitle.textContent='Dashboard · '+(user.empresa||'Minha empresa');
-    dashSub.textContent='Visão financeira da sua empresa';
-    l5.textContent='Clientes ativos';
-    v5.textContent='—';
+    company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(user.empresa||'Minha empresa')+'</option>';
+    company.disabled=true; all.style.display='none'; one.style.display='grid';
+    dashTitle.textContent='Dashboard · '+(user.empresa||'Minha empresa'); dashSub.textContent='Visão financeira da sua empresa'; l5.textContent='Clientes ativos'; v5.textContent='—';
   }
-  renderClientes();
-  goDashboard();
+  renderClientes(); goDashboard();
 }
-function showLogin(){
-  currentUser=null;
-  localStorage.removeItem(SESSIONKEY);
-  appShell.classList.add('hidden-app');
-  loginScreen.style.display='grid';
-  loginPassword.value='';
-  loginError.style.display='none';
+function showLogin(message=''){
+  currentUser=null; appShell.classList.add('hidden-app'); loginScreen.style.display='grid'; loginPassword.value='';
+  loginError.style.display=message?'block':'none'; if(message)loginError.textContent=message;
 }
-loginForm.addEventListener('submit',e=>{
-  e.preventDefault();
-  const email=loginEmail.value.trim().toLowerCase();
-  const senha=loginPassword.value;
-  const user=store.usuarios.find(u=>String(u.email||'').toLowerCase()===email && String(u.senha||'')===senha);
-  if(!user){loginError.style.display='block';return}
-  loginError.style.display='none';
-  localStorage.setItem(SESSIONKEY,JSON.stringify({id:user.id}));
-  applyAccess(user);
+loginForm.addEventListener('submit',async e=>{
+  e.preventDefault(); loginError.style.display='none';
+  const email=loginEmail.value.trim().toLowerCase(), password=loginPassword.value;
+  const btn=loginForm.querySelector('button[type="submit"]'); btn.disabled=true; btn.textContent='Entrando...';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    const access=await loadCurrentProfile(data.user);
+    await applyAccess(access);
+  }catch(e){
+    await sb.auth.signOut();
+    showLogin(e.message==='Invalid login credentials'?'E-mail ou senha inválidos.':(e.message||'Não foi possível entrar.'));
+  }finally{btn.disabled=false;btn.textContent='Entrar'}
 });
-logoutBtn.onclick=showLogin;
-
+logoutBtn.onclick=async()=>{await sb.auth.signOut();showLogin()};
 renderAll();
-const savedSession=JSON.parse(localStorage.getItem(SESSIONKEY)||'null');
-if(savedSession){
-  const u=store.usuarios.find(x=>x.id===savedSession.id);
-  if(u) applyAccess(u); else showLogin();
-}else{
-  showLogin();
-}
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){showLogin();return}
+  try{const access=await loadCurrentProfile(session.user);await applyAccess(access)}
+  catch(e){await sb.auth.signOut();showLogin(e.message||'Sem acesso ao Seu BPO.')}
+})();
 </script></body></html>,'text'],['dia_vencimento','Dia do vencimento','number'],['valor_diaria','Valor da diária R
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
  plano:[['grupo','Grupo','select',['Receitas','Custos','Despesas','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
