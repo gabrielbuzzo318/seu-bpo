@@ -20,13 +20,51 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 
 .actions{display:flex;gap:6px;flex-wrap:wrap}.iconbtn{border:1px solid var(--border);background:#fff;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:11px}.iconbtn.danger{color:#b4232c;border-color:#f1c8cc}.empty{color:var(--muted);padding:20px;text-align:center}
 .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);display:none;align-items:center;justify-content:center;z-index:999}.modal-backdrop.show{display:flex}.modal{width:min(560px,92vw);background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0}.modal-body{padding:20px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:#fff}.field textarea{min-height:80px;resize:vertical}.modal-foot{padding:15px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}.toast{position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:11px 14px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.2s;z-index:1200;font-size:13px}.toast.show{opacity:1;transform:none}
+
+.login-screen{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;background:#f5f7fb}
+.login-brand{background:linear-gradient(145deg,#111c2d,#1b2a41);color:#fff;padding:54px;display:flex;flex-direction:column;justify-content:space-between}
+.login-brand .biglogo{width:58px;height:58px;background:#fff;color:var(--accent);border-radius:16px;display:grid;place-items:center;font-size:26px;font-weight:900;margin-bottom:20px}
+.login-brand h1{font-size:38px;margin:0 0 12px}.login-brand p{color:#bec8d7;max-width:480px;line-height:1.6}
+.login-side{display:grid;place-items:center;padding:36px}.login-card{width:min(430px,100%);background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 18px 45px rgba(31,41,55,.08)}
+.login-card h2{margin:0 0 6px;font-size:26px}.login-card .sub{margin-bottom:22px}
+.login-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.login-field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}.login-field input{border:1px solid var(--border);border-radius:10px;padding:12px 13px;font-size:14px}
+.login-btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer;margin-top:4px}
+.login-error{display:none;margin-top:12px;background:#fdebed;color:#a8323b;padding:10px 12px;border-radius:9px;font-size:12px}
+.login-hint{margin-top:18px;background:#f7f9fc;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);line-height:1.55}
+.logout-btn{border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:700;font-size:12px;margin-left:8px}
+.app.hidden-app{display:none}.role-hidden{display:none!important}
+@media(max-width:850px){.login-screen{grid-template-columns:1fr}.login-brand{display:none}}
 </style></head>
-<body><div class="app">
+<body>
+<div id="loginScreen" class="login-screen">
+  <section class="login-brand">
+    <div>
+      <div class="biglogo">S</div>
+      <h1>Seu BPO</h1>
+      <p>Gestão financeira multiempresas em um único ambiente. Cada cliente acessa apenas a própria empresa, enquanto o administrador acompanha toda a carteira.</p>
+    </div>
+    <div style="color:#8996aa;font-size:12px">Seu BPO · Gestão Financeira</div>
+  </section>
+  <section class="login-side">
+    <div class="login-card">
+      <h2>Bem-vindo</h2>
+      <div class="sub">Entre para acessar o financeiro.</div>
+      <form id="loginForm">
+        <div class="login-field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" placeholder="seu@email.com" required></div>
+        <div class="login-field"><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
+        <button class="login-btn" type="submit">Entrar</button>
+        <div id="loginError" class="login-error">E-mail ou senha inválidos.</div>
+      </form>
+      <div class="login-hint"><b>Acesso de teste da Ester</b><br>ester@seubpo.app.br<br>Senha: 123456</div>
+    </div>
+  </section>
+</div>
+<div id="appShell" class="app hidden-app">
 <aside class="sidebar"><div class="brand"><div class="logo">S</div>Seu BPO</div><div class="nav">
 <button class="active" data-screen="dashboard">▣ Dashboard</button><button data-screen="pagar">💸 A Pagar</button><button data-screen="reembolsos">↩ Reembolsos</button><button data-screen="fluxo">📈 Fluxo de Caixa</button><button data-screen="dre">📊 DRE</button>
 <div class="nav-title">Cadastros</div><button data-screen="plano">🗂 Plano de Contas</button><button data-screen="clientes">👥 Clientes</button><button data-screen="fornecedores">🏭 Fornecedores</button><button data-screen="boletos">🧾 Boletos</button><button data-screen="nf">📄 Notas Fiscais</button>
-<div class="nav-title">Gestão BPO</div><button data-screen="empresas">🏢 Empresas</button><button data-screen="usuarios">🔐 Usuários e Acessos</button></div></aside>
-<main class="main"><div class="header"><div><select id="company" class="company-select"><option value="all">Todas as empresas</option><option value="dpmz">DPMZ</option><option value="tugao">Tugão Imóveis</option><option value="iza">IZA Comunica</option><option value="aurora">Clínica Aurora</option></select> <span class="pill">Acesso BPO</span></div><div class="user"><div class="avatar">GB</div><div><b>Gabriel</b><div class="sub">Administrador</div></div></div></div>
+<div class="nav-title admin-access">Gestão BPO</div><button class="admin-access" data-screen="empresas">🏢 Empresas</button><button class="admin-access" data-screen="usuarios">🔐 Usuários e Acessos</button></div></aside>
+<main class="main"><div class="header"><div><select id="company" class="company-select"><option value="all">Todas as empresas</option><option value="dpmz">DPMZ</option><option value="tugao">Tugão Imóveis</option><option value="iza">IZA Comunica</option><option value="aurora">Clínica Aurora</option></select> <span class="pill">Acesso BPO</span></div><div class="user"><div class="avatar" id="userAvatar">ES</div><div><b id="userName">Ester</b><div class="sub" id="userRole">Administrador</div></div><button id="logoutBtn" class="logout-btn">Sair</button></div></div>
 <div class="content">
 <section id="dashboard" class="screen active"><div class="page-title"><div><h1 id="dashTitle">Dashboard Geral</h1><div id="dashSub" class="sub">Visão consolidada de todas as empresas atendidas</div></div><span class="pill">Setembro/2026</span></div>
 <div class="cards"><div class="card"><div class="label">A receber</div><div class="value" id="r">R$ 92.450</div></div><div class="card"><div class="label">A pagar</div><div class="value" id="p">R$ 61.300</div></div><div class="card"><div class="label">Inadimplência</div><div class="value red" id="i">R$ 14.200</div></div><div class="card"><div class="label">Saldo</div><div class="value green" id="s">R$ 84.930</div></div><div class="card"><div class="label" id="l5">Empresas ativas</div><div class="value" id="v5">4</div></div></div>
@@ -46,14 +84,29 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </div></main></div>
 <div id="modalBg" class="modal-backdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Cadastro</h3><button class="iconbtn" id="modalX">✕</button></div><div class="modal-body"><div id="modalForm" class="formgrid"></div></div><div class="modal-foot"><button class="btn" id="modalCancel">Cancelar</button><button class="btn primary" id="modalSave">Salvar</button></div></div></div><div id="toast" class="toast"></div>
 <script>
-const bs=[...document.querySelectorAll('[data-screen]')],ss=[...document.querySelectorAll('.screen')];bs.forEach(b=>b.onclick=()=>{bs.forEach(x=>x.classList.remove('active'));b.classList.add('active');ss.forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active')});
+const bs=[...document.querySelectorAll('[data-screen]')],ss=[...document.querySelectorAll('.screen')];bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;bs.forEach(x=>x.classList.remove('active'));b.classList.add('active');ss.forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active')});
 const d={dpmz:['DPMZ','R$ 28.600','R$ 17.800','R$ 2.300','R$ 31.450','26'],tugao:['Tugão Imóveis','R$ 24.300','R$ 16.100','R$ 6.100','R$ 18.900','31'],iza:['IZA Comunica','R$ 18.900','R$ 13.500','R$ 3.400','R$ 12.300','18'],aurora:['Clínica Aurora','R$ 20.650','R$ 13.900','R$ 2.400','R$ 22.280','14']};
-document.getElementById('company').onchange=function(){let a=this.value==='all';document.getElementById('all').style.display=a?'grid':'none';document.getElementById('one').style.display=a?'none':'grid';if(a){dashTitle.textContent='Dashboard Geral';dashSub.textContent='Visão consolidada de todas as empresas atendidas';r.textContent='R$ 92.450';p.textContent='R$ 61.300';i.textContent='R$ 14.200';s.textContent='R$ 84.930';l5.textContent='Empresas ativas';v5.textContent='4'}else{let x=d[this.value];dashTitle.textContent='Dashboard · '+x[0];dashSub.textContent='Visão financeira da empresa selecionada';r.textContent=x[1];p.textContent=x[2];i.textContent=x[3];s.textContent=x[4];l5.textContent='Clientes ativos';v5.textContent=x[5]}}
+document.getElementById('company').onchange=function(){
+  let a=this.value==='all';
+  document.getElementById('all').style.display=a?'grid':'none';
+  document.getElementById('one').style.display=a?'none':'grid';
+  if(a){
+    dashTitle.textContent='Dashboard Geral';dashSub.textContent='Visão consolidada de todas as empresas atendidas';
+    r.textContent='R$ 92.450';p.textContent='R$ 61.300';i.textContent='R$ 14.200';s.textContent='R$ 84.930';l5.textContent='Empresas ativas';v5.textContent=String(store?.empresas?.length||0);
+  }else{
+    const selected=this.options[this.selectedIndex]?.textContent||'Empresa';
+    let x=d[this.value];
+    dashTitle.textContent='Dashboard · '+selected;dashSub.textContent='Visão financeira da empresa selecionada';
+    if(x){r.textContent=x[1];p.textContent=x[2];i.textContent=x[3];s.textContent=x[4];v5.textContent=x[5]}
+    else{r.textContent='R$ 0,00';p.textContent='R$ 0,00';i.textContent='R$ 0,00';s.textContent='R$ 0,00';v5.textContent='0'}
+    l5.textContent='Clientes ativos';
+  }
+}
 
 const DBKEY='seubpo_demo_v2';
 const seed={
  empresas:[{id:1,nome:'DPMZ',cnpj:'00.000.000/0001-00',responsavel:'Ester'},{id:2,nome:'Tugão Imóveis',cnpj:'11.111.111/0001-11',responsavel:'Ester'},{id:3,nome:'IZA Comunica',cnpj:'22.222.222/0001-22',responsavel:'Ester'}],
- usuarios:[{id:1,nome:'Ester',email:'ester@seubpo.app.br',perfil:'Administrador',empresa:'Todas'},{id:2,nome:'Cliente Exemplo',email:'cliente@empresa.com',perfil:'Cliente',empresa:'Tugão Imóveis'}],
+ usuarios:[{id:1,nome:'Ester',email:'ester@seubpo.app.br',senha:'123456',perfil:'Administrador',empresa:'Todas'},{id:2,nome:'Cliente Exemplo',email:'cliente@empresa.com',senha:'123456',perfil:'Cliente',empresa:'Tugão Imóveis'}],
  clientes:[{id:1,nome:'Cliente A',documento:'00.000.000/0001-00',contato:'financeiro@cliente.com'}],
  fornecedores:[{id:1,nome:'Fornecedor X',documento:'11.111.111/0001-11',categoria:'Serviços'}],
  plano:[{id:1,grupo:'Receitas',conta:'Receita de Serviços',tipo:'Entrada'},{id:2,grupo:'Despesas',conta:'Software',tipo:'Saída'}],
@@ -79,10 +132,21 @@ function renderAll(){
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
  refreshCompanySelect();
 }
-function refreshCompanySelect(){let cur=company.value;company.innerHTML='<option value="all">Todas as empresas</option>'+store.empresas.map(x=>'<option value="emp_'+x.id+'">'+esc(x.nome)+'</option>').join(''); if([...company.options].some(o=>o.value===cur))company.value=cur}
+function refreshCompanySelect(){
+  let cur=company.value;
+  const isAdmin=!currentUser || currentUser.perfil==='Administrador' || currentUser.perfil==='Gestor';
+  if(isAdmin){
+    company.innerHTML='<option value="all">Todas as empresas</option>'+store.empresas.map(x=>'<option value="emp_'+x.id+'">'+esc(x.nome)+'</option>').join('');
+    if([...company.options].some(o=>o.value===cur))company.value=cur;
+  }else{
+    const emp=findCompanyByName(currentUser.empresa);
+    company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(currentUser.empresa||'Minha empresa')+'</option>';
+    company.disabled=true;
+  }
+}
 const schemas={
  empresas:[['nome','Nome da empresa','text'],['cnpj','CNPJ','text'],['responsavel','Responsável','text']],
- usuarios:[['nome','Nome','text'],['email','E-mail','email'],['perfil','Perfil','select',['Administrador','Gestor','Cliente']],['empresa','Empresa','text']],
+ usuarios:[['nome','Nome','text'],['email','E-mail','email'],['senha','Senha','password'],['perfil','Perfil','select',['Administrador','Gestor','Cliente']],['empresa','Empresa','text']],
  clientes:[['nome','Nome / Razão social','text'],['documento','CPF/CNPJ','text'],['contato','Contato','text']],
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
  plano:[['grupo','Grupo','select',['Receitas','Custos','Despesas','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
@@ -119,5 +183,79 @@ window.toggleStatus=(t,id,status)=>{let x=store[t].find(x=>x.id===id);if(x){x.st
 function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
 document.querySelectorAll('#fluxo .btn,#dre .btn').forEach(b=>b.onclick=()=>window.print());
 document.querySelectorAll('#one p').forEach(p=>{p.style.cursor='pointer';p.onclick=()=>notify(p.textContent+' aberto para teste.')});
+
+const SESSIONKEY='seubpo_session_v1';
+let currentUser=null;
+
+function initials(name){return String(name||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
+function findCompanyByName(name){return store.empresas.find(e=>e.nome===name)}
+function goDashboard(){
+  bs.forEach(x=>x.classList.remove('active'));
+  const db=bs.find(x=>x.dataset.screen==='dashboard'); if(db) db.classList.add('active');
+  ss.forEach(x=>x.classList.remove('active')); document.getElementById('dashboard').classList.add('active');
+}
+function applyAccess(user){
+  currentUser=user;
+  loginScreen.style.display='none';
+  appShell.classList.remove('hidden-app');
+  userName.textContent=user.nome;
+  userRole.textContent=user.perfil;
+  userAvatar.textContent=initials(user.nome);
+
+  const isAdmin=user.perfil==='Administrador' || user.perfil==='Gestor';
+  document.querySelectorAll('.admin-access').forEach(el=>el.classList.toggle('role-hidden',!isAdmin));
+
+  refreshCompanySelect();
+  if(isAdmin){
+    company.disabled=false;
+    if(!company.querySelector('option[value="all"]')){
+      refreshCompanySelect();
+    }
+    company.value='all';
+    company.dispatchEvent(new Event('change'));
+  }else{
+    const emp=findCompanyByName(user.empresa);
+    company.innerHTML='';
+    const opt=document.createElement('option');
+    opt.value=emp?'emp_'+emp.id:'client_company';
+    opt.textContent=user.empresa || 'Minha empresa';
+    company.appendChild(opt);
+    company.disabled=true;
+    all.style.display='none';
+    one.style.display='grid';
+    dashTitle.textContent='Dashboard · '+(user.empresa||'Minha empresa');
+    dashSub.textContent='Visão financeira da sua empresa';
+    l5.textContent='Clientes ativos';
+    v5.textContent='—';
+  }
+  goDashboard();
+}
+function showLogin(){
+  currentUser=null;
+  localStorage.removeItem(SESSIONKEY);
+  appShell.classList.add('hidden-app');
+  loginScreen.style.display='grid';
+  loginPassword.value='';
+  loginError.style.display='none';
+}
+loginForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const email=loginEmail.value.trim().toLowerCase();
+  const senha=loginPassword.value;
+  const user=store.usuarios.find(u=>String(u.email||'').toLowerCase()===email && String(u.senha||'')===senha);
+  if(!user){loginError.style.display='block';return}
+  loginError.style.display='none';
+  localStorage.setItem(SESSIONKEY,JSON.stringify({id:user.id}));
+  applyAccess(user);
+});
+logoutBtn.onclick=showLogin;
+
 renderAll();
+const savedSession=JSON.parse(localStorage.getItem(SESSIONKEY)||'null');
+if(savedSession){
+  const u=store.usuarios.find(x=>x.id===savedSession.id);
+  if(u) applyAccess(u); else showLogin();
+}else{
+  showLogin();
+}
 </script></body></html>
