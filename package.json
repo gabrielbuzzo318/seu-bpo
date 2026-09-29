@@ -1,0 +1,1 @@
+{"name":"seu-bpo","version":"1.0.0","private":true,"scripts":{"start":"serve -s . -l $PORT"},"dependencies":{"serve":"14.2.4"}}
