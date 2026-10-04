@@ -296,6 +296,8 @@ function money(v){if(!v)return'';let n=Number(String(v).replace(/\./g,'').replac
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function acts(type,id,extra=''){return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+extra+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>'}
 function clienteStatus(item){
+  const explicit=String(item?.status_cliente||'').trim();
+  if(explicit) return explicit;
   const obs=String(item?.observacoes_contrato||'').trim().toLowerCase();
   if(item?.ativo===false||obs==='inativo') return 'Inativo';
   if(obs.includes('negociação')||obs.includes('negociacao')) return 'Negociação';
@@ -365,7 +367,7 @@ const schemas={
  empresas:[['nome','Nome da empresa','text'],['cnpj','CNPJ','text'],['responsavel','Responsável','text']],
  usuarios:[['nome','Nome','text'],['email','E-mail','email'],['senha','Senha','password'],['perfil','Perfil','select',['Administrador','Gestor','Cliente']],['empresa','Empresa','text']],
  clientes:[['tipo_cliente','Tipo de cliente','select',['Comum','Detalhado']],['nome','Nome / Razão social','text'],['documento','CPF/CNPJ','text'],['contato','Contato','text']],
- fiuzaClientes:[['nome','Nome','text'],['data_nascimento','Data de nascimento','date'],['responsavel','Responsável','text'],['cpf_responsavel','CPF do responsável','text'],['email_responsavel','E-mail do responsável','email'],['data_inicio','Data de início','date'],['frequencia_semanal','Frequência','number'],['apostila','Valor apostila','text'],['dia_vencimento','Vencimento','number'],['valor_diaria','Valor diária','text'],['observacoes_contrato','Observações do contrato','text']],
+ fiuzaClientes:[['nome','Nome','text'],['data_nascimento','Data de nascimento','date'],['responsavel','Responsável','text'],['cpf_responsavel','CPF do responsável','text'],['email_responsavel','E-mail do responsável','email'],['data_inicio','Data de início','date'],['frequencia_semanal','Frequência','number'],['apostila','Valor apostila','text'],['dia_vencimento','Vencimento','number'],['valor_diaria','Valor diária','text'],['observacoes_contrato','Observações do contrato','text'],['status_cliente','Status','select',['Ativo','Inativo','Negociação']]],
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
  plano:[['grupo','Grupo','select',['Receitas','Custos','Despesas','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
  pagar:[['vencimento','Vencimento','date'],['fornecedor','Fornecedor','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Pago','Vencido']]],
@@ -389,6 +391,7 @@ function openModal(type,id=null){
  }else{
    modalForm.innerHTML=schemas[type].map(([key,label,tp,opts])=>{
      let val=item?.[key]??'';
+     if(type==='fiuzaClientes'&&key==='status_cliente'&&!val) val=clienteStatus(item);
      if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option '+(o===val?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
      return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'" value="'+esc(val)+'"></div>'
    }).join('');
@@ -410,6 +413,7 @@ function reativarCliente(type,id){
   const item=store[type]?.find(x=>x.id===id);
   if(!item)return;
   item.ativo=true;
+  item.status_cliente='Ativo';
   item.data_inativacao='';
   item.motivo_inativacao='';
   persist();
@@ -434,9 +438,10 @@ function openNovoClienteModal(){
   const renderCampos=()=>{
     const box=document.getElementById('camposClienteDinamicos');
     if(sel.value==='FIUZA'){
-      box.innerHTML=schemas.fiuzaClientes.map(([key,label,tp])=>
-        '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'"></div>'
-      ).join('');
+      box.innerHTML=schemas.fiuzaClientes.map(([key,label,tp,opts])=>{
+        if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option>'+o+'</option>').join('')+'</select></div>';
+        return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'"></div>';
+      }).join('');
     }else{
       box.innerHTML=
         '<div class="field"><label>Nome / Razão social</label><input type="text" data-field="nome"></div>'+
@@ -461,6 +466,7 @@ modalSave.onclick=async()=>{
    if(!motivo){notify('Informe o motivo do inativamento.');return}
    if(!item){notify('Cliente não encontrado.');return}
    item.ativo=false;
+   item.status_cliente='Inativo';
    item.data_inativacao=data;
    item.motivo_inativacao=motivo;
    persist();closeModal();notify('Cliente inativado.');
@@ -472,6 +478,8 @@ modalSave.onclick=async()=>{
    modalForm.querySelectorAll('[data-field]').forEach(el=>obj[el.dataset.field]=el.value.trim());
    if(!obj.nome){notify('Informe o nome do cliente.');return}
    if(tipo==='FIUZA'){
+     obj.status_cliente=obj.status_cliente||'Ativo';
+     obj.ativo=obj.status_cliente!=='Inativo';
      store.fiuzaClientes.push(obj);
    }else{
      obj.tipo_cliente=tipo;
@@ -505,6 +513,9 @@ modalSave.onclick=async()=>{
  }
  let obj=id?store[type].find(x=>x.id===id):{id:Date.now()};
  modalForm.querySelectorAll('[data-field]').forEach(el=>obj[el.dataset.field]=el.value.trim());
+ if(type==='fiuzaClientes'&&obj.status_cliente){
+   obj.ativo=obj.status_cliente!=='Inativo';
+ }
  if(!id)store[type].push(obj);
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
 };
