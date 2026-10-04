@@ -139,7 +139,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
       </div>
       <button id="launchClose" class="launch-close" type="button">×</button>
     </div>
-    <div class="launch-grid">
+    <div class="launch-grid" id="launchGrid">
       <div class="launch-left">
         <div class="launch-tabs">
           <button type="button" class="launch-tab active" data-launch-type="pagar">A pagar</button>
@@ -792,9 +792,20 @@ function resetLaunch(){
 function setLaunchType(tipo){
   launchState.tipo=tipo;
   document.querySelectorAll('[data-launch-type]').forEach(b=>b.classList.toggle('active',b.dataset.launchType===tipo));
-  launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber'; parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
+  launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber';
+  parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
   if(window.receberTipoSection)receberTipoSection.style.display=tipo==='receber'?'block':'none';
-  if(tipo!=='receber')setReceberTipo('comum');
+
+  const right=document.querySelector('.launch-right');
+  const grid=document.getElementById('launchGrid');
+  if(tipo==='receber'){
+    if(right)right.style.display='none';
+    if(grid)grid.style.gridTemplateColumns='1fr';
+  }else{
+    if(right)right.style.display='flex';
+    if(grid)grid.style.gridTemplateColumns='minmax(0,1.52fr) minmax(390px,.9fr)';
+    setReceberTipo('comum');
+  }
 }
 function fillContaOptions(){
   lfConta.innerHTML='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
@@ -837,6 +848,7 @@ function renderParcelas(){
 lfParcelado.onclick=()=>{launchState.parcelado=true;lfParcelado.classList.add('active');lfUnico.classList.remove('active');lfUnicoBox.style.display='none';lfParcelasBox.style.display='block';if(launchState.parcelas.length<2){const total=numeroValor(lfValor.value)||0,b=(total/2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});launchState.parcelas=[{vencimento:lfVencimento.value,valor:b},{vencimento:lfVencimento.value,valor:b}]}renderParcelas()};
 lfAddParcela.onclick=()=>{launchState.parcelas.push({vencimento:lfVencimento.value,valor:'0,00'});renderParcelas()};
 lfFile.onchange=async()=>{
+  if(launchState.tipo==='receber')return;
   const file=lfFile.files?.[0]; if(!file)return; launchState.arquivo=file;uploadText.textContent=file.name;readStatus.textContent='Lendo documento e preenchendo os campos...';readStatus.className='read-status show';
   if(launchState.previewUrl)URL.revokeObjectURL(launchState.previewUrl);launchState.previewUrl=URL.createObjectURL(file);
   const n=file.name.toLowerCase();
