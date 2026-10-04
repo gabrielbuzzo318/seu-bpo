@@ -116,7 +116,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <div id="all" class="grid2"><div class="card"><div class="section-title">Resumo por empresa</div><table><thead><tr><th>Empresa</th><th>A receber</th><th>A pagar</th><th>Inadimplência</th><th>Status</th></tr></thead><tbody><tr><td><b>DPMZ</b></td><td>R$ 28.600</td><td>R$ 17.800</td><td>R$ 2.300</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Tugão Imóveis</b></td><td>R$ 24.300</td><td>R$ 16.100</td><td>R$ 6.100</td><td><span class="status warn">Atenção</span></td></tr><tr><td><b>IZA Comunica</b></td><td>R$ 18.900</td><td>R$ 13.500</td><td>R$ 3.400</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Clínica Aurora</b></td><td>R$ 20.650</td><td>R$ 13.900</td><td>R$ 2.400</td><td><span class="status ok">Saudável</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Pendências da carteira</div><table><tbody><tr><td>Conciliações pendentes</td><td><b>3 empresas</b></td></tr><tr><td>NF pendentes de vínculo</td><td><b>8 notas</b></td></tr><tr><td>Títulos vencidos</td><td class="red"><b>19</b></td></tr><tr><td>Documentos pendentes</td><td><b>11</b></td></tr></tbody></table></div></div>
 <div id="one" class="grid2" style="display:none"><div class="card"><div class="section-title">Últimos lançamentos</div><table><tbody><tr><td>29/09</td><td>Recebimento Cliente A</td><td class="green">R$ 3.500</td><td><span class="status ok">Recebido</span></td></tr><tr><td>29/09</td><td>Fornecedor X</td><td class="red">R$ 1.200</td><td><span class="status warn">Em aberto</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Ações rápidas</div><p>+ Novo pagamento</p><p>+ Novo recebimento</p><p>Baixar título</p><p>Gerar relatório</p></div></div></section>
 <section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
-<section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
+<section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
@@ -145,6 +145,28 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
           <button type="button" class="launch-tab active" data-launch-type="pagar">A pagar</button>
           <button type="button" class="launch-tab" data-launch-type="receber">A receber</button>
         </div>
+
+        <section id="receberTipoSection" class="launch-section" style="display:none">
+          <div class="launch-section-head"><b>Tipo de recebimento</b><small>Use o modelo comum ou o controle específico da FIUZA.</small></div>
+          <div class="segment-row">
+            <label><input type="radio" name="lfReceberTipo" value="comum" checked> Comum</label>
+            <label><input type="radio" name="lfReceberTipo" value="fiuza"> Específico FIUZA</label>
+          </div>
+        </section>
+
+        <section id="fiuzaReceberSection" class="launch-section" style="display:none">
+          <div class="launch-section-head"><b>FIUZA · Projetado x Real</b><small>Informe as diárias previstas e as efetivamente realizadas para calcular a cobrança.</small></div>
+          <div class="launch-formgrid">
+            <div class="lf c6"><label>Cliente FIUZA</label><select id="lfFiuzaCliente"><option value="">Selecione o cliente</option></select></div>
+            <div class="lf c3"><label>Competência</label><input id="lfFiuzaCompetencia" type="month"></div>
+            <div class="lf c3"><label>Valor da diária R$</label><input id="lfFiuzaValorDiaria" inputmode="decimal" placeholder="0,00"></div>
+            <div class="lf c3"><label>Diárias projetadas</label><input id="lfFiuzaDiariasProjetadas" type="number" min="0" step="1" placeholder="0"></div>
+            <div class="lf c3"><label>Valor projetado R$</label><input id="lfFiuzaValorProjetado" readonly placeholder="0,00"></div>
+            <div class="lf c3"><label>Diárias realizadas</label><input id="lfFiuzaDiariasRealizadas" type="number" min="0" step="1" placeholder="0"></div>
+            <div class="lf c3"><label>Valor real a cobrar R$</label><input id="lfFiuzaValorReal" readonly placeholder="0,00"></div>
+            <div class="lf c6"><label>Diferença R$</label><input id="lfFiuzaDiferenca" readonly placeholder="0,00"></div>
+          </div>
+        </section>
 
         <section class="launch-section">
           <div class="launch-section-head"><b>Dados do documento</b><small>Campos principais da nota, boleto ou lançamento.</small></div>
@@ -338,7 +360,7 @@ function renderAll(){
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
  pagarBody.innerHTML=store.pagar.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
- receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,'<button class="iconbtn" onclick="toggleStatus(\'receber\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
+ receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,'<button class="iconbtn" onclick="toggleStatus(\'receber\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
@@ -714,8 +736,54 @@ async function lerDocumento(file){
   }
   return {};
 }
+function fiuzaReceberClientes(){
+  return store.fiuzaClientes.filter(x=>clienteStatus(x)!=='Inativo');
+}
+function fillFiuzaReceberClientes(){
+  if(!window.lfFiuzaCliente)return;
+  lfFiuzaCliente.innerHTML='<option value="">Selecione o cliente</option>'+fiuzaReceberClientes().map(x=>'<option value="'+x.id+'">'+esc(x.nome)+'</option>').join('');
+}
+function moedaNumero(v){return numeroValor(v)||0}
+function atualizaFiuzaReceberCalculo(){
+  if(!window.lfFiuzaValorDiaria)return;
+  const diaria=moedaNumero(lfFiuzaValorDiaria.value);
+  const proj=Number(lfFiuzaDiariasProjetadas.value||0);
+  const real=Number(lfFiuzaDiariasRealizadas.value||0);
+  const vp=diaria*proj, vr=diaria*real, dif=vr-vp;
+  lfFiuzaValorProjetado.value=formatValor(vp);
+  lfFiuzaValorReal.value=formatValor(vr);
+  lfFiuzaDiferenca.value=formatValor(dif);
+  if(document.querySelector('input[name="lfReceberTipo"]:checked')?.value==='fiuza'){
+    lfValor.value=formatValor(vr);
+  }
+}
+function atualizaFiuzaVencimento(){
+  const id=Number(lfFiuzaCliente?.value||0);
+  const cli=store.fiuzaClientes.find(x=>Number(x.id)===id);
+  const comp=lfFiuzaCompetencia?.value;
+  if(!cli||!comp)return;
+  const [y,m]=comp.split('-').map(Number);
+  const last=new Date(y,m,0).getDate();
+  const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
+  lfVencimento.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
+  if(!lfEmissao.value)lfEmissao.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-01';
+  updateCompetenciaHint();
+}
+function setReceberTipo(tipo){
+  document.querySelectorAll('input[name="lfReceberTipo"]').forEach(r=>r.checked=r.value===tipo);
+  const fiuza=tipo==='fiuza';
+  if(window.fiuzaReceberSection)fiuzaReceberSection.style.display=fiuza?'block':'none';
+  if(fiuza){
+    fillFiuzaReceberClientes();
+    lfParte.readOnly=true;
+  }else{
+    lfParte.readOnly=false;
+  }
+}
 function resetLaunch(){
   ['lfParte','lfEmissao','lfVencimento','lfValor','lfNumero','lfChave','lfLinha','lfHistorico'].forEach(id=>document.getElementById(id).value='');
+  if(window.lfFiuzaCliente){lfFiuzaCliente.value='';lfFiuzaCompetencia.value='';lfFiuzaValorDiaria.value='';lfFiuzaDiariasProjetadas.value='';lfFiuzaValorProjetado.value='';lfFiuzaDiariasRealizadas.value='';lfFiuzaValorReal.value='';lfFiuzaDiferenca.value='';}
+  setReceberTipo('comum');
   lfConta.value=''; lfBanco.value='Sicredi'; lfFile.value=''; uploadText.textContent='Selecionar documento'; readStatus.className='read-status'; readStatus.textContent='';
   if(launchState.previewUrl) URL.revokeObjectURL(launchState.previewUrl); launchState.previewUrl=null; launchState.arquivo=null; launchState.parcelado=false; launchState.parcelas=[];
   lfUnico.classList.add('active');lfParcelado.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none';
@@ -725,6 +793,8 @@ function setLaunchType(tipo){
   launchState.tipo=tipo;
   document.querySelectorAll('[data-launch-type]').forEach(b=>b.classList.toggle('active',b.dataset.launchType===tipo));
   launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber'; parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
+  if(window.receberTipoSection)receberTipoSection.style.display=tipo==='receber'?'block':'none';
+  if(tipo!=='receber')setReceberTipo('comum');
 }
 function fillContaOptions(){
   lfConta.innerHTML='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
@@ -733,7 +803,19 @@ function openLaunchModal(tipo,id=null){
   resetLaunch();fillContaOptions();launchState.id=id;setLaunchType(tipo);
   if(id){
     const x=store[tipo].find(r=>r.id===id);
-    if(x){lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';}
+    if(x){
+      lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';
+      if(tipo==='receber'&&x.tipo_recebimento==='fiuza'){
+        setReceberTipo('fiuza');
+        fillFiuzaReceberClientes();
+        lfFiuzaCliente.value=String(x.fiuza_cliente_id||'');
+        lfFiuzaCompetencia.value=x.competencia_fiuza||'';
+        lfFiuzaValorDiaria.value=x.valor_diaria||'';
+        lfFiuzaDiariasProjetadas.value=x.diarias_projetadas??'';
+        lfFiuzaDiariasRealizadas.value=x.diarias_realizadas??'';
+        atualizaFiuzaReceberCalculo();
+      }
+    }
     launchTitle.textContent='Editar lançamento';
   }else launchTitle.textContent='Novo lançamento';
   launchBg.classList.add('show');
@@ -768,12 +850,51 @@ lfFile.onchange=async()=>{
     readStatus.textContent='Documento lido automaticamente. Confira os campos antes de salvar.';readStatus.className='read-status show';updateCompetenciaHint();
   }catch(err){readStatus.textContent=err?.message||'Não foi possível ler o documento automaticamente.';readStatus.className='read-status show err'}
 };
+document.querySelectorAll('input[name="lfReceberTipo"]').forEach(r=>r.onchange=()=>setReceberTipo(r.value));
+if(window.lfFiuzaCliente)lfFiuzaCliente.onchange=()=>{
+  const cli=store.fiuzaClientes.find(x=>String(x.id)===String(lfFiuzaCliente.value));
+  if(cli){
+    lfParte.value=cli.nome||'';
+    lfFiuzaValorDiaria.value=cli.valor_diaria||'';
+    if(!lfHistorico.value)lfHistorico.value='Diárias FIUZA - '+(cli.nome||'');
+    atualizaFiuzaVencimento();
+    atualizaFiuzaReceberCalculo();
+  }
+};
+if(window.lfFiuzaCompetencia)lfFiuzaCompetencia.onchange=atualizaFiuzaVencimento;
+if(window.lfFiuzaValorDiaria)lfFiuzaValorDiaria.oninput=atualizaFiuzaReceberCalculo;
+if(window.lfFiuzaDiariasProjetadas)lfFiuzaDiariasProjetadas.oninput=atualizaFiuzaReceberCalculo;
+if(window.lfFiuzaDiariasRealizadas)lfFiuzaDiariasRealizadas.oninput=atualizaFiuzaReceberCalculo;
+
 launchSave.onclick=()=>{
-  const tipo=launchState.tipo, parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
+  const tipo=launchState.tipo, receberTipo=document.querySelector('input[name="lfReceberTipo"]:checked')?.value||'comum', parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
+  if(tipo==='receber'&&receberTipo==='fiuza'){
+    if(!lfFiuzaCliente.value||!lfFiuzaCompetencia.value){notify('Selecione o cliente FIUZA e a competência.');return}
+    if(!lfFiuzaDiariasProjetadas.value||lfFiuzaDiariasRealizadas.value===''){notify('Informe as diárias projetadas e realizadas.');return}
+  }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
   Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:tipo==='pagar'?'Em aberto':'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao',tipo_pagamento:launchState.parcelado?'parcelado':'unico',parcelas:launchState.parcelado?structuredClone(launchState.parcelas):[]});
-  if(tipo==='pagar'){obj.fornecedor=parte;delete obj.cliente}else{obj.cliente=parte;delete obj.fornecedor}
+  if(tipo==='pagar'){obj.fornecedor=parte;delete obj.cliente}else{
+    obj.cliente=parte;delete obj.fornecedor;
+    obj.tipo_recebimento=receberTipo;
+    if(receberTipo==='fiuza'){
+      Object.assign(obj,{
+        fiuza_cliente_id:Number(lfFiuzaCliente.value),
+        competencia_fiuza:lfFiuzaCompetencia.value,
+        valor_diaria:lfFiuzaValorDiaria.value,
+        diarias_projetadas:Number(lfFiuzaDiariasProjetadas.value||0),
+        valor_projetado:lfFiuzaValorProjetado.value,
+        diarias_realizadas:Number(lfFiuzaDiariasRealizadas.value||0),
+        valor_real:lfFiuzaValorReal.value,
+        diferenca_projetado_real:lfFiuzaDiferenca.value
+      });
+      obj.valor=lfFiuzaValorReal.value;
+      obj.descricao='FIUZA · '+obj.diarias_projetadas+' diárias projetadas / '+obj.diarias_realizadas+' realizadas';
+    }else{
+      delete obj.fiuza_cliente_id;delete obj.competencia_fiuza;delete obj.valor_diaria;delete obj.diarias_projetadas;delete obj.valor_projetado;delete obj.diarias_realizadas;delete obj.valor_real;delete obj.diferenca_projetado_real;
+    }
+  }
   if(!launchState.id)store[tipo].push(obj);persist();closeLaunch();notify(launchState.id?'Lançamento atualizado.':'Lançamento salvo.');
 };
 
