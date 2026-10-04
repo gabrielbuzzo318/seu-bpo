@@ -182,7 +182,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
           </div>
         </section>
 
-        <section class="launch-section">
+        <section id="competenciaSection" class="launch-section">
           <div class="launch-section-head"><b>Competência</b><small>Escolha qual data define a competência financeira.</small></div>
           <div class="segment-row">
             <label><input type="radio" name="lfCompetencia" value="emissao" checked> Emissão</label>
@@ -191,7 +191,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
           </div>
         </section>
 
-        <section class="launch-section">
+        <section id="prazoPagamentoSection" class="launch-section">
           <div class="pay-head">
             <div><b style="font-size:12px">Prazo de pagamento</b><div class="sub" style="font-size:9.5px;margin-top:3px">Lançamento único ou parcelado.</div></div>
             <div class="seg"><button id="lfUnico" type="button" class="active">Único</button><button id="lfParcelado" type="button">Parcelado</button></div>
@@ -205,6 +205,20 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
           <div id="lfUnicoBox" class="launch-formgrid">
             <div class="lf c6"><label>Conta contábil</label><select id="lfConta"><option value="">Selecione uma conta</option></select></div>
             <div class="lf c6"><label>Banco</label><select id="lfBanco"><option>Sicredi</option><option>Sicoob</option><option>Inter</option><option>Outros</option></select></div>
+          </div>
+        </section>
+
+        <section id="recorrenciaSection" class="launch-section" style="display:none">
+          <div class="launch-section-head"><b>Recorrência</b><small>Defina a frequência deste recebimento.</small></div>
+          <div class="launch-formgrid">
+            <div class="lf c6"><label>Recorrência</label>
+              <select id="lfRecorrencia">
+                <option value="unico">Único</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+              </select>
+            </div>
           </div>
         </section>
       </div>
@@ -783,6 +797,7 @@ function setReceberTipo(tipo){
 function resetLaunch(){
   ['lfParte','lfEmissao','lfVencimento','lfValor','lfNumero','lfChave','lfLinha','lfHistorico'].forEach(id=>document.getElementById(id).value='');
   if(window.lfFiuzaCliente){lfFiuzaCliente.value='';lfFiuzaCompetencia.value='';lfFiuzaValorDiaria.value='';lfFiuzaDiariasProjetadas.value='';lfFiuzaValorProjetado.value='';lfFiuzaDiariasRealizadas.value='';lfFiuzaValorReal.value='';lfFiuzaDiferenca.value='';}
+  if(window.lfRecorrencia)lfRecorrencia.value='mensal';
   setReceberTipo('comum');
   lfConta.value=''; lfBanco.value='Sicredi'; lfFile.value=''; uploadText.textContent='Selecionar documento'; readStatus.className='read-status'; readStatus.textContent='';
   if(launchState.previewUrl) URL.revokeObjectURL(launchState.previewUrl); launchState.previewUrl=null; launchState.arquivo=null; launchState.parcelado=false; launchState.parcelas=[];
@@ -795,6 +810,9 @@ function setLaunchType(tipo){
   launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber';
   parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
   if(window.receberTipoSection)receberTipoSection.style.display=tipo==='receber'?'block':'none';
+  if(window.competenciaSection)competenciaSection.style.display=tipo==='receber'?'none':'block';
+  if(window.prazoPagamentoSection)prazoPagamentoSection.style.display=tipo==='receber'?'none':'block';
+  if(window.recorrenciaSection)recorrenciaSection.style.display=tipo==='receber'?'block':'none';
 
   const right=document.querySelector('.launch-right');
   const grid=document.getElementById('launchGrid');
@@ -815,7 +833,7 @@ function openLaunchModal(tipo,id=null){
   if(id){
     const x=store[tipo].find(r=>r.id===id);
     if(x){
-      lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';
+      lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';if(window.lfRecorrencia)lfRecorrencia.value=x.recorrencia||'mensal';
       if(tipo==='receber'&&x.tipo_recebimento==='fiuza'){
         setReceberTipo('fiuza');
         fillFiuzaReceberClientes();
@@ -886,10 +904,11 @@ launchSave.onclick=()=>{
   }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
-  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:tipo==='pagar'?'Em aberto':'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao',tipo_pagamento:launchState.parcelado?'parcelado':'unico',parcelas:launchState.parcelado?structuredClone(launchState.parcelas):[]});
+  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
   if(tipo==='pagar'){obj.fornecedor=parte;delete obj.cliente}else{
     obj.cliente=parte;delete obj.fornecedor;
     obj.tipo_recebimento=receberTipo;
+    obj.recorrencia=window.lfRecorrencia?.value||'mensal';
     if(receberTipo==='fiuza'){
       Object.assign(obj,{
         fiuza_cliente_id:Number(lfFiuzaCliente.value),
