@@ -350,6 +350,22 @@ let store=JSON.parse(localStorage.getItem(DBKEY)||'null')||seed;
 if(!Array.isArray(store.receber)) store.receber=structuredClone(seed.receber);
 if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
 if(!Array.isArray(store.fluxo)) store.fluxo=[];
+for(const r of store.receber){
+  if(r?.tipo_recebimento==='fiuza'&&r.competencia_fiuza&&r.fiuza_cliente_id){
+    const cli=store.fiuzaClientes.find(x=>String(x.id)===String(r.fiuza_cliente_id));
+    if(cli){
+      const mm=String(r.competencia_fiuza).match(/^(\d{4})-(\d{2})$/);
+      if(mm){
+        const y=Number(mm[1]), mon=Number(mm[2]);
+        const prox=new Date(y,mon,1);
+        const vy=prox.getFullYear(), vm=prox.getMonth()+1;
+        const last=new Date(vy,vm,0).getDate();
+        const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
+        r.vencimento=String(vy).padStart(4,'0')+'-'+String(vm).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
+      }
+    }
+  }
+}
 for(const c of fiuzaImportOut20261004){
   const exists=store.fiuzaClientes.some(x=>String(x.nome||'').trim().toLowerCase()===String(c.nome).trim().toLowerCase());
   if(!exists) store.fiuzaClientes.push(structuredClone(c));
@@ -422,6 +438,18 @@ function brDate(v){
   if(!v)return '';
   const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return m?m[3]+'/'+m[2]+'/'+m[1]:v;
+}
+function vencimentoFiuzaPorCompetencia(competencia,clienteId){
+  const cli=store.fiuzaClientes.find(x=>String(x.id)===String(clienteId));
+  if(!cli||!competencia)return '';
+  const m=String(competencia).match(/^(\d{4})-(\d{2})$/);
+  if(!m)return '';
+  const y=Number(m[1]), mon=Number(m[2]);
+  const prox=new Date(y,mon,1);
+  const vy=prox.getFullYear(), vm=prox.getMonth()+1;
+  const last=new Date(vy,vm,0).getDate();
+  const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
+  return String(vy).padStart(4,'0')+'-'+String(vm).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
 }
 function renderClientes(){
   if(!window.clientesHead||!window.clientesBody)return;
@@ -844,11 +872,7 @@ function atualizaFiuzaVencimento(){
   const comp=lfFiuzaCompetencia?.value;
   if(!cli||!comp)return;
   const [y,m]=comp.split('-').map(Number);
-  const prox=new Date(y,m,1);
-  const vy=prox.getFullYear(), vm=prox.getMonth()+1;
-  const last=new Date(vy,vm,0).getDate();
-  const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
-  lfVencimento.value=String(vy).padStart(4,'0')+'-'+String(vm).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
+  lfVencimento.value=vencimentoFiuzaPorCompetencia(comp,id);
   if(window.lfReceberVencimento)lfReceberVencimento.value=lfVencimento.value;
   if(!lfEmissao.value)lfEmissao.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-01';
   updateCompetenciaHint();
@@ -926,6 +950,7 @@ function openLaunchModal(tipo,id=null){
         lfFiuzaValorDiaria.value=x.valor_diaria||'';
         lfFiuzaDiariasProjetadas.value=x.diarias_projetadas??'';
         lfFiuzaDiariasRealizadas.value=x.diarias_realizadas??'';
+        atualizaFiuzaVencimento();
         atualizaFiuzaReceberCalculo();
       }
     }
@@ -1003,6 +1028,8 @@ launchSave.onclick=()=>{
     obj.tipo_recebimento=receberTipo;
     obj.recorrencia=window.lfRecorrencia?.value||'mensal';
     if(receberTipo==='fiuza'){
+      const vencFiuza=vencimentoFiuzaPorCompetencia(lfFiuzaCompetencia.value,lfFiuzaCliente.value);
+      if(vencFiuza){obj.vencimento=vencFiuza;lfVencimento.value=vencFiuza;}
       Object.assign(obj,{
         fiuza_cliente_id:Number(lfFiuzaCliente.value),
         competencia_fiuza:lfFiuzaCompetencia.value,
