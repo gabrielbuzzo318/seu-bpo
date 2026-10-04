@@ -384,7 +384,7 @@ function renderAll(){
  renderClientes();
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
- pagarBody.innerHTML=store.pagar.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
+ pagarBody.innerHTML=store.pagar.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
  receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,'<button class="iconbtn" onclick="toggleStatus(\'receber\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
@@ -773,14 +773,18 @@ function atualizaFiuzaReceberCalculo(){
   if(!window.lfFiuzaValorDiaria)return;
   const diaria=moedaNumero(lfFiuzaValorDiaria.value);
   const proj=Number(lfFiuzaDiariasProjetadas.value||0);
-  const real=Number(lfFiuzaDiariasRealizadas.value||0);
-  const vp=diaria*proj, vr=diaria*real, dif=vr-vp;
+  const realizou=lfFiuzaDiariasRealizadas.value!=='';
+  const real=realizou?Number(lfFiuzaDiariasRealizadas.value):0;
+  const vp=diaria*proj;
+  const vr=realizou?diaria*real:null;
+  const dif=realizou?vr-vp:null;
   lfFiuzaValorProjetado.value=formatValor(vp);
-  lfFiuzaValorReal.value=formatValor(vr);
-  lfFiuzaDiferenca.value=formatValor(dif);
+  lfFiuzaValorReal.value=realizou?formatValor(vr):'';
+  lfFiuzaDiferenca.value=realizou?formatValor(dif):'';
   if(document.querySelector('input[name="lfReceberTipo"]:checked')?.value==='fiuza'){
-    lfValor.value=formatValor(vr);
-    if(window.lfReceberValor)lfReceberValor.value=formatValor(vr);
+    const valorAtual=realizou?vr:vp;
+    lfValor.value=formatValor(valorAtual);
+    if(window.lfReceberValor)lfReceberValor.value=formatValor(valorAtual);
   }
 }
 function atualizaFiuzaVencimento(){
@@ -936,7 +940,7 @@ launchSave.onclick=()=>{
   const parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
   if(tipo==='receber'&&receberTipo==='fiuza'){
     if(!lfFiuzaCliente.value||!lfFiuzaCompetencia.value){notify('Selecione o cliente FIUZA e a competência.');return}
-    if(!lfFiuzaDiariasProjetadas.value||lfFiuzaDiariasRealizadas.value===''){notify('Informe as diárias projetadas e realizadas.');return}
+    if(!lfFiuzaDiariasProjetadas.value){notify('Informe as diárias projetadas.');return}
   }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
@@ -952,12 +956,12 @@ launchSave.onclick=()=>{
         valor_diaria:lfFiuzaValorDiaria.value,
         diarias_projetadas:Number(lfFiuzaDiariasProjetadas.value||0),
         valor_projetado:lfFiuzaValorProjetado.value,
-        diarias_realizadas:Number(lfFiuzaDiariasRealizadas.value||0),
-        valor_real:lfFiuzaValorReal.value,
-        diferenca_projetado_real:lfFiuzaDiferenca.value
+        diarias_realizadas:lfFiuzaDiariasRealizadas.value===''?null:Number(lfFiuzaDiariasRealizadas.value),
+        valor_real:lfFiuzaDiariasRealizadas.value===''?'':lfFiuzaValorReal.value,
+        diferenca_projetado_real:lfFiuzaDiariasRealizadas.value===''?'':lfFiuzaDiferenca.value
       });
-      obj.valor=lfFiuzaValorReal.value;
-      obj.descricao='FIUZA · '+obj.diarias_projetadas+' diárias projetadas / '+obj.diarias_realizadas+' realizadas';
+      obj.valor=obj.valor_real||obj.valor_projetado;
+      obj.descricao='FIUZA · '+obj.diarias_projetadas+' diárias projetadas'+(obj.diarias_realizadas==null?'':' / '+obj.diarias_realizadas+' realizadas');
     }else{
       delete obj.fiuza_cliente_id;delete obj.competencia_fiuza;delete obj.valor_diaria;delete obj.diarias_projetadas;delete obj.valor_projetado;delete obj.diarias_realizadas;delete obj.valor_real;delete obj.diferenca_projetado_real;
     }
