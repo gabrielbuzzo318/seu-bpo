@@ -257,6 +257,13 @@ function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll()
 function money(v){if(!v)return'';let n=Number(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?v:n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function acts(type,id,extra=''){return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+extra+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>'}
+function clientActs(type,id,item){
+  const inactive=item&&item.ativo===false;
+  const btn=inactive
+    ? '<button class="iconbtn" onclick="reativarCliente(\''+type+'\','+id+')">Reativar</button>'
+    : '<button class="iconbtn" onclick="openInativarCliente(\''+type+'\','+id+')">Inativar</button>';
+  return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+btn+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>';
+}
 function renderAll(){
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
  usuariosBody.innerHTML=store.usuarios.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email)+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa)+'</td><td>'+acts('usuarios',x.id)+'</td></tr>').join('');
@@ -298,11 +305,11 @@ function renderClientes(){
   const fiuza=isFiuzaSelected();
   clientesSub.textContent=fiuza?'Cadastro específico de alunos/clientes da FIUZA':'Cadastro de clientes';
   if(fiuza){
-    clientesHead.innerHTML='<tr><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=store.fiuzaClientes.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+acts('fiuzaClientes',x.id)+'</td></tr>').join('');
+    clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Ações</th></tr>';
+    clientesBody.innerHTML=store.fiuzaClientes.map(x=>'<tr><td>'+(x.ativo===false?'Inativo':'Ativo')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
   }else{
-    clientesHead.innerHTML='<tr><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=store.clientes.map(x=>'<tr><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+acts('clientes',x.id)+'</td></tr>').join('');
+    clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
+    clientesBody.innerHTML=store.clientes.map(x=>'<tr><td>'+(x.ativo===false?'Inativo':'Ativo')+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
   }
 }
 const schemas={
@@ -338,6 +345,26 @@ function openModal(type,id=null){
    }).join('');
  }
  modalBg.classList.add('show');
+}
+function openInativarCliente(type,id){
+  const item=store[type]?.find(x=>x.id===id);
+  if(!item)return;
+  modalState={type:'inativarCliente',id,sourceType:type};
+  modalTitle.textContent='Inativar cliente';
+  const hoje=new Date().toISOString().slice(0,10);
+  modalForm.innerHTML=
+    '<div class="field"><label>Data do inativamento</label><input type="date" data-field="data_inativacao" value="'+hoje+'"></div>'+
+    '<div class="field full"><label>Motivo do inativamento</label><textarea data-field="motivo_inativacao" rows="4" style="width:100%;resize:vertical"></textarea></div>';
+  modalBg.classList.add('show');
+}
+function reativarCliente(type,id){
+  const item=store[type]?.find(x=>x.id===id);
+  if(!item)return;
+  item.ativo=true;
+  item.data_inativacao='';
+  item.motivo_inativacao='';
+  persist();
+  notify('Cliente reativado.');
 }
 function closeModal(){modalBg.classList.remove('show')}
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dataset.add));
@@ -376,9 +403,23 @@ modalX.onclick=modalCancel.onclick=closeModal;
 modalBg.onclick=e=>{if(e.target===modalBg)closeModal()};
 modalSave.onclick=async()=>{
  const {type,id}=modalState;
+ if(type==='inativarCliente'&&id){
+   const sourceType=modalState.sourceType;
+   const item=store[sourceType]?.find(x=>x.id===id);
+   const data=modalForm.querySelector('[data-field="data_inativacao"]')?.value||'';
+   const motivo=modalForm.querySelector('[data-field="motivo_inativacao"]')?.value.trim()||'';
+   if(!data){notify('Informe a data do inativamento.');return}
+   if(!motivo){notify('Informe o motivo do inativamento.');return}
+   if(!item){notify('Cliente não encontrado.');return}
+   item.ativo=false;
+   item.data_inativacao=data;
+   item.motivo_inativacao=motivo;
+   persist();closeModal();notify('Cliente inativado.');
+   return;
+ }
  if(type==='novoCliente'&&!id){
    const tipo=document.getElementById('tipoClienteNovo')?.value||'Comum';
-   const obj={id:Date.now()};
+   const obj={id:Date.now(),ativo:true};
    modalForm.querySelectorAll('[data-field]').forEach(el=>obj[el.dataset.field]=el.value.trim());
    if(!obj.nome){notify('Informe o nome do cliente.');return}
    if(tipo==='FIUZA'){
