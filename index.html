@@ -14,7 +14,7 @@ select,input{font:inherit}.company-select{border:1px solid var(--border);border-
 .content{padding:24px}.screen{display:none}.screen.active{display:block}.page-title{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px}.page-title h1{margin:0 0 4px;font-size:24px}.sub{color:var(--muted);font-size:13px}
 .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card{background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:17px;box-shadow:0 5px 16px rgba(35,45,78,.04)}.label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:7px}.value{font-size:23px;font-weight:800}.green{color:var(--green)}.red{color:var(--red)}.orange{color:var(--orange)}
 .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.section-title{font-weight:800;font-size:15px;margin-bottom:12px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9px;border-bottom:1px solid var(--border);text-align:left}th{font-size:10px;color:var(--muted);text-transform:uppercase}.status{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.ok{background:#e9f7f0;color:#187d55}.warn{background:#fff4e5;color:#af741d}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9px;border-bottom:1px solid var(--border);text-align:left}th{font-size:10px;color:var(--muted);text-transform:uppercase}.status{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.ok{background:#e9f7f0;color:#187d55}.bad{background:#fde9e7;color:#b24f48;border:1px solid #f1c9c5}.warn{background:#fff4e5;color:#af741d}
 .toolbar{display:flex;justify-content:space-between;gap:10px;margin-bottom:14px}.search{padding:9px 11px;border:1px solid var(--border);border-radius:9px;min-width:260px}.btn{padding:9px 12px;border-radius:9px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#fff}.primary{background:var(--accent);color:#fff;border:0}.primary:hover{background:#a77e46}.pill{font-size:10px;background:#f2e8dd;color:#285f6d;padding:4px 8px;border-radius:999px;font-weight:800}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
 
@@ -121,7 +121,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
 <section id="plano" class="screen"><div class="page-title"><div><h1>Plano de Contas</h1><div class="sub">Categorias financeiras</div></div><button class="btn primary" data-add="plano">+ Nova conta</button></div><div class="card"><table><thead><tr><th>Grupo</th><th>Conta</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="planoBody"></tbody></table></div></section>
-<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
+<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
 <section id="fornecedores" class="screen"><div class="page-title"><div><h1>Fornecedores</h1><div class="sub">Cadastro de fornecedores</div></div><button class="btn primary" data-add="fornecedores">+ Novo fornecedor</button></div><div class="card"><table><thead><tr><th>Fornecedor</th><th>Documento</th><th>Categoria</th><th>Ações</th></tr></thead><tbody id="fornecedoresBody"></tbody></table></div></section>
 <section id="boletos" class="screen"><div class="page-title"><div><h1>Boletos</h1><div class="sub">Cobranças emitidas para clientes</div></div><button class="btn primary" data-add="boletos">+ Novo boleto</button></div><div class="card"><table><thead><tr><th>Cliente</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="boletosBody"></tbody></table></div></section>
 <section id="nf" class="screen"><div class="page-title"><div><h1>Notas Fiscais</h1><div class="sub">Controle de notas fiscais emitidas e recebidas</div></div><button class="btn primary" data-add="nf">+ Nova nota fiscal</button></div><div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table></div></section>
@@ -211,9 +211,26 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </div>
 <div id="modalBg" class="modal-backdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Cadastro</h3><button class="iconbtn" id="modalX">✕</button></div><div class="modal-body"><div id="modalForm" class="formgrid"></div></div><div class="modal-foot"><button class="btn" id="modalCancel">Cancelar</button><button class="btn primary" id="modalSave">Salvar</button></div></div></div><div id="toast" class="toast"></div>
 <script>
-const bs=[...document.querySelectorAll('[data-screen]')],ss=[...document.querySelectorAll('.screen')];bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;bs.forEach(x=>x.classList.remove('active'));b.classList.add('active');ss.forEach(x=>x.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active')});
+const UIKEY='seubpo_ui_state_v1';
+function saveUiState(extra={}){
+  let prev={};try{prev=JSON.parse(localStorage.getItem(UIKEY)||'{}')}catch(_){}
+  localStorage.setItem(UIKEY,JSON.stringify({...prev,...extra}));
+}
+function getUiState(){try{return JSON.parse(localStorage.getItem(UIKEY)||'{}')}catch(_){return {}}}
+const bs=[...document.querySelectorAll('[data-screen]')],ss=[...document.querySelectorAll('.screen')];
+function goScreen(screenId,save=true){
+  const target=document.getElementById(screenId);
+  const btn=bs.find(x=>x.dataset.screen===screenId&&!x.classList.contains('role-hidden'));
+  if(!target||!btn)return false;
+  bs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+  ss.forEach(x=>x.classList.remove('active'));target.classList.add('active');
+  if(save)saveUiState({screen:screenId});
+  return true;
+}
+bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;goScreen(b.dataset.screen,true)});
 const d={dpmz:['DPMZ','R$ 28.600','R$ 17.800','R$ 2.300','R$ 31.450','26'],tugao:['Tugão Imóveis','R$ 24.300','R$ 16.100','R$ 6.100','R$ 18.900','31'],iza:['IZA Comunica','R$ 18.900','R$ 13.500','R$ 3.400','R$ 12.300','18'],aurora:['Clínica Aurora','R$ 20.650','R$ 13.900','R$ 2.400','R$ 22.280','14']};
 document.getElementById('company').onchange=function(){
+  saveUiState({companyValue:this.value,companyName:this.options[this.selectedIndex]?.textContent?.trim()||''});
   let a=this.value==='all';
   document.getElementById('all').style.display=a?'grid':'none';
   document.getElementById('one').style.display=a?'none':'grid';
@@ -354,13 +371,15 @@ function brDate(v){
 function renderClientes(){
   if(!window.clientesHead||!window.clientesBody)return;
   const fiuza=isFiuzaSelected();
+  const filtro=window.clientesStatusFiltro?.value||'Todos';
+  const filtraStatus=arr=>filtro==='Todos'?arr:arr.filter(x=>clienteStatus(x)===filtro);
   clientesSub.textContent=fiuza?'Cadastro específico de alunos/clientes da FIUZA':'Cadastro de clientes';
   if(fiuza){
     clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Observações do contrato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=store.fiuzaClientes.map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
+    clientesBody.innerHTML=filtraStatus(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
   }else{
     clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=store.clientes.map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
+    clientesBody.innerHTML=filtraStatus(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
   }
 }
 const schemas={
@@ -422,6 +441,7 @@ function reativarCliente(type,id){
 function closeModal(){modalBg.classList.remove('show')}
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dataset.add));
 novoClienteBtn.onclick=()=>openNovoClienteModal();
+if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
 
 function openNovoClienteModal(){
   modalState={type:'novoCliente',id:null};
@@ -681,10 +701,22 @@ let currentUser=null;
 
 function initials(name){return String(name||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
 function findCompanyByName(name){return (cloudCompanies.length?cloudCompanies:store.empresas).find(e=>e.nome===name)}
-function goDashboard(){
-  bs.forEach(x=>x.classList.remove('active'));
-  const db=bs.find(x=>x.dataset.screen==='dashboard'); if(db) db.classList.add('active');
-  ss.forEach(x=>x.classList.remove('active')); document.getElementById('dashboard').classList.add('active');
+function goDashboard(){goScreen('dashboard',true)}
+function restoreUiState(isAdmin){
+  const ui=getUiState();
+  if(isAdmin){
+    let restored=false;
+    if(ui.companyValue&&[...company.options].some(o=>o.value===ui.companyValue)){
+      company.value=ui.companyValue;restored=true;
+    }else if(ui.companyName){
+      const opt=[...company.options].find(o=>o.textContent.trim()===ui.companyName);
+      if(opt){company.value=opt.value;restored=true}
+    }
+    if(!restored)company.value='all';
+    company.dispatchEvent(new Event('change'));
+  }
+  const desired=ui.screen||'dashboard';
+  if(!goScreen(desired,false))goScreen('dashboard',false);
 }
 async function loadCloudCompanies(){
   const {data,error}=await sb.from('seubpo_empresas').select('id,nome,cnpj,ativo').eq('ativo',true).order('nome');
@@ -734,8 +766,6 @@ async function applyAccess(user){
   refreshCompanySelect();
   if(isAdmin){
     company.disabled=false;
-    company.value='all';
-    company.dispatchEvent(new Event('change'));
   }else{
     const emp=findCompanyByName(user.empresa);
     company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(user.empresa||'Minha empresa')+'</option>';
@@ -746,7 +776,7 @@ async function applyAccess(user){
     l5.textContent='Clientes ativos'; v5.textContent='—';
     renderClientes();
   }
-  goDashboard();
+  restoreUiState(isAdmin);
 }
 function showLogin(msg=''){
   currentUser=null;
