@@ -71,7 +71,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -121,7 +121,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
 <section id="plano" class="screen"><div class="page-title"><div><h1>Plano de Contas</h1><div class="sub">Categorias financeiras</div></div><button class="btn primary" data-add="plano">+ Nova conta</button></div><div class="card"><table><thead><tr><th>Grupo</th><th>Conta</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="planoBody"></tbody></table></div></section>
-<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><input id="clientesBusca" class="search" style="min-width:260px" placeholder="Pesquisar cliente, responsável, CPF, e-mail..."><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
+<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><input id="clientesBusca" class="search" style="min-width:260px" placeholder="Pesquisar cliente, responsável, CPF, e-mail..."><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="clientesRelatorioBtn" class="btn">Gerar relatório</button><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
 <section id="fornecedores" class="screen"><div class="page-title"><div><h1>Fornecedores</h1><div class="sub">Cadastro de fornecedores</div></div><button class="btn primary" data-add="fornecedores">+ Novo fornecedor</button></div><div class="card"><table><thead><tr><th>Fornecedor</th><th>Documento</th><th>Categoria</th><th>Ações</th></tr></thead><tbody id="fornecedoresBody"></tbody></table></div></section>
 <section id="boletos" class="screen"><div class="page-title"><div><h1>Boletos</h1><div class="sub">Cobranças emitidas para clientes</div></div><button class="btn primary" data-add="boletos">+ Novo boleto</button></div><div class="card"><table><thead><tr><th>Cliente</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="boletosBody"></tbody></table></div></section>
 <section id="nf" class="screen"><div class="page-title"><div><h1>Notas Fiscais</h1><div class="sub">Controle de notas fiscais emitidas e recebidas</div></div><button class="btn primary" data-add="nf">+ Nova nota fiscal</button></div><div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table></div></section>
@@ -380,8 +380,8 @@ function renderClientes(){
   const filtraClientes=arr=>filtraBusca(filtraStatus(arr));
   clientesSub.textContent=fiuza?'Cadastro específico de alunos/clientes da FIUZA':'Cadastro de clientes';
   if(fiuza){
-    clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Observações do contrato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=filtraClientes(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
+    clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Observações do contrato</th><th>Contrato</th><th>Ações</th></tr>';
+    clientesBody.innerHTML=filtraClientes(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+(x.contrato_path?'<button class="iconbtn" onclick="openContratoCliente(\'fiuzaClientes\','+x.id+')">Abrir</button>':'—')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
   }else{
     clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
     clientesBody.innerHTML=filtraClientes(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
@@ -419,8 +419,37 @@ function openModal(type,id=null){
      if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option '+(o===val?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
      return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'" value="'+esc(val)+'"></div>'
    }).join('');
+   if(type==='fiuzaClientes'){
+     modalForm.insertAdjacentHTML('beforeend',
+       '<div class="field full"><label>Contrato</label><input type="file" data-contract-file accept=".pdf,image/jpeg,image/png,image/webp">'+
+       (item?.contrato_path?'<div style="margin-top:8px"><button type="button" class="btn" onclick="openContratoCliente(\'fiuzaClientes\','+item.id+')">Abrir contrato anexado</button> <span class="sub">'+esc(item.contrato_nome||'Contrato anexado')+'</span></div>':'')+
+       '</div>'
+     );
+   }
  }
  modalBg.classList.add('show');
+}
+async function uploadContratoCliente(item,file){
+  if(!file)return;
+  if(file.size>20*1024*1024)throw new Error('O contrato deve ter no máximo 20 MB.');
+  const allowed=['application/pdf','image/jpeg','image/png','image/webp'];
+  if(file.type&&!allowed.includes(file.type))throw new Error('Envie o contrato em PDF, JPG, PNG ou WEBP.');
+  const safe=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_');
+  const path='fiuza/'+item.id+'/'+Date.now()+'_'+safe;
+  const {error}=await sb.storage.from('seubpo-contratos').upload(path,file,{upsert:false,contentType:file.type||undefined});
+  if(error)throw error;
+  if(item.contrato_path&&item.contrato_path!==path){
+    await sb.storage.from('seubpo-contratos').remove([item.contrato_path]);
+  }
+  item.contrato_path=path;
+  item.contrato_nome=file.name;
+}
+async function openContratoCliente(type,id){
+  const item=store[type]?.find(x=>x.id===id);
+  if(!item?.contrato_path){notify('Este cliente não possui contrato anexado.');return}
+  const {data,error}=await sb.storage.from('seubpo-contratos').createSignedUrl(item.contrato_path,300);
+  if(error){notify(error.message||'Não foi possível abrir o contrato.');return}
+  window.open(data.signedUrl,'_blank','noopener');
 }
 function openInativarCliente(type,id){
   const item=store[type]?.find(x=>x.id===id);
@@ -448,6 +477,52 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dat
 novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
 if(window.clientesBusca) clientesBusca.oninput=renderClientes;
+if(window.clientesRelatorioBtn) clientesRelatorioBtn.onclick=gerarRelatorioClientes;
+
+function clientesFiltradosAtual(){
+  const fiuza=isFiuzaSelected();
+  const filtro=window.clientesStatusFiltro?.value||'Todos';
+  const busca=String(window.clientesBusca?.value||'').trim().toLowerCase();
+  const arr=fiuza?store.fiuzaClientes:store.clientes;
+  return arr.filter(x=>{
+    if(filtro!=='Todos'&&clienteStatus(x)!==filtro)return false;
+    if(!busca)return true;
+    return Object.values(x||{}).some(v=>String(v??'').toLowerCase().includes(busca));
+  });
+}
+function gerarRelatorioClientes(){
+  if(!window.jspdf?.jsPDF){notify('Gerador de PDF indisponível. Atualize a página e tente novamente.');return}
+  const fiuza=isFiuzaSelected();
+  const rows=clientesFiltradosAtual();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:fiuza?'landscape':'portrait',unit:'mm',format:'a4'});
+  const empresa=selectedCompanyName()||'Todas as empresas';
+  const filtro=clientesStatusFiltro?.value||'Todos';
+  const busca=clientesBusca?.value?.trim()||'';
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('Relatório de Clientes',14,15);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text('Empresa: '+empresa,14,21);
+  doc.text('Status: '+filtro+(busca?' | Busca: '+busca:''),14,26);
+  doc.text('Emitido em: '+new Date().toLocaleString('pt-BR'),14,31);
+  if(fiuza){
+    doc.autoTable({
+      startY:36,
+      head:[['Status','Cliente','Nascimento','Responsável','CPF','E-mail','Início','Freq.','Apostila','Venc.','Diária','Observações']],
+      body:rows.map(x=>[clienteStatus(x),x.nome||'',brDate(x.data_nascimento),x.responsavel||'',x.cpf_responsavel||'',x.email_responsavel||'',brDate(x.data_inicio),x.frequencia_semanal||'',money(x.apostila),x.dia_vencimento||'',money(x.valor_diaria),x.observacoes_contrato||'']),
+      styles:{fontSize:6,cellPadding:1.2,overflow:'linebreak'},
+      headStyles:{fontSize:6.5},
+      margin:{left:7,right:7}
+    });
+  }else{
+    doc.autoTable({
+      startY:36,
+      head:[['Status','Tipo','Cliente','Documento','Contato']],
+      body:rows.map(x=>[clienteStatus(x),x.tipo_cliente||'Comum',x.nome||'',x.documento||'',x.contato||'']),
+      styles:{fontSize:8}
+    });
+  }
+  doc.save('relatorio-clientes-'+empresa.toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.pdf');
+}
 
 function openNovoClienteModal(){
   modalState={type:'novoCliente',id:null};
@@ -467,7 +542,8 @@ function openNovoClienteModal(){
       box.innerHTML=schemas.fiuzaClientes.map(([key,label,tp,opts])=>{
         if(tp==='select')return '<div class="field"><label>'+label+'</label><select data-field="'+key+'">'+opts.map(o=>'<option>'+o+'</option>').join('')+'</select></div>';
         return '<div class="field"><label>'+label+'</label><input type="'+tp+'" data-field="'+key+'"></div>';
-      }).join('');
+      }).join('')+
+      '<div class="field full"><label>Contrato</label><input type="file" data-contract-file accept=".pdf,image/jpeg,image/png,image/webp"></div>';
     }else{
       box.innerHTML=
         '<div class="field"><label>Nome / Razão social</label><input type="text" data-field="nome"></div>'+
@@ -506,6 +582,9 @@ modalSave.onclick=async()=>{
    if(tipo==='FIUZA'){
      obj.status_cliente=obj.status_cliente||'Ativo';
      obj.ativo=obj.status_cliente!=='Inativo';
+     const contractFile=modalForm.querySelector('[data-contract-file]')?.files?.[0];
+     try{if(contractFile)await uploadContratoCliente(obj,contractFile)}
+     catch(e){notify(e.message||'Erro ao anexar contrato.');return}
      store.fiuzaClientes.push(obj);
    }else{
      obj.tipo_cliente=tipo;
@@ -541,6 +620,9 @@ modalSave.onclick=async()=>{
  modalForm.querySelectorAll('[data-field]').forEach(el=>obj[el.dataset.field]=el.value.trim());
  if(type==='fiuzaClientes'&&obj.status_cliente){
    obj.ativo=obj.status_cliente!=='Inativo';
+   const contractFile=modalForm.querySelector('[data-contract-file]')?.files?.[0];
+   try{if(contractFile)await uploadContratoCliente(obj,contractFile)}
+   catch(e){notify(e.message||'Erro ao anexar contrato.');return}
  }
  if(!id)store[type].push(obj);
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
