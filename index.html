@@ -168,7 +168,18 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
           </div>
         </section>
 
-        <section class="launch-section">
+        <section id="receberDadosSection" class="launch-section" style="display:none">
+          <div class="launch-section-head"><b>Dados do recebimento</b><small>Informações essenciais para cobrança.</small></div>
+          <div class="launch-formgrid">
+            <div class="lf c12"><label>Cliente</label><input id="lfReceberCliente" placeholder="Nome do cliente"></div>
+            <div class="lf c4"><label>Vencimento</label><input id="lfReceberVencimento" type="date"></div>
+            <div class="lf c4"><label>Valor R$</label><input id="lfReceberValor" inputmode="decimal" placeholder="0,00"></div>
+            <div class="lf c4"><label>Conta contábil</label><select id="lfReceberConta"><option value="">Selecione uma conta</option></select></div>
+            <div class="lf c12"><label>Histórico</label><input id="lfReceberHistorico" placeholder="Descrição do recebimento"></div>
+          </div>
+        </section>
+
+        <section id="documentoSection" class="launch-section">
           <div class="launch-section-head"><b>Dados do documento</b><small>Campos principais da nota, boleto ou lançamento.</small></div>
           <div class="launch-formgrid">
             <div class="lf c12"><label id="parteLabel">Fornecedor</label><input id="lfParte" placeholder="Nome ou razão social"></div>
@@ -769,6 +780,7 @@ function atualizaFiuzaReceberCalculo(){
   lfFiuzaDiferenca.value=formatValor(dif);
   if(document.querySelector('input[name="lfReceberTipo"]:checked')?.value==='fiuza'){
     lfValor.value=formatValor(vr);
+    if(window.lfReceberValor)lfReceberValor.value=formatValor(vr);
   }
 }
 function atualizaFiuzaVencimento(){
@@ -780,6 +792,7 @@ function atualizaFiuzaVencimento(){
   const last=new Date(y,m,0).getDate();
   const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
   lfVencimento.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
+  if(window.lfReceberVencimento)lfReceberVencimento.value=lfVencimento.value;
   if(!lfEmissao.value)lfEmissao.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-01';
   updateCompetenciaHint();
 }
@@ -787,6 +800,7 @@ function setReceberTipo(tipo){
   document.querySelectorAll('input[name="lfReceberTipo"]').forEach(r=>r.checked=r.value===tipo);
   const fiuza=tipo==='fiuza';
   if(window.fiuzaReceberSection)fiuzaReceberSection.style.display=fiuza?'block':'none';
+  if(window.receberDadosSection)receberDadosSection.style.display=fiuza?'none':'block';
   if(fiuza){
     fillFiuzaReceberClientes();
     lfParte.readOnly=true;
@@ -797,6 +811,7 @@ function setReceberTipo(tipo){
 function resetLaunch(){
   ['lfParte','lfEmissao','lfVencimento','lfValor','lfNumero','lfChave','lfLinha','lfHistorico'].forEach(id=>document.getElementById(id).value='');
   if(window.lfFiuzaCliente){lfFiuzaCliente.value='';lfFiuzaCompetencia.value='';lfFiuzaValorDiaria.value='';lfFiuzaDiariasProjetadas.value='';lfFiuzaValorProjetado.value='';lfFiuzaDiariasRealizadas.value='';lfFiuzaValorReal.value='';lfFiuzaDiferenca.value='';}
+  if(window.lfReceberCliente){lfReceberCliente.value='';lfReceberVencimento.value='';lfReceberValor.value='';lfReceberConta.value='';lfReceberHistorico.value='';}
   if(window.lfRecorrencia)lfRecorrencia.value='mensal';
   setReceberTipo('comum');
   lfConta.value=''; lfBanco.value='Sicredi'; lfFile.value=''; uploadText.textContent='Selecionar documento'; readStatus.className='read-status'; readStatus.textContent='';
@@ -810,6 +825,8 @@ function setLaunchType(tipo){
   launchTag.textContent=tipo==='pagar'?'Conta a pagar':'Conta a receber';
   parteLabel.textContent=tipo==='pagar'?'Fornecedor':'Cliente';
   if(window.receberTipoSection)receberTipoSection.style.display=tipo==='receber'?'block':'none';
+  if(window.documentoSection)documentoSection.style.display=tipo==='receber'?'none':'block';
+  if(window.receberDadosSection)receberDadosSection.style.display=tipo==='receber'?'block':'none';
   if(window.competenciaSection)competenciaSection.style.display=tipo==='receber'?'none':'block';
   if(window.prazoPagamentoSection)prazoPagamentoSection.style.display=tipo==='receber'?'none':'block';
   if(window.recorrenciaSection)recorrenciaSection.style.display=tipo==='receber'?'block':'none';
@@ -826,7 +843,9 @@ function setLaunchType(tipo){
   }
 }
 function fillContaOptions(){
-  lfConta.innerHTML='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
+  const opts='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
+  lfConta.innerHTML=opts;
+  if(window.lfReceberConta)lfReceberConta.innerHTML=opts;
 }
 function openLaunchModal(tipo,id=null){
   resetLaunch();fillContaOptions();launchState.id=id;setLaunchType(tipo);
@@ -834,6 +853,14 @@ function openLaunchModal(tipo,id=null){
     const x=store[tipo].find(r=>r.id===id);
     if(x){
       lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';if(window.lfRecorrencia)lfRecorrencia.value=x.recorrencia||'mensal';
+      if(tipo==='receber'&&x.tipo_recebimento!=='fiuza'){
+        setReceberTipo('comum');
+        lfReceberCliente.value=x.cliente||'';
+        lfReceberVencimento.value=x.vencimento||'';
+        lfReceberValor.value=x.valor||'';
+        lfReceberConta.value=x.categoria||'';
+        lfReceberHistorico.value=x.descricao||'';
+      }
       if(tipo==='receber'&&x.tipo_recebimento==='fiuza'){
         setReceberTipo('fiuza');
         fillFiuzaReceberClientes();
@@ -885,6 +912,7 @@ if(window.lfFiuzaCliente)lfFiuzaCliente.onchange=()=>{
   const cli=store.fiuzaClientes.find(x=>String(x.id)===String(lfFiuzaCliente.value));
   if(cli){
     lfParte.value=cli.nome||'';
+    if(window.lfReceberCliente)lfReceberCliente.value=cli.nome||'';
     lfFiuzaValorDiaria.value=cli.valor_diaria||'';
     if(!lfHistorico.value)lfHistorico.value='Diárias FIUZA - '+(cli.nome||'');
     atualizaFiuzaVencimento();
@@ -897,7 +925,15 @@ if(window.lfFiuzaDiariasProjetadas)lfFiuzaDiariasProjetadas.oninput=atualizaFiuz
 if(window.lfFiuzaDiariasRealizadas)lfFiuzaDiariasRealizadas.oninput=atualizaFiuzaReceberCalculo;
 
 launchSave.onclick=()=>{
-  const tipo=launchState.tipo, receberTipo=document.querySelector('input[name="lfReceberTipo"]:checked')?.value||'comum', parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
+  const tipo=launchState.tipo, receberTipo=document.querySelector('input[name="lfReceberTipo"]:checked')?.value||'comum';
+  if(tipo==='receber'&&receberTipo==='comum'){
+    lfParte.value=lfReceberCliente.value.trim();
+    lfVencimento.value=lfReceberVencimento.value;
+    lfValor.value=lfReceberValor.value.trim();
+    lfHistorico.value=lfReceberHistorico.value.trim();
+    lfConta.value=lfReceberConta.value;
+  }
+  const parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
   if(tipo==='receber'&&receberTipo==='fiuza'){
     if(!lfFiuzaCliente.value||!lfFiuzaCompetencia.value){notify('Selecione o cliente FIUZA e a competência.');return}
     if(!lfFiuzaDiariasProjetadas.value||lfFiuzaDiariasRealizadas.value===''){notify('Informe as diárias projetadas e realizadas.');return}
