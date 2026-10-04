@@ -315,6 +315,35 @@ const seed={
  fluxo:[]
 };
 
+
+const fiuzaReceberSet2026=[
+  {nome:'Messias Luiz de Campos',diarias:12,projetado:'2910,00',real:'2910,00'},
+  {nome:'Celso Luiz Gonçalves de Campos',diarias:4,projetado:'1050,00',real:'1050,00'},
+  {nome:'Antonio Carlos Ramos Sanchez',diarias:5,projetado:'1400,00',real:'1400,00'},
+  {nome:'Neide Salim Ferreira de Souza',diarias:7,projetado:'1830,00',real:'2070,00'},
+  {nome:'Marcelo Silva',diarias:13,projetado:'3140,00',real:'3800,00'},
+  {nome:'Nelci Conceição de Moura',diarias:4,projetado:'1050,00',real:''},
+  {nome:'Alzira Melhado Ercolin',diarias:7,projetado:'1680,00',real:'1680,00'},
+  {nome:'Conceição Lopes Cualhete',diarias:10,projetado:'2025,00',real:'2066,85'},
+  {nome:'"Val" Valderez Nereide da Cunha',diarias:6,projetado:'1650,00',real:'1150,00'},
+  {nome:'Odete Freire Pessoa',diarias:8,projetado:'2070,00',real:'2070,00'},
+  {nome:'"Teresinha" Mieki Ito Miyahara',diarias:9,projetado:'2310,00',real:'2310,00'},
+  {nome:'"Analú" Ana Luzia Cagliari Medeiros',diarias:4,projetado:'1150,00',real:'1150,00'},
+  {nome:'João Venancio de Souza Sobrinho',diarias:3,projetado:'750,00',real:'750,00'},
+  {nome:'Sebastião dos Reis Prado',diarias:10,projetado:'2550,00',real:'2400,00'},
+  {nome:'"Leila" Latif Atallah Carniel',diarias:4,projetado:'1150,00',real:'1150,00'},
+  {nome:'Marisa Eni Rodrigues de Lima',diarias:12,projetado:'2910,00',real:'2910,00'},
+  {nome:'Anna Lucia Prendes Amyuni',diarias:4,projetado:'1150,00',real:'1150,00'},
+  {nome:'Genny de Almeida Ramos da Silva',diarias:5,projetado:'1200,00',real:'1200,00'},
+  {nome:'Elizabeth Toledo Calvo',diarias:5,projetado:'937,50',real:'937,50'},
+  {nome:'Mario Roberto Calvo',diarias:5,projetado:'937,50',real:'937,50'},
+  {nome:'"Shu" Orlanda',diarias:4,projetado:'1150,00',real:'1150,00'},
+  {nome:'Elza Maria Bradin Gatti',diarias:2,projetado:'500,00',real:'500,00'},
+  {nome:'Sandra Maria de Castro Peres',diarias:5,projetado:'1041,15',real:'1041,00'},
+  {nome:'Martha Peres',diarias:1,projetado:'0,00',real:''},
+  {nome:'Julia Peres Torres',diarias:1,projetado:'0,00',real:''}
+];
+
 const fiuzaImportOut20261004=[
 {id:910001,observacoes_contrato:'Ativo',nome:'Messias Luiz de Campos',data_nascimento:'1932-02-16',responsavel:'Maria Teresa de Campos',cpf_responsavel:'057.185.688-80',email_responsavel:'mariteka61@terra.com.br',data_inicio:'2026-05-08',frequencia_semanal:'3',apostila:'150,00',dia_vencimento:'5',valor_diaria:'230,00',ativo:true},
 {id:910002,observacoes_contrato:'inativo',nome:'Geralda Aparecida das Neves Franco',data_nascimento:'1946-11-02',responsavel:'Geralda Aparecida das Neves Franco',cpf_responsavel:'169.791.748-86',email_responsavel:'apfranco31@gmail.com',data_inicio:'2026-05-11',frequencia_semanal:'',apostila:'150',dia_vencimento:'5',valor_diaria:'208,33',ativo:false},
@@ -369,6 +398,34 @@ for(const r of store.receber){
 for(const c of fiuzaImportOut20261004){
   const exists=store.fiuzaClientes.some(x=>String(x.nome||'').trim().toLowerCase()===String(c.nome).trim().toLowerCase());
   if(!exists) store.fiuzaClientes.push(structuredClone(c));
+}
+for(const r of fiuzaReceberSet2026){
+  const cli=store.fiuzaClientes.find(x=>String(x.nome||'').trim().toLowerCase()===String(r.nome).trim().toLowerCase());
+  if(!cli)continue;
+  const exists=store.receber.some(x=>x.tipo_recebimento==='fiuza'&&x.competencia_fiuza==='2026-09'&&String(x.cliente||'').trim().toLowerCase()===String(r.nome).trim().toLowerCase());
+  if(exists)continue;
+  const venc=vencimentoFiuzaPorCompetencia('2026-09',cli.id);
+  store.receber.push({
+    id:92600000+store.receber.length+1,
+    data_emissao:'2026-09-01',
+    vencimento:venc,
+    cliente:r.nome,
+    descricao:'FIUZA · '+r.diarias+' diárias projetadas',
+    categoria:'Receita de Serviços',
+    banco:'Sicredi',
+    valor:r.real||r.projetado,
+    status:'Em aberto',
+    tipo_recebimento:'fiuza',
+    recorrencia:'mensal',
+    fiuza_cliente_id:cli.id,
+    competencia_fiuza:'2026-09',
+    valor_diaria:cli.valor_diaria||'',
+    diarias_projetadas:r.diarias,
+    valor_projetado:r.projetado,
+    diarias_realizadas:null,
+    valor_real:r.real,
+    diferenca_projetado_real:r.real?(numeroValor(r.real)-numeroValor(r.projetado)).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''
+  });
 }
 localStorage.setItem(DBKEY,JSON.stringify(store));
 if(!store.empresas.some(e=>String(e.nome||'').trim().toUpperCase()==='FIUZA')) store.empresas.push({id:Date.now()+7,nome:'FIUZA',cnpj:'',responsavel:'Ester'});
