@@ -121,7 +121,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
 <section id="plano" class="screen"><div class="page-title"><div><h1>Plano de Contas</h1><div class="sub">Categorias financeiras</div></div><button class="btn primary" data-add="plano">+ Nova conta</button></div><div class="card"><table><thead><tr><th>Grupo</th><th>Conta</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="planoBody"></tbody></table></div></section>
-<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
+<section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><input id="clientesBusca" class="search" style="min-width:260px" placeholder="Pesquisar cliente, responsável, CPF, e-mail..."><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
 <section id="fornecedores" class="screen"><div class="page-title"><div><h1>Fornecedores</h1><div class="sub">Cadastro de fornecedores</div></div><button class="btn primary" data-add="fornecedores">+ Novo fornecedor</button></div><div class="card"><table><thead><tr><th>Fornecedor</th><th>Documento</th><th>Categoria</th><th>Ações</th></tr></thead><tbody id="fornecedoresBody"></tbody></table></div></section>
 <section id="boletos" class="screen"><div class="page-title"><div><h1>Boletos</h1><div class="sub">Cobranças emitidas para clientes</div></div><button class="btn primary" data-add="boletos">+ Novo boleto</button></div><div class="card"><table><thead><tr><th>Cliente</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="boletosBody"></tbody></table></div></section>
 <section id="nf" class="screen"><div class="page-title"><div><h1>Notas Fiscais</h1><div class="sub">Controle de notas fiscais emitidas e recebidas</div></div><button class="btn primary" data-add="nf">+ Nova nota fiscal</button></div><div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table></div></section>
@@ -371,14 +371,20 @@ function renderClientes(){
   if(!window.clientesHead||!window.clientesBody)return;
   const fiuza=isFiuzaSelected();
   const filtro=window.clientesStatusFiltro?.value||'Todos';
+  const busca=String(window.clientesBusca?.value||'').trim().toLowerCase();
   const filtraStatus=arr=>filtro==='Todos'?arr:arr.filter(x=>clienteStatus(x)===filtro);
+  const filtraBusca=arr=>{
+    if(!busca)return arr;
+    return arr.filter(x=>Object.values(x||{}).some(v=>String(v??'').toLowerCase().includes(busca)));
+  };
+  const filtraClientes=arr=>filtraBusca(filtraStatus(arr));
   clientesSub.textContent=fiuza?'Cadastro específico de alunos/clientes da FIUZA':'Cadastro de clientes';
   if(fiuza){
     clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Observações do contrato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=filtraStatus(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
+    clientesBody.innerHTML=filtraClientes(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
   }else{
     clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=filtraStatus(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
+    clientesBody.innerHTML=filtraClientes(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
   }
 }
 const schemas={
@@ -441,6 +447,7 @@ function closeModal(){modalBg.classList.remove('show')}
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dataset.add));
 novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
+if(window.clientesBusca) clientesBusca.oninput=renderClientes;
 
 function openNovoClienteModal(){
   modalState={type:'novoCliente',id:null};
