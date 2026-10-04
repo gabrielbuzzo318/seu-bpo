@@ -302,9 +302,8 @@ let store=JSON.parse(localStorage.getItem(DBKEY)||'null')||seed;
 if(!Array.isArray(store.receber)) store.receber=structuredClone(seed.receber);
 if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
 for(const c of fiuzaImportOut20261004){
-  const idx=store.fiuzaClientes.findIndex(x=>String(x.nome||'').trim().toLowerCase()===String(c.nome).trim().toLowerCase());
-  if(idx===-1) store.fiuzaClientes.push(structuredClone(c));
-  else store.fiuzaClientes[idx]={...store.fiuzaClientes[idx],...c,id:store.fiuzaClientes[idx].id||c.id};
+  const exists=store.fiuzaClientes.some(x=>String(x.nome||'').trim().toLowerCase()===String(c.nome).trim().toLowerCase());
+  if(!exists) store.fiuzaClientes.push(structuredClone(c));
 }
 localStorage.setItem(DBKEY,JSON.stringify(store));
 if(!store.empresas.some(e=>String(e.nome||'').trim().toUpperCase()==='FIUZA')) store.empresas.push({id:Date.now()+7,nome:'FIUZA',cnpj:'',responsavel:'Ester'});
