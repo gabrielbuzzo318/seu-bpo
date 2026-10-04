@@ -118,7 +118,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
 <section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
-<section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div class="value green">R$ 48.700</div></div><div class="card"><div class="label">Saídas</div><div class="value red">R$ 31.900</div></div><div class="card"><div class="label">Resultado</div><div class="value green">R$ 16.800</div></div><div class="card"><div class="label">Saldo final</div><div class="value">R$ 18.900</div></div></div></section>
+<section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div><div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th></tr></thead><tbody id="fluxoBody"></tbody></table></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
 <section id="plano" class="screen"><div class="page-title"><div><h1>Plano de Contas</h1><div class="sub">Categorias financeiras</div></div><button class="btn primary" data-add="plano">+ Nova conta</button></div><div class="card"><table><thead><tr><th>Grupo</th><th>Conta</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="planoBody"></tbody></table></div></section>
 <section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><input id="clientesBusca" class="search" style="min-width:260px" placeholder="Pesquisar cliente, responsável, CPF, e-mail..."><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="clientesRelatorioBtn" class="btn">Gerar relatório</button><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
@@ -311,7 +311,8 @@ const seed={
  receber:[{id:1,vencimento:'2026-09-30',data_emissao:'2026-09-20',cliente:'Cliente A',descricao:'Honorários mensais',categoria:'Receita de Serviços',valor:'3500,00',status:'Em aberto'}],
  reembolsos:[{id:1,data:'2026-09-27',solicitante:'Colaborador A',descricao:'Despesa operacional',valor:'184,90',status:'Pendente'}],
  boletos:[{id:1,cliente:'Cliente A',vencimento:'2026-09-29',valor:'3500,00',status:'Recebido'}],
- nf:[{id:1,data:'2026-09-29',tipo:'Emitida',numero:'0000187',pessoa:'Cliente A',valor:'3500,00',status:'Emitida'}]
+ nf:[{id:1,data:'2026-09-29',tipo:'Emitida',numero:'0000187',pessoa:'Cliente A',valor:'3500,00',status:'Emitida'}],
+ fluxo:[]
 };
 
 const fiuzaImportOut20261004=[
@@ -348,6 +349,7 @@ const fiuzaImportOut20261004=[
 let store=JSON.parse(localStorage.getItem(DBKEY)||'null')||seed;
 if(!Array.isArray(store.receber)) store.receber=structuredClone(seed.receber);
 if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
+if(!Array.isArray(store.fluxo)) store.fluxo=[];
 for(const c of fiuzaImportOut20261004){
   const exists=store.fiuzaClientes.some(x=>String(x.nome||'').trim().toLowerCase()===String(c.nome).trim().toLowerCase());
   if(!exists) store.fiuzaClientes.push(structuredClone(c));
@@ -385,7 +387,14 @@ function renderAll(){
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
  pagarBody.innerHTML=store.pagar.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
- receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(x.vencimento)+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,'<button class="iconbtn" onclick="toggleStatus(\'receber\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
+ receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
+ const fluxoEntradasTotal=store.fluxo.filter(x=>x.tipo==='Entrada').reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
+ const fluxoSaidasTotal=store.fluxo.filter(x=>x.tipo==='Saída').reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
+ if(window.fluxoEntradas)fluxoEntradas.textContent=money(String(fluxoEntradasTotal).replace('.',','));
+ if(window.fluxoSaidas)fluxoSaidas.textContent=money(String(fluxoSaidasTotal).replace('.',','));
+ if(window.fluxoResultado)fluxoResultado.textContent=money(String(fluxoEntradasTotal-fluxoSaidasTotal).replace('.',','));
+ if(window.fluxoSaldo)fluxoSaldo.textContent=money(String(fluxoEntradasTotal-fluxoSaidasTotal).replace('.',','));
+ if(window.fluxoBody)fluxoBody.innerHTML=store.fluxo.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td></tr>').join('');
  reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
@@ -498,6 +507,22 @@ async function openContratoCliente(type,id){
   if(error){notify(error.message||'Não foi possível abrir o contrato.');return}
   window.open(data.signedUrl,'_blank','noopener');
 }
+function openReceberBaixa(id){
+  const item=store.receber.find(x=>x.id===id);
+  if(!item)return;
+  if(item.tipo_recebimento==='fiuza'&&!item.valor_real){
+    notify('Informe primeiro as diárias realizadas para fechar o valor real.');
+    return;
+  }
+  modalState={type:'receberBaixa',id};
+  modalTitle.textContent='Receber lançamento';
+  const hoje=new Date().toISOString().slice(0,10);
+  modalForm.innerHTML=
+    '<div class="field"><label>Data do recebimento</label><input type="date" data-field="data_recebimento" value="'+hoje+'"></div>'+
+    '<div class="field"><label>Valor recebido</label><input type="text" value="'+esc(item.valor_real||item.valor||'')+'" readonly></div>'+
+    '<div class="field full"><label>Plano de contas</label><input type="text" value="Receita de Serviços" readonly></div>';
+  modalBg.classList.add('show');
+}
 function openInativarCliente(type,id){
   const item=store[type]?.find(x=>x.id===id);
   if(!item)return;
@@ -606,6 +631,32 @@ modalX.onclick=modalCancel.onclick=closeModal;
 modalBg.onclick=e=>{if(e.target===modalBg)closeModal()};
 modalSave.onclick=async()=>{
  const {type,id}=modalState;
+ if(type==='receberBaixa'&&id){
+   const item=store.receber.find(x=>x.id===id);
+   const data=modalForm.querySelector('[data-field="data_recebimento"]')?.value||'';
+   if(!item){notify('Lançamento não encontrado.');return}
+   if(!data){notify('Informe a data do recebimento.');return}
+   if(item.tipo_recebimento==='fiuza'&&!item.valor_real){notify('Informe as diárias realizadas antes de receber.');return}
+   item.status='Recebido';
+   item.data_recebimento=data;
+   item.categoria='Receita de Serviços';
+   const valor=item.valor_real||item.valor;
+   const jaExiste=store.fluxo.some(x=>x.origem==='receber'&&x.origem_id===item.id);
+   if(!jaExiste){
+     store.fluxo.push({
+       id:Date.now(),
+       data,
+       tipo:'Entrada',
+       historico:'Recebimento - '+(item.cliente||'Cliente'),
+       plano_contas:'Receita de Serviços',
+       valor,
+       origem:'receber',
+       origem_id:item.id
+     });
+   }
+   persist();closeModal();notify('Recebimento lançado no fluxo de caixa.');
+   return;
+ }
  if(type==='inativarCliente'&&id){
    const sourceType=modalState.sourceType;
    const item=store[sourceType]?.find(x=>x.id===id);
@@ -793,9 +844,11 @@ function atualizaFiuzaVencimento(){
   const comp=lfFiuzaCompetencia?.value;
   if(!cli||!comp)return;
   const [y,m]=comp.split('-').map(Number);
-  const last=new Date(y,m,0).getDate();
+  const prox=new Date(y,m,1);
+  const vy=prox.getFullYear(), vm=prox.getMonth()+1;
+  const last=new Date(vy,vm,0).getDate();
   const dia=Math.min(Math.max(Number(cli.dia_vencimento)||1,1),last);
-  lfVencimento.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
+  lfVencimento.value=String(vy).padStart(4,'0')+'-'+String(vm).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
   if(window.lfReceberVencimento)lfReceberVencimento.value=lfVencimento.value;
   if(!lfEmissao.value)lfEmissao.value=String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-01';
   updateCompetenciaHint();
@@ -961,6 +1014,7 @@ launchSave.onclick=()=>{
         diferenca_projetado_real:lfFiuzaDiariasRealizadas.value===''?'':lfFiuzaDiferenca.value
       });
       obj.valor=obj.valor_real||obj.valor_projetado;
+      obj.categoria='Receita de Serviços';
       obj.descricao='FIUZA · '+obj.diarias_projetadas+' diárias projetadas'+(obj.diarias_realizadas==null?'':' / '+obj.diarias_realizadas+' realizadas');
     }else{
       delete obj.fiuza_cliente_id;delete obj.competencia_fiuza;delete obj.valor_diaria;delete obj.diarias_projetadas;delete obj.valor_projetado;delete obj.diarias_realizadas;delete obj.valor_real;delete obj.diferenca_projetado_real;
