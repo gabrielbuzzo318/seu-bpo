@@ -597,8 +597,20 @@ function renderFinanceiros(){
   const baseReceber=registrosFinanceirosVisiveis('receber');
   preencherFiltroMes(window.pagarMesFiltro,basePagar);
   preencherFiltroMes(window.receberMesFiltro,baseReceber);
-  const pagarVisiveis=filtrarFinanceiro('pagar');
-  const receberVisiveis=filtrarFinanceiro('receber');
+  const pagarVisiveis=filtrarFinanceiro('pagar').slice().sort((a,b)=>{
+    const av=String(a.vencimento||'9999-12-31');
+    const bv=String(b.vencimento||'9999-12-31');
+    const cmp=av.localeCompare(bv);
+    if(cmp!==0)return cmp;
+    return String(a.fornecedor||'').localeCompare(String(b.fornecedor||''),'pt-BR');
+  });
+  const receberVisiveis=filtrarFinanceiro('receber').slice().sort((a,b)=>{
+    const av=String(a.vencimento||'9999-12-31');
+    const bv=String(b.vencimento||'9999-12-31');
+    const cmp=av.localeCompare(bv);
+    if(cmp!==0)return cmp;
+    return String(a.cliente||'').localeCompare(String(b.cliente||''),'pt-BR');
+  });
 
   const pagarTotalValor=pagarVisiveis.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
   const receberTotalValor=receberVisiveis.reduce((s,x)=>{
