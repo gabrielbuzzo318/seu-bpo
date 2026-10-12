@@ -1131,15 +1131,50 @@ function dataRotulo(texto,rotulos){
 }
 function extrairTexto(texto){
   texto=String(texto||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').trim();
-  const fornecedor=fornecedorTexto(texto);
-  const emissao=dataRotulo(texto,['data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o','data\\s+da\\s+compra','data\\s+do\\s+documento'])||dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]);
+  const isBoleto=/linha\s+digit[aá]vel|ficha\s+de\s+compensa[cç][aã]o|nosso\s+n[uú]mero|local\s+de\s+pagamento/i.test(texto);
+  let fornecedor=fornecedorTexto(texto);
+
+  if(isBoleto){
+    const benef=(texto.match(/Benefici[aá]rio\s+(.+?)(?=\s+CPF\/CNPJ|\s+CNPJ:|\s+Data\s+do\s+Documento|\s+Ag[eê]ncia)/i)||[])[1];
+    if(benef)fornecedor=benef.replace(/\s{2,}/g,' ').trim();
+  }
+
+  const emissao=isBoleto
+    ? (dataRotulo(texto,['data\\s+do\\s+documento','data\\s+processamento','data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o'])
+       || dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]))
+    : (dataRotulo(texto,['data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o','data\\s+da\\s+compra','data\\s+do\\s+documento'])
+       || dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]));
+
   const venc=dataRotulo(texto,['data\\s+(?:de\\s+)?vencimento','vencimento','venc']);
+
   let valor=null;
-  for(const re of [/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,/(?:r\$)\s*([0-9][0-9.,]*)/i]){let m=texto.match(re);valor=numeroValor(m&&m[1]);if(valor&&valor>0)break}
-  const num=(texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
-  const chave=((texto.match(/(?:\d[ .-]*){44}/)||[])[0]||'').replace(/\D/g,'');
-  const linha=((texto.match(/(?:\d[ .-]*){47,48}/)||[])[0]||'').replace(/\D/g,'');
-  return {fornecedor,dataEmissao:emissao,vencimento:venc||emissao,valor,numeroDocumento:num,chaveAcesso:chave.length===44?chave:'',linhaDigitavel:(linha.length===47||linha.length===48)?linha:''};
+  const valorRegex=isBoleto
+    ? [/(?:valor\s+do\s+documento)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,
+       /(?:r\$)\s*([0-9][0-9.,]*)/i]
+    : [/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,
+       /(?:r\$)\s*([0-9][0-9.,]*)/i];
+  for(const rx of valorRegex){const mm=texto.match(rx);valor=numeroValor(mm&&mm[1]);if(valor!=null&&valor>0)break}
+
+  let num='';
+  if(isBoleto){
+    num=(texto.match(/N[°ºo]?\s*Documento\s*[:\-]?\s*([0-9]{1,20})/i)||[])[1]||'';
+  }
+  if(!num){
+    num=(texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
+  }
+
+  let linha='';
+  const linhaFmt=(texto.match(/(?:linha\s+digit[aá]vel)[^0-9]{0,30}((?:\d[ .-]*){47,48})/i)||[])[1]||
+                 (texto.match(/\b\d{5}\.\d{5}\s+\d{5}\.\d{6}\s+\d{5}\.\d{6}\s+\d\s+\d{14}\b/)||[])[0]||'';
+  if(linhaFmt)linha=linhaFmt.replace(/\s+/g,' ').trim();
+
+  let chave='';
+  if(!isBoleto){
+    const chaveRaw=((texto.match(/(?:\d[ .-]*){44}/)||[])[0]||'').replace(/\D/g,'');
+    if(chaveRaw.length===44)chave=chaveRaw;
+  }
+
+  return {fornecedor,dataEmissao:emissao,vencimento:venc||emissao,valor,numeroDocumento:num,chaveAcesso:chave,linhaDigitavel:linha};
 }
 async function lerDocumento(file){
   const nome=file.name.toLowerCase();
@@ -1321,8 +1356,25 @@ lfFile.onchange=async()=>{
   else if(n.endsWith('.xml')){const tx=await file.text();docPreview.innerHTML='<pre class="preview-xml">'+esc(tx.slice(0,25000))+'</pre>'}
   try{
     const d=await lerDocumento(file);
-    if(d.fornecedor)lfParte.value=d.fornecedor;if(d.dataEmissao)lfEmissao.value=d.dataEmissao;lfVencimento.value=d.vencimento||d.dataEmissao||lfVencimento.value;if(d.valor!=null)lfValor.value=formatValor(d.valor);if(d.numeroDocumento)lfNumero.value=d.numeroDocumento;if(d.chaveAcesso)lfChave.value=d.chaveAcesso;if(d.linhaDigitavel)lfLinha.value=d.linhaDigitavel;
-    if(!lfHistorico.value && d.fornecedor)lfHistorico.value=(d.numeroDocumento?'Documento '+d.numeroDocumento+' - ':'')+d.fornecedor;
+    if(d.fornecedor)lfParte.value=d.fornecedor;
+    if(d.dataEmissao)lfEmissao.value=d.dataEmissao;
+    lfVencimento.value=d.vencimento||d.dataEmissao||lfVencimento.value;
+    if(d.valor!=null)lfValor.value=formatValor(d.valor);
+    if(d.numeroDocumento)lfNumero.value=d.numeroDocumento;
+    lfChave.value=d.chaveAcesso||'';
+    if(d.linhaDigitavel)lfLinha.value=d.linhaDigitavel;
+
+    const txtFornecedor=String(d.fornecedor||'').toUpperCase();
+    const nomeArquivo=file.name.toUpperCase();
+    const ehIza=txtFornecedor.includes('IZABELA DOS SANTOS')||nomeArquivo.includes('IZA COMUNICA');
+    if(isFiuzaSelected()&&ehIza){
+      lfParte.value='Iza Comunica';
+      lfHistorico.value='Gestão MKT e Trafego Pago';
+      lfConta.value='Marketing';
+      lfBanco.value='Sicoob';
+    }else if(!lfHistorico.value && d.fornecedor){
+      lfHistorico.value=(d.numeroDocumento?'Documento '+d.numeroDocumento+' - ':'')+d.fornecedor;
+    }
     readStatus.textContent='Documento lido automaticamente. Confira os campos antes de salvar.';readStatus.className='read-status show';updateCompetenciaHint();
   }catch(err){readStatus.textContent=err?.message||'Não foi possível ler o documento automaticamente.';readStatus.className='read-status show err'}
 };
