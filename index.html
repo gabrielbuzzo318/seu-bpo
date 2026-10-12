@@ -597,17 +597,23 @@ function renderFinanceiros(){
   const baseReceber=registrosFinanceirosVisiveis('receber');
   preencherFiltroMes(window.pagarMesFiltro,basePagar);
   preencherFiltroMes(window.receberMesFiltro,baseReceber);
+  const dataSortValue=v=>{
+    if(!v)return Number.MAX_SAFE_INTEGER;
+    const s=String(v).trim();
+    let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m)return Number(m[1]+m[2]+m[3]);
+    m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m)return Number(m[3]+m[2]+m[1]);
+    const d=new Date(s);
+    return Number.isNaN(d.getTime())?Number.MAX_SAFE_INTEGER:Number(d.toISOString().slice(0,10).replace(/-/g,''));
+  };
   const pagarVisiveis=filtrarFinanceiro('pagar').slice().sort((a,b)=>{
-    const av=String(a.vencimento||'9999-12-31');
-    const bv=String(b.vencimento||'9999-12-31');
-    const cmp=av.localeCompare(bv);
+    const cmp=dataSortValue(a.vencimento)-dataSortValue(b.vencimento);
     if(cmp!==0)return cmp;
     return String(a.fornecedor||'').localeCompare(String(b.fornecedor||''),'pt-BR');
   });
   const receberVisiveis=filtrarFinanceiro('receber').slice().sort((a,b)=>{
-    const av=String(a.vencimento||'9999-12-31');
-    const bv=String(b.vencimento||'9999-12-31');
-    const cmp=av.localeCompare(bv);
+    const cmp=dataSortValue(a.vencimento)-dataSortValue(b.vencimento);
     if(cmp!==0)return cmp;
     return String(a.cliente||'').localeCompare(String(b.cliente||''),'pt-BR');
   });
