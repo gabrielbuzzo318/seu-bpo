@@ -587,7 +587,7 @@ function renderFinanceiros(){
   preencherFiltroMes(window.receberMesFiltro,baseReceber);
   const pagarVisiveis=filtrarFinanceiro('pagar');
   const receberVisiveis=filtrarFinanceiro('receber');
-  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
+  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
   if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
 }
 function gerarRelatorioFinanceiro(tipo){
@@ -762,6 +762,18 @@ async function openContratoCliente(type,id){
   if(error){notify(error.message||'Não foi possível abrir o contrato.');return}
   window.open(data.signedUrl,'_blank','noopener');
 }
+function openPagarBaixa(id){
+  const item=store.pagar.find(x=>x.id===id);
+  if(!item)return;
+  modalState={type:'pagarBaixa',id};
+  modalTitle.textContent='Baixar lançamento';
+  const hoje=new Date().toISOString().slice(0,10);
+  modalForm.innerHTML=
+    '<div class="field"><label>Data do pagamento</label><input type="date" data-field="data_pagamento" value="'+hoje+'"></div>'+
+    '<div class="field"><label>Valor pago</label><input type="text" value="'+esc(item.valor||'')+'" readonly></div>'+
+    '<div class="field full"><label>Plano de contas</label><input type="text" value="'+esc(item.categoria||item.conta_contabil||'Não classificado')+'" readonly></div>';
+  modalBg.classList.add('show');
+}
 function openReceberBaixa(id){
   const item=store.receber.find(x=>x.id===id);
   if(!item)return;
@@ -895,6 +907,30 @@ modalX.onclick=modalCancel.onclick=closeModal;
 modalBg.onclick=e=>{if(e.target===modalBg)closeModal()};
 modalSave.onclick=async()=>{
  const {type,id}=modalState;
+ if(type==='pagarBaixa'&&id){
+   const item=store.pagar.find(x=>x.id===id);
+   const data=modalForm.querySelector('[data-field="data_pagamento"]')?.value||'';
+   if(!item){notify('Lançamento não encontrado.');return}
+   if(!data){notify('Informe a data do pagamento.');return}
+   item.status='Pago';
+   item.data_pagamento=data;
+   const plano=item.categoria||item.conta_contabil||'Não classificado';
+   const jaExiste=store.fluxo.some(x=>x.origem==='pagar'&&x.origem_id===item.id);
+   if(!jaExiste){
+     store.fluxo.push({
+       id:Date.now(),
+       data,
+       tipo:'Saída',
+       historico:'Pagamento - '+(item.fornecedor||'Fornecedor')+(item.descricao?' - '+item.descricao:''),
+       plano_contas:plano,
+       valor:item.valor,
+       origem:'pagar',
+       origem_id:item.id
+     });
+   }
+   persist();closeModal();notify('Pagamento lançado no fluxo de caixa.');
+   return;
+ }
  if(type==='receberBaixa'&&id){
    const item=store.receber.find(x=>x.id===id);
    const data=modalForm.querySelector('[data-field="data_recebimento"]')?.value||'';
@@ -1288,7 +1324,11 @@ launchSave.onclick=()=>{
 
 window.editItem=(t,id)=>{if(t==='pagar'||t==='receber')openLaunchModal(t,id);else openModal(t,id)};
 window.delItem=(t,id)=>{if(confirm('Excluir este registro?')){store[t]=store[t].filter(x=>x.id!==id);persist();notify('Registro excluído.')}};
-window.toggleStatus=(t,id,status)=>{let x=store[t].find(x=>x.id===id);if(x){x.status=status;persist();notify('Status atualizado.')}};
+window.toggleStatus=(t,id,status)=>{
+  if(t==='pagar'&&status==='Pago'){openPagarBaixa(id);return}
+  if(t==='receber'&&status==='Recebido'){openReceberBaixa(id);return}
+  let x=store[t].find(x=>x.id===id);if(x){x.status=status;persist();notify('Status atualizado.')}
+};
 function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
 document.querySelectorAll('#fluxo .btn,#dre .btn').forEach(b=>b.onclick=()=>window.print());
 document.querySelectorAll('#one p').forEach(p=>{p.style.cursor='pointer';p.onclick=()=>notify(p.textContent+' aberto para teste.')});
