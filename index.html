@@ -724,13 +724,28 @@ function nomeMesCurto(m){
   const nomes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const [y,mo]=String(m).split('-');return (nomes[Number(mo)-1]||mo)+'/'+y;
 }
+function tipoMovimentoDre(tipo){
+  const t=String(tipo||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  if(['ENTRADA','RECEBIMENTO','RECEITA','CREDITO'].includes(t))return 'Entrada';
+  if(['SAIDA','PAGAMENTO','DESPESA','DEBITO'].includes(t))return 'Saída';
+  return t==='ENTRADA'?'Entrada':'Saída';
+}
 function dreGrupoDaConta(conta,tipo){
+  const movimento=tipoMovimentoDre(tipo);
   const p=(store.plano||[]).find(x=>String(x.conta||'').trim().toUpperCase()===String(conta||'').trim().toUpperCase());
-  if(p?.grupo)return p.grupo;
-  const c=String(conta||'').toUpperCase();
-  if(tipo==='Entrada'||/RECEITA|SERVI[CÇ]O|HONOR[AÁ]RIO|VENDA/.test(c))return 'Receitas';
-  if(/INVEST|IMOBILIZ|EQUIPAMENTO|M[OÓ]VEL|REFORMA/.test(c))return 'Investimentos';
-  if(/CUSTO|INSUMO|MERCADORIA|MAT[EÉ]RIA/.test(c))return 'Custos';
+  const grupoPlano=String(p?.grupo||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const c=String(conta||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+
+  // A natureza da movimentação manda na DRE. Isso evita uma saída cair em Receitas
+  // apenas porque a conta foi cadastrada em um grupo incorreto no plano de contas.
+  if(movimento==='Entrada'){
+    if(grupoPlano.startsWith('OUTRAS RECEITAS'))return 'Outras Receitas';
+    return 'Receitas';
+  }
+
+  if(grupoPlano.startsWith('INVEST')||/INVEST|IMOBILIZ|EQUIPAMENTO|MOVEIS|REFORMA/.test(c))return 'Investimentos';
+  if(grupoPlano.startsWith('CUST')||/CUSTO|INSUMO|MERCADORIA|MATERIA PRIMA/.test(c))return 'Custos';
+  if(grupoPlano.startsWith('DEDUC'))return 'Deduções';
   return 'Despesas Operacionais';
 }
 function dreLinhasMes(mes){
@@ -744,8 +759,9 @@ function dreMapa(mes){
   const map=new Map();
   for(const x of dreLinhasMes(mes)){
     const conta=x.plano_contas||'Não classificado';
-    const grupo=dreGrupoDaConta(conta,x.tipo);
-    const sinal=x.tipo==='Entrada'?1:-1;
+    const movimento=tipoMovimentoDre(x.tipo);
+    const grupo=dreGrupoDaConta(conta,movimento);
+    const sinal=movimento==='Entrada'?1:-1;
     const valor=(numeroValor(x.valor)||0)*sinal;
     const k=grupo+'|||'+conta;
     const cur=map.get(k)||{grupo,conta,valor:0,rows:[]};
@@ -757,7 +773,7 @@ function dreDetalhes(conta,mes){
   const rows=dreLinhasMes(mes).filter(x=>String(x.plano_contas||'Não classificado')===conta);
   modalState={type:'dreDetalhes'};
   modalTitle.textContent=conta+' · '+nomeMesCurto(mes);
-  const total=rows.reduce((s,x)=>s+(x.tipo==='Entrada'?1:-1)*(numeroValor(x.valor)||0),0);
+  const total=rows.reduce((s,x)=>s+(tipoMovimentoDre(x.tipo)==='Entrada'?1:-1)*(numeroValor(x.valor)||0),0);
   modalForm.innerHTML='<div class="field full"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>'+rows.length+' lançamento(s)</b><b class="'+(total>=0?'green':'red')+'">'+(total<0?'-':'')+money(String(Math.abs(total)).replace('.',','))+'</b></div><div style="overflow:auto"><table><thead><tr><th>Data</th><th>Histórico</th><th>Banco</th><th>Tipo</th><th>Valor</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico||'')+'</td><td>'+esc(x.banco||'')+'</td><td>'+esc(x.tipo||'')+'</td><td>'+money(x.valor)+'</td></tr>').join('')+'</tbody></table></div></div>';
   modalSave.style.display='none';modalCancel.textContent='Fechar';modalBg.classList.add('show');
 }
