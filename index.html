@@ -786,16 +786,33 @@ async function openDocumentoPagar(id){
   const item=store.pagar.find(x=>x.id===id);
   if(!item?.documento_nome){notify('Este lançamento não possui anexo.');return}
   if(!item.documento_path){
-    notify('O anexo antigo aparece no cadastro, mas precisa ser reenviado uma vez para poder abrir.');
+    notify('Esse anexo antigo precisa ser reenviado uma vez para ficar disponível no visualizador.');
     return;
   }
-  const {data,error}=await sb.storage.from('seubpo-documentos').createSignedUrl(item.documento_path,300);
+  const {data,error}=await sb.storage.from('seubpo-documentos').createSignedUrl(item.documento_path,600);
   if(error){notify(error.message||'Não foi possível abrir o anexo.');return}
-  window.open(data.signedUrl,'_blank','noopener');
+  const nome=String(item.documento_nome||'Anexo');
+  const ext=nome.split('.').pop().toLowerCase();
+  const modalEl=modalBg.querySelector('.modal');
+  const bodyEl=modalBg.querySelector('.modal-body');
+  if(modalEl){modalEl.style.width='min(1120px,96vw)';modalEl.style.maxWidth='1120px'}
+  if(bodyEl){bodyEl.style.height='78vh';bodyEl.style.overflow='hidden';bodyEl.style.padding='0'}
+  modalState={type:'visualizarDocumento',id};
+  modalTitle.textContent=nome;
+  modalSave.style.display='none';
+  modalCancel.textContent='Fechar';
+  modalCancel.style.display='';
+  if(['jpg','jpeg','png','webp'].includes(ext)){
+    modalForm.innerHTML='<div style="width:100%;height:78vh;display:grid;place-items:center;background:#f7f4f0;padding:18px"><img src="'+data.signedUrl+'" alt="'+esc(nome)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px"></div>';
+  }else{
+    modalForm.innerHTML='<iframe src="'+data.signedUrl+'" title="'+esc(nome)+'" style="width:100%;height:78vh;border:0;background:#fff"></iframe>';
+  }
+  modalForm.style.display='block';
+  modalBg.classList.add('show');
 }
 function pagarAnexoHtml(x){
   if(x.documento_path)return '<button class="iconbtn" title="'+esc(x.documento_nome||'Anexo')+'" onclick="openDocumentoPagar('+x.id+')">📎 Abrir</button>';
-  if(x.documento_nome)return '<span title="'+esc(x.documento_nome)+'" style="display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b6b4c">📎 '+esc(x.documento_nome)+'</span>';
+  if(x.documento_nome)return '<button class="iconbtn" title="'+esc(x.documento_nome)+'" onclick="openDocumentoPagar('+x.id+')">📎 '+esc(x.documento_nome)+'</button>';
   return '—';
 }
 function openPagarBaixa(id){
@@ -847,7 +864,16 @@ function reativarCliente(type,id){
   persist();
   notify('Cliente reativado.');
 }
-function closeModal(){modalBg.classList.remove('show')}
+function closeModal(){
+  modalBg.classList.remove('show');
+  const modalEl=modalBg.querySelector('.modal');
+  const bodyEl=modalBg.querySelector('.modal-body');
+  if(modalEl){modalEl.style.width='';modalEl.style.maxWidth=''}
+  if(bodyEl){bodyEl.style.height='';bodyEl.style.overflow='';bodyEl.style.padding=''}
+  if(window.modalSave)modalSave.style.display='';
+  if(window.modalCancel){modalCancel.style.display='';modalCancel.textContent='Cancelar'}
+  if(window.modalForm)modalForm.style.display='';
+}
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dataset.add));
 novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
