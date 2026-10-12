@@ -1266,10 +1266,11 @@ function fillContaOptions(){
 }
 function openLaunchModal(tipo,id=null){
   resetLaunch();fillContaOptions();launchState.id=id;setLaunchType(tipo);
+  if(isFiuzaSelected()){lfBanco.value='Sicoob';lfBanco.disabled=true}else{lfBanco.disabled=false}
   if(id){
     const x=store[tipo].find(r=>r.id===id);
     if(x){
-      lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=x.banco||'Sicredi';if(window.lfRecorrencia)lfRecorrencia.value=x.recorrencia||'mensal';
+      lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=isFiuzaSelected()?'Sicoob':(x.banco||'Sicredi');if(window.lfRecorrencia)lfRecorrencia.value=x.recorrencia||'mensal';
       if(tipo==='receber'&&x.tipo_recebimento!=='fiuza'){
         setReceberTipo('comum');
         lfReceberCliente.value=x.cliente||'';
@@ -1358,7 +1359,7 @@ launchSave.onclick=async()=>{
   }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
-  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
+  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:isFiuzaSelected()?'Sicoob':lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
   if(tipo==='pagar'){
     obj.fornecedor=parte;delete obj.cliente;
     if(launchState.arquivo){
