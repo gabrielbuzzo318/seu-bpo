@@ -168,13 +168,13 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   </div>
 </section>
 <section id="fluxo" class="screen">
-  <div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas por banco</div></div><button class="btn">Exportar PDF</button></div>
+  <div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas por banco</div></div><div style="display:flex;gap:8px"><button id="fluxoNovoBtn" class="btn primary">+ Lançamento</button><button class="btn">Exportar PDF</button></div></div>
   <div class="launch-tabs" style="max-width:420px;margin:0 0 16px 0">
     <button type="button" class="launch-tab active" data-fluxo-banco="Sicoob">Sicoob</button>
     <button type="button" class="launch-tab" data-fluxo-banco="Caixa">Caixa</button>
   </div>
   <div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div>
-  <div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th></tr></thead><tbody id="fluxoBody"></tbody></table></div>
+  <div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th><th>Ações</th></tr></thead><tbody id="fluxoBody"></tbody></table></div>
 </section>
 <section id="dre" class="screen">
   <div class="page-title">
@@ -1111,7 +1111,7 @@ function renderFinanceiros(){
   const receberMes=window.receberMesFiltro?.value||'Todos';
   if(window.pagarTotalSub)pagarTotalSub.textContent=pagarMes==='Todos'?'Todos os meses':nomeMesCompetencia(pagarMes);
   if(window.receberTotalSub)receberTotalSub.textContent=receberMes==='Todos'?'Todos os meses':nomeMesCompetencia(receberMes);
-  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td>'+pagarAnexoHtml(x)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
+  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td>'+pagarAnexoHtml(x)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'<button class="iconbtn danger" onclick="estornarPagar('+x.id+')">Estornar</button>':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
   if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
 }
 function gerarRelatorioFinanceiro(tipo){
@@ -1153,6 +1153,32 @@ function gerarRelatorioFinanceiro(tipo){
   doc.save((tipo==='pagar'?'contas-a-pagar-':'contas-a-receber-')+slug+'.pdf');
 }
 let fluxoBancoAtual='Sicoob';
+function abrirFluxoManual(){
+  const empresa=selectedCompanyName();
+  if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa antes de criar um lançamento manual.');return}
+  modalState={type:'fluxoManual'};
+  modalTitle.textContent='Novo lançamento no fluxo';
+  const hoje=new Date().toISOString().slice(0,10);
+  const contas=(store.plano||[]).map(x=>x.conta).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  modalForm.innerHTML=
+    '<div class="field"><label>Data</label><input type="date" data-field="data" value="'+hoje+'"></div>'+
+    '<div class="field"><label>Tipo</label><select data-field="tipo"><option value="Entrada">Entrada</option><option value="Saída">Saída</option></select></div>'+
+    '<div class="field"><label>Banco</label><select data-field="banco"><option value="Sicoob">Sicoob</option><option value="Caixa">Caixa</option></select></div>'+
+    '<div class="field"><label>Valor</label><input type="text" data-field="valor" inputmode="decimal" placeholder="0,00"></div>'+
+    '<div class="field full"><label>Histórico</label><input type="text" data-field="historico" placeholder="Descrição do lançamento"></div>'+
+    '<div class="field full"><label>Plano de contas</label><select data-field="plano_contas"><option value="">Selecione</option>'+contas.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+  const bancoEl=modalForm.querySelector('[data-field="banco"]');
+  if(bancoEl)bancoEl.value=fluxoBancoAtual||'Sicoob';
+  modalBg.classList.add('show');
+}
+function excluirFluxoManual(id){
+  const mov=(store.fluxo||[]).find(x=>Number(x.id)===Number(id));
+  if(!mov||mov.origem)return;
+  if(!confirm('Excluir este lançamento manual do fluxo?'))return;
+  store.fluxo=store.fluxo.filter(x=>Number(x.id)!==Number(id));
+  persist();
+  notify('Lançamento manual excluído.');
+}
 function renderFluxo(){
   const empresaAtual=selectedCompanyName();
   const rows=(store.fluxo||[]).filter(x=>{
@@ -1167,7 +1193,7 @@ function renderFluxo(){
   if(window.fluxoSaidas)fluxoSaidas.textContent=money(String(saidas).replace('.',','));
   if(window.fluxoResultado)fluxoResultado.textContent=money(String(entradas-saidas).replace('.',','));
   if(window.fluxoSaldo)fluxoSaldo.textContent=money(String(entradas-saidas).replace('.',','));
-  if(window.fluxoBody)fluxoBody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td></tr>').join('');
+  if(window.fluxoBody)fluxoBody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td><td>'+(x.origem?'—':'<button class="iconbtn danger" onclick="excluirFluxoManual('+x.id+')">Excluir</button>')+'</td></tr>').join('');
 }
 document.querySelectorAll('[data-fluxo-banco]').forEach(b=>b.onclick=()=>{
   fluxoBancoAtual=b.dataset.fluxoBanco;
@@ -1877,6 +1903,20 @@ function pagarAnexoHtml(x){
   if(x.documento_nome)return '<button class="iconbtn" title="'+esc(x.documento_nome)+'" onclick="openDocumentoPagar('+x.id+')">📎 '+esc(x.documento_nome)+'</button>';
   return '—';
 }
+function estornarPagar(id){
+  const item=store.pagar.find(x=>Number(x.id)===Number(id));
+  if(!item)return;
+  if(item.status!=='Pago'){notify('Esse lançamento não está baixado.');return}
+  if(!confirm('Estornar este pagamento? O lançamento será removido do Fluxo de Caixa e voltará para Em aberto.'))return;
+  const antes=(store.fluxo||[]).length;
+  store.fluxo=(store.fluxo||[]).filter(x=>!(x.origem==='pagar'&&Number(x.origem_id)===Number(item.id)));
+  item.status='Em aberto';
+  delete item.data_pagamento;
+  delete item.banco_fluxo;
+  persist();
+  const removidos=antes-store.fluxo.length;
+  notify(removidos?'Pagamento estornado e removido do fluxo.':'Pagamento estornado. Não havia movimentação vinculada no fluxo.');
+}
 function openPagarBaixa(id){
   const item=store.pagar.find(x=>x.id===id);
   if(!item)return;
@@ -1953,6 +1993,7 @@ if(window.pagarRelatorioBtn)pagarRelatorioBtn.onclick=()=>gerarRelatorioFinancei
 if(window.receberRelatorioBtn)receberRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('receber');
 if(window.dreMesFiltro)dreMesFiltro.onchange=renderDre;
 if(window.drePdfBtn)drePdfBtn.onclick=gerarPdfDre;
+if(window.fluxoNovoBtn)fluxoNovoBtn.onclick=abrirFluxoManual;
 if(window.tugaoCertBtn)tugaoCertBtn.onclick=()=>tugaoCertFile.click();
 if(window.tugaoCertFile)tugaoCertFile.onchange=()=>{const f=tugaoCertFile.files?.[0];if(f)salvarCertificadoTugao(f);tugaoCertFile.value=''};
 if(window.tugaoCertRemoveBtn)tugaoCertRemoveBtn.onclick=removerCertificadoTugao;
@@ -2077,6 +2118,28 @@ modalSave.onclick=async()=>{
    store.pagar.push({id:pagarId,vencimento:venc,data_emissao:new Date().toISOString().slice(0,10),fornecedor:'Fatura '+cartao,descricao:'Fatura '+cartao+' · '+nomeMesCompetencia(competencia),categoria:'Cartão de Crédito',conta_contabil:'Cartão de Crédito',banco:'Sicoob',valor:String(total).replace('.',','),status:'Em aberto',empresa:'FIUZA',origem_cartao_fatura:true,cartao_fatura:cartao,competencia_cartao:competencia});
    store.cartoesFaturas.push({id:Date.now()+1,cartao,competencia,total,pagar_id:pagarId,status:'Fechada'});
    persist();closeModal();notify('Fatura fechada e enviada para o Contas a Pagar.');
+   return;
+ }
+ if(type==='fluxoManual'){
+   const get=f=>modalForm.querySelector('[data-field="'+f+'"]')?.value||'';
+   const data=get('data'),tipo=get('tipo'),banco=get('banco'),historico=get('historico').trim(),plano=get('plano_contas'),valor=get('valor').trim();
+   if(!data||!tipo||!banco||!historico||!plano||!(numeroValor(valor)>0)){notify('Preencha data, tipo, banco, histórico, plano de contas e um valor maior que zero.');return}
+   const empresa=selectedCompanyName();
+   if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa específica.');return}
+   store.fluxo.push({
+     id:Date.now(),
+     data,
+     tipo,
+     banco,
+     historico,
+     plano_contas:plano,
+     valor,
+     empresa,
+     origem:'',
+     manual:true
+   });
+   fluxoBancoAtual=banco;
+   persist();closeModal();notify('Lançamento manual adicionado ao fluxo.');
    return;
  }
  if(type==='pagarBaixa'&&id){
