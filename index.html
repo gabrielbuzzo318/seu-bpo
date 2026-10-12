@@ -330,7 +330,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
         <section id="prazoPagamentoSection" class="launch-section">
           <div class="pay-head">
             <div><b style="font-size:12px">Prazo de pagamento</b><div class="sub" style="font-size:9.5px;margin-top:3px">Lançamento único ou parcelado.</div></div>
-            <div class="seg"><button id="lfUnico" type="button" class="active">Único</button><button id="lfParcelado" type="button">Parcelado</button></div>
+            <div class="seg"><button id="lfUnico" type="button" class="active">Único</button><button id="lfParcelado" type="button">Parcelado</button><button id="lfRecorrente" type="button">Recorrente</button></div>
           </div>
           <div id="lfParcelasBox" style="display:none">
             <div class="parcel-box" id="lfParcelas">
@@ -342,19 +342,23 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
             <div class="lf c6"><label>Conta contábil</label><select id="lfConta"><option value="">Selecione uma conta</option></select></div>
             <div class="lf c6"><label>Banco</label><select id="lfBanco"><option>Sicredi</option><option>Sicoob</option><option>Inter</option><option>Outros</option></select></div>
           </div>
-        </section>
-
-        <section id="recorrenciaSection" class="launch-section" style="display:none">
-          <div class="launch-section-head"><b>Recorrência</b><small>Defina a frequência deste recebimento.</small></div>
-          <div class="launch-formgrid">
-            <div class="lf c6"><label>Recorrência</label>
-              <select id="lfRecorrencia">
-                <option value="unico">Único</option>
-                <option value="semanal">Semanal</option>
-                <option value="quinzenal">Quinzenal</option>
-                <option value="mensal">Mensal</option>
-              </select>
+          <div id="lfRecorrenteBox" style="display:none;margin-top:12px">
+            <div class="launch-formgrid">
+              <div class="lf c4"><label>Frequência</label>
+                <select id="lfRecorrencia">
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="mensal" selected>Mensal</option>
+                </select>
+              </div>
+              <div class="lf c4"><label>Quantidade de lançamentos</label><input id="lfRecorrenciaQtd" type="number" min="2" max="60" value="12"></div>
+              <div class="lf c4"><label>Primeiro vencimento</label><input id="lfRecorrenciaInicio" type="date"></div>
             </div>
+            <div class="launch-formgrid" style="margin-top:10px">
+              <div class="lf c6"><label>Conta contábil</label><select id="lfRecConta"><option value="">Selecione uma conta</option></select></div>
+              <div class="lf c6"><label>Banco</label><select id="lfRecBanco"><option>Sicredi</option><option>Sicoob</option><option>Inter</option><option>Outros</option></select></div>
+            </div>
+            <div class="sub" style="margin-top:8px">O sistema criará os próximos lançamentos automaticamente, mantendo valor, histórico e plano de contas.</div>
           </div>
         </section>
       </div>
@@ -2270,7 +2274,7 @@ modalSave.onclick=async()=>{
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
 };
 
-let launchState={tipo:'pagar',id:null,arquivo:null,previewUrl:null,parcelado:false,parcelas:[]};
+let launchState={tipo:'pagar',id:null,arquivo:null,previewUrl:null,parcelado:false,recorrente:false,parcelas:[]};
 
 function dataISO(v){
   if(!v)return '';
@@ -2534,10 +2538,12 @@ function resetLaunch(){
   if(window.lfFiuzaCliente){lfFiuzaCliente.value='';lfFiuzaCompetencia.value='';lfFiuzaValorDiaria.value='';lfFiuzaDiariasProjetadas.value='';lfFiuzaValorProjetado.value='';lfFiuzaDiariasRealizadas.value='';lfFiuzaValorReal.value='';lfFiuzaDiferenca.value='';}
   if(window.lfReceberCliente){lfReceberCliente.value='';lfReceberVencimento.value='';lfReceberValor.value='';lfReceberConta.value='';lfReceberHistorico.value='';}
   if(window.lfRecorrencia)lfRecorrencia.value='mensal';
+  if(window.lfRecorrenciaQtd)lfRecorrenciaQtd.value='12';
+  if(window.lfRecorrenciaInicio)lfRecorrenciaInicio.value='';
   setReceberTipo('comum');
   lfConta.value=''; lfBanco.value='Sicredi'; lfFile.value=''; uploadText.textContent='Selecionar documento'; readStatus.className='read-status'; readStatus.textContent='';
-  if(launchState.previewUrl) URL.revokeObjectURL(launchState.previewUrl); launchState.previewUrl=null; launchState.arquivo=null; launchState.parcelado=false; launchState.parcelas=[];
-  lfUnico.classList.add('active');lfParcelado.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none';
+  if(launchState.previewUrl) URL.revokeObjectURL(launchState.previewUrl); launchState.previewUrl=null; launchState.arquivo=null; launchState.parcelado=false; launchState.recorrente=false; launchState.parcelas=[];
+  lfUnico.classList.add('active');lfParcelado.classList.remove('active');if(window.lfRecorrente)lfRecorrente.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none';if(window.lfRecorrenteBox)lfRecorrenteBox.style.display='none';
   docPreview.innerHTML='<div class="doc-empty"><div class="ico">▧</div><b>Pré-visualização do documento</b><span>Anexe PDF, XML, nota fiscal, boleto, recibo ou comprovante para conferir o documento enquanto preenche o lançamento.</span></div>';
 }
 function setLaunchType(tipo){
@@ -2549,8 +2555,7 @@ function setLaunchType(tipo){
   if(window.documentoSection)documentoSection.style.display=tipo==='receber'?'none':'block';
   if(window.receberDadosSection)receberDadosSection.style.display=tipo==='receber'?'block':'none';
   if(window.competenciaSection)competenciaSection.style.display=tipo==='receber'?'none':'block';
-  if(window.prazoPagamentoSection)prazoPagamentoSection.style.display=tipo==='receber'?'none':'block';
-  if(window.recorrenciaSection)recorrenciaSection.style.display=tipo==='receber'?'block':'none';
+  if(window.prazoPagamentoSection)prazoPagamentoSection.style.display='block';
 
   const right=document.querySelector('.launch-right');
   const grid=document.getElementById('launchGrid');
@@ -2567,6 +2572,7 @@ function setLaunchType(tipo){
 function fillContaOptions(){
   const opts='<option value="">Selecione uma conta</option>'+store.plano.map(x=>'<option>'+esc(x.conta)+'</option>').join('');
   lfConta.innerHTML=opts;
+  if(window.lfRecConta)lfRecConta.innerHTML=opts;
   if(window.lfReceberConta)lfReceberConta.innerHTML=opts;
 }
 function openLaunchModal(tipo,id=null){
@@ -2576,6 +2582,9 @@ function openLaunchModal(tipo,id=null){
     const x=store[tipo].find(r=>r.id===id);
     if(x){
       lfParte.value=x.fornecedor||x.cliente||'';lfEmissao.value=x.data_emissao||'';lfVencimento.value=x.vencimento||'';lfValor.value=x.valor||'';lfNumero.value=x.numero_documento||'';lfChave.value=x.chave_acesso||'';lfLinha.value=x.linha_digitavel||'';lfHistorico.value=x.descricao||'';lfConta.value=x.categoria||'';lfBanco.value=isFiuzaSelected()?'Sicoob':(x.banco||'Sicredi');if(window.lfRecorrencia)lfRecorrencia.value=x.recorrencia||'mensal';
+      if(x.recorrencia_grupo){setPrazoMode('recorrente');if(window.lfRecorrenciaQtd)lfRecorrenciaQtd.value=String(x.recorrencia_total||12);if(window.lfRecorrenciaInicio)lfRecorrenciaInicio.value=x.vencimento||'';if(window.lfRecConta)lfRecConta.value=x.categoria||'';if(window.lfRecBanco)lfRecBanco.value=x.banco||'Sicredi'}
+      else if(x.tipo_pagamento==='parcelado'){setPrazoMode('parcelado')}
+      else setPrazoMode('unico');
       if(tipo==='receber'&&x.tipo_recebimento!=='fiuza'){
         setReceberTipo('comum');
         lfReceberCliente.value=x.cliente||'';
@@ -2609,12 +2618,28 @@ launchClose.onclick=launchCancel.onclick=closeLaunch;
 launchBg.onclick=e=>{if(e.target===launchBg)closeLaunch()};
 lfEmissao.onchange=()=>{if(!lfVencimento.value)lfVencimento.value=lfEmissao.value;updateCompetenciaHint()};
 lfVencimento.onchange=updateCompetenciaHint;document.querySelectorAll('input[name="lfCompetencia"]').forEach(r=>r.onchange=updateCompetenciaHint);
-lfUnico.onclick=()=>{launchState.parcelado=false;lfUnico.classList.add('active');lfParcelado.classList.remove('active');lfUnicoBox.style.display='grid';lfParcelasBox.style.display='none'};
+function setPrazoMode(mode){
+  launchState.parcelado=mode==='parcelado';
+  launchState.recorrente=mode==='recorrente';
+  lfUnico.classList.toggle('active',mode==='unico');
+  lfParcelado.classList.toggle('active',mode==='parcelado');
+  if(window.lfRecorrente)lfRecorrente.classList.toggle('active',mode==='recorrente');
+  lfUnicoBox.style.display=mode==='unico'?'grid':'none';
+  lfParcelasBox.style.display=mode==='parcelado'?'block':'none';
+  if(window.lfRecorrenteBox)lfRecorrenteBox.style.display=mode==='recorrente'?'block':'none';
+  if(mode==='recorrente'){
+    if(window.lfRecorrenciaInicio&&!lfRecorrenciaInicio.value)lfRecorrenciaInicio.value=lfVencimento.value||lfReceberVencimento?.value||'';
+    if(window.lfRecConta)lfRecConta.value=(launchState.tipo==='receber'?(lfReceberConta?.value||''):(lfConta.value||''));
+    if(window.lfRecBanco)lfRecBanco.value=isFiuzaSelected()?'Sicoob':(lfBanco.value||'Sicredi');
+  }
+}
+lfUnico.onclick=()=>setPrazoMode('unico');
 function renderParcelas(){
   lfParcelas.querySelectorAll('.parcel-row:not(:first-child)').forEach(x=>x.remove());
   launchState.parcelas.forEach((p,i)=>{const row=document.createElement('div');row.className='parcel-row';row.innerHTML='<div><b>'+(i+1)+'/'+launchState.parcelas.length+'</b></div><input type="date" value="'+esc(p.vencimento)+'"><input value="'+esc(p.valor)+'"><button class="iconbtn danger" type="button">×</button>';const ins=row.querySelectorAll('input');ins[0].oninput=e=>p.vencimento=e.target.value;ins[1].oninput=e=>p.valor=e.target.value;row.querySelector('button').onclick=()=>{if(launchState.parcelas.length>2){launchState.parcelas.splice(i,1);renderParcelas()}};lfParcelas.appendChild(row)});
 }
-lfParcelado.onclick=()=>{launchState.parcelado=true;lfParcelado.classList.add('active');lfUnico.classList.remove('active');lfUnicoBox.style.display='none';lfParcelasBox.style.display='block';if(launchState.parcelas.length<2){const total=numeroValor(lfValor.value)||0,b=(total/2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});launchState.parcelas=[{vencimento:lfVencimento.value,valor:b},{vencimento:lfVencimento.value,valor:b}]}renderParcelas()};
+lfParcelado.onclick=()=>{setPrazoMode('parcelado');if(launchState.parcelas.length<2){const total=numeroValor(lfValor.value)||0,b=(total/2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});launchState.parcelas=[{vencimento:lfVencimento.value,valor:b},{vencimento:lfVencimento.value,valor:b}]}renderParcelas()};
+if(window.lfRecorrente)lfRecorrente.onclick=()=>setPrazoMode('recorrente');
 lfAddParcela.onclick=()=>{launchState.parcelas.push({vencimento:lfVencimento.value,valor:'0,00'});renderParcelas()};
 lfFile.onchange=async()=>{
   if(launchState.tipo==='receber')return;
@@ -2672,7 +2697,22 @@ if(window.lfFiuzaCompetencia)lfFiuzaCompetencia.onchange=atualizaFiuzaVencimento
 if(window.lfFiuzaValorDiaria)lfFiuzaValorDiaria.oninput=atualizaFiuzaReceberCalculo;
 if(window.lfFiuzaDiariasProjetadas)lfFiuzaDiariasProjetadas.oninput=atualizaFiuzaReceberCalculo;
 if(window.lfFiuzaDiariasRealizadas)lfFiuzaDiariasRealizadas.oninput=atualizaFiuzaReceberCalculo;
+if(window.lfReceberVencimento)lfReceberVencimento.onchange=()=>{if(launchState.recorrente&&window.lfRecorrenciaInicio)lfRecorrenciaInicio.value=lfReceberVencimento.value};
+if(window.lfReceberConta)lfReceberConta.onchange=()=>{if(launchState.recorrente&&window.lfRecConta)lfRecConta.value=lfReceberConta.value};
 
+function proximaDataRecorrencia(dataBase,frequencia,indice){
+  const d=new Date(dataBase+'T12:00:00');
+  if(Number.isNaN(d.getTime()))return dataBase;
+  if(frequencia==='semanal')d.setDate(d.getDate()+(7*indice));
+  else if(frequencia==='quinzenal')d.setDate(d.getDate()+(15*indice));
+  else{
+    const dia=d.getDate();
+    d.setDate(1);d.setMonth(d.getMonth()+indice);
+    const ultimo=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    d.setDate(Math.min(dia,ultimo));
+  }
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 launchSave.onclick=async()=>{
   const tipo=launchState.tipo, receberTipo=document.querySelector('input[name="lfReceberTipo"]:checked')?.value||'comum';
   if(tipo==='receber'&&receberTipo==='comum'){
@@ -2682,6 +2722,15 @@ launchSave.onclick=async()=>{
     lfHistorico.value=lfReceberHistorico.value.trim();
     lfConta.value=lfReceberConta.value;
   }
+  if(launchState.recorrente){
+    if(window.lfRecorrenciaInicio&&lfRecorrenciaInicio.value)lfVencimento.value=lfRecorrenciaInicio.value;
+    if(window.lfRecConta&&lfRecConta.value)lfConta.value=lfRecConta.value;
+    if(window.lfRecBanco&&lfRecBanco.value)lfBanco.value=lfRecBanco.value;
+    if(tipo==='receber'&&receberTipo==='comum'){
+      if(window.lfRecorrenciaInicio&&lfRecorrenciaInicio.value)lfReceberVencimento.value=lfRecorrenciaInicio.value;
+      if(window.lfRecConta&&lfRecConta.value)lfReceberConta.value=lfRecConta.value;
+    }
+  }
   const parte=lfParte.value.trim(), emissao=lfEmissao.value, venc=lfVencimento.value||emissao, valor=lfValor.value.trim();
   if(tipo==='receber'&&receberTipo==='fiuza'){
     if(!lfFiuzaCliente.value||!lfFiuzaCompetencia.value){notify('Selecione o cliente FIUZA e a competência.');return}
@@ -2689,7 +2738,7 @@ launchSave.onclick=async()=>{
   }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
-  Object.assign(obj,{empresa:(tipo==='receber'&&receberTipo==='fiuza')?'FIUZA':selectedCompanyName(),data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:isFiuzaSelected()?'Sicoob':lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
+  Object.assign(obj,{empresa:(tipo==='receber'&&receberTipo==='fiuza')?'FIUZA':selectedCompanyName(),data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:isFiuzaSelected()?'Sicoob':lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:launchState.recorrente?'recorrente':(tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'unico'),parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
   if(tipo==='pagar'){
     obj.fornecedor=parte;delete obj.cliente;
     if(launchState.arquivo){
@@ -2699,7 +2748,7 @@ launchSave.onclick=async()=>{
   }else{
     obj.cliente=parte;delete obj.fornecedor;
     obj.tipo_recebimento=receberTipo;
-    obj.recorrencia=window.lfRecorrencia?.value||'mensal';
+    obj.recorrencia=launchState.recorrente?(window.lfRecorrencia?.value||'mensal'):'unico';
     if(receberTipo==='fiuza'){
       const vencFiuza=vencimentoFiuzaPorCompetencia(lfFiuzaCompetencia.value,lfFiuzaCliente.value);
       if(vencFiuza){obj.vencimento=vencFiuza;lfVencimento.value=vencFiuza;}
@@ -2720,7 +2769,31 @@ launchSave.onclick=async()=>{
       delete obj.fiuza_cliente_id;delete obj.competencia_fiuza;delete obj.valor_diaria;delete obj.diarias_projetadas;delete obj.valor_projetado;delete obj.diarias_realizadas;delete obj.valor_real;delete obj.diferenca_projetado_real;
     }
   }
-  if(!launchState.id)store[tipo].push(obj);persist();closeLaunch();notify(launchState.id?'Lançamento atualizado.':'Lançamento salvo.');
+  if(!launchState.id){
+    if(launchState.recorrente){
+      const freq=window.lfRecorrencia?.value||'mensal';
+      const qtd=Math.min(60,Math.max(2,Number(window.lfRecorrenciaQtd?.value)||12));
+      const inicio=window.lfRecorrenciaInicio?.value||obj.vencimento;
+      if(!inicio){notify('Informe o primeiro vencimento da recorrência.');return}
+      const grupo='rec_'+Date.now();
+      for(let i=0;i<qtd;i++){
+        const novo=structuredClone(obj);
+        novo.id=Date.now()+i;
+        novo.vencimento=proximaDataRecorrencia(inicio,freq,i);
+        novo.competencia=novo.vencimento.slice(0,7);
+        novo.recorrencia=freq;
+        novo.recorrencia_grupo=grupo;
+        novo.recorrencia_indice=i+1;
+        novo.recorrencia_total=qtd;
+        novo.status='Em aberto';
+        if(i>0){delete novo.documento_path;delete novo.documento_nome}
+        store[tipo].push(novo);
+      }
+    }else{
+      store[tipo].push(obj);
+    }
+  }
+  persist();closeLaunch();notify(launchState.id?'Lançamento atualizado.':(launchState.recorrente?'Lançamentos recorrentes criados.':'Lançamento salvo.'));
 };
 
 window.editItem=(t,id)=>{if(t==='pagar'||t==='receber')openLaunchModal(t,id);else openModal(t,id)};
