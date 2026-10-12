@@ -78,7 +78,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .finance-filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto}
 .finance-filter-actions .btn{height:42px;white-space:nowrap}
 @media(max-width:900px){.finance-filters{align-items:stretch}.finance-filter,.finance-filter.searchwide{min-width:100%;width:100%}.finance-filter-actions{width:100%;margin-left:0}.finance-filter-actions .btn{flex:1}}
-.finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer.inline-total{margin:0}.finance-totalizer.inline-total .total-box{min-width:180px;padding:9px 13px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:18px;font-weight:900;color:#334f55;margin-top:3px}.finance-totalizer .total-sub{font-size:8px;color:var(--muted);margin-top:2px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}.finance-totalizer.inline-total{width:100%}.finance-totalizer.inline-total .total-box{min-width:0}}.company-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}.company-access-option{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:#fffdfa;cursor:pointer}.company-access-option:hover{border-color:#c9ad83;background:#fffaf3}.company-access-option input{width:16px;height:16px;accent-color:#b9965d}.company-access-option span{font-size:12px;font-weight:700;color:#465b5f}@media(max-width:650px){.company-access-grid{grid-template-columns:1fr}}</style>
+.finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer.inline-total{margin:0}.finance-totalizer.inline-total .total-box{min-width:180px;padding:9px 13px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:18px;font-weight:900;color:#334f55;margin-top:3px}.finance-totalizer .total-sub{font-size:8px;color:var(--muted);margin-top:2px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}.finance-totalizer.inline-total{width:100%}.finance-totalizer.inline-total .total-box{min-width:0}}.company-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}.company-access-option{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:#fffdfa;cursor:pointer}.company-access-option:hover{border-color:#c9ad83;background:#fffaf3}.company-access-option input{width:16px;height:16px;accent-color:#b9965d}.company-access-option span{font-size:12px;font-weight:700;color:#465b5f}@media(max-width:650px){.company-access-grid{grid-template-columns:1fr}}.dre-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.dre-card{padding:0}.dre-head-row,.dre-row{display:grid;grid-template-columns:minmax(280px,1fr) 140px 140px 90px;gap:12px;align-items:center}.dre-head-row{padding:11px 16px;background:#f5f0ea;border-bottom:1px solid var(--border);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#8b7767}.dre-row{padding:10px 16px;border-bottom:1px solid #eee4db;font-size:11px}.dre-row:last-child{border-bottom:0}.dre-row>div:not(:first-child){text-align:right}.dre-group{background:#f1ece6;font-weight:900;text-transform:uppercase;letter-spacing:.035em;color:#52666a}.dre-line{cursor:pointer}.dre-line:hover{background:#fcf8f3}.dre-indent{padding-left:18px;color:#647277}.dre-subtotal{background:#f8f5f1;font-weight:900}.dre-total{background:#f1f3f3;font-weight:900}.dre-result-positive{background:#edf7f1;color:#347153;font-weight:900}.dre-result-negative{background:#fff0ef;color:#a65650;font-weight:900}@media(max-width:900px){.dre-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dre-head-row,.dre-row{grid-template-columns:minmax(220px,1fr) 110px 110px 75px;min-width:620px}}@media(max-width:600px){.dre-kpis{grid-template-columns:1fr 1fr}}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
@@ -149,7 +149,25 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   <div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div>
   <div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th></tr></thead><tbody id="fluxoBody"></tbody></table></div>
 </section>
-<section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
+<section id="dre" class="screen">
+  <div class="page-title">
+    <div><h1>DRE Gerencial</h1><div class="sub">Comparativo mensal detalhado por grupo e conta</div></div>
+    <div style="display:flex;gap:8px;align-items:end">
+      <div class="finance-filter" style="min-width:165px"><label>Competência</label><select id="dreMesFiltro"></select></div>
+      <button id="drePdfBtn" class="btn">Gerar PDF</button>
+    </div>
+  </div>
+  <div class="dre-kpis">
+    <div class="card"><div class="label">Receita operacional</div><div id="dreReceitaKpi" class="value green">R$ 0,00</div></div>
+    <div class="card"><div class="label">Despesas / Receita</div><div id="dreDespesaPctKpi" class="value">0,0%</div></div>
+    <div class="card"><div class="label">Margem operacional</div><div id="dreMargemKpi" class="value">0,0%</div></div>
+    <div class="card"><div class="label">Resultado após investimentos</div><div id="dreResultadoKpi" class="value green">R$ 0,00</div></div>
+  </div>
+  <div class="card dre-card" style="overflow:auto;margin-top:14px">
+    <div class="dre-head-row"><div>Conta</div><div id="dreMesAnteriorLabel">Anterior</div><div id="dreMesAtualLabel">Atual</div><div>% Receita</div></div>
+    <div id="dreBody"></div>
+  </div>
+</section>
 <section id="plano" class="screen"><div class="page-title"><div><h1>Plano de Contas</h1><div class="sub">Categorias financeiras</div></div><button class="btn primary" data-add="plano">+ Nova conta</button></div><div class="card"><table><thead><tr><th>Grupo</th><th>Conta</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="planoBody"></tbody></table></div></section>
 <section id="clientes" class="screen"><div class="page-title"><div><h1>Clientes</h1><div id="clientesSub" class="sub">Cadastro de clientes</div></div><div style="display:flex;gap:10px;align-items:center"><input id="clientesBusca" class="search" style="min-width:260px" placeholder="Pesquisar cliente, responsável, CPF, e-mail..."><select id="clientesStatusFiltro" class="search" style="min-width:170px"><option value="Todos">Todos os status</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Negociação">Negociação</option></select><button id="clientesRelatorioBtn" class="btn">Gerar relatório</button><button id="novoClienteBtn" class="btn primary">+ Novo cliente</button></div></div><div class="card" style="overflow:auto"><table><thead id="clientesHead"></thead><tbody id="clientesBody"></tbody></table></div></section>
 <section id="fornecedores" class="screen"><div class="page-title"><div><h1>Fornecedores</h1><div class="sub">Cadastro de fornecedores</div></div><button class="btn primary" data-add="fornecedores">+ Novo fornecedor</button></div><div class="card"><table><thead><tr><th>Fornecedor</th><th>Documento</th><th>Categoria</th><th>Ações</th></tr></thead><tbody id="fornecedoresBody"></tbody></table></div></section>
@@ -692,6 +710,109 @@ document.querySelectorAll('[data-fluxo-banco]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-fluxo-banco]').forEach(x=>x.classList.toggle('active',x===b));
   renderFluxo();
 });
+function dreMesesDisponiveis(){
+  const empresa=selectedCompanyName();
+  const meses=[...new Set((store.fluxo||[]).filter(x=>empresa==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresa.toUpperCase()).map(x=>String(x.data||'').slice(0,7)).filter(x=>/^\d{4}-\d{2}$/.test(x)))].sort().reverse();
+  if(!meses.length)meses.push(new Date().toISOString().slice(0,7));
+  return meses;
+}
+function mesAnteriorIso(m){
+  const [y,mo]=m.split('-').map(Number);const d=new Date(y,mo-2,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function nomeMesCurto(m){
+  const nomes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [y,mo]=String(m).split('-');return (nomes[Number(mo)-1]||mo)+'/'+y;
+}
+function dreGrupoDaConta(conta,tipo){
+  const p=(store.plano||[]).find(x=>String(x.conta||'').trim().toUpperCase()===String(conta||'').trim().toUpperCase());
+  if(p?.grupo)return p.grupo;
+  const c=String(conta||'').toUpperCase();
+  if(tipo==='Entrada'||/RECEITA|SERVI[CÇ]O|HONOR[AÁ]RIO|VENDA/.test(c))return 'Receitas';
+  if(/INVEST|IMOBILIZ|EQUIPAMENTO|M[OÓ]VEL|REFORMA/.test(c))return 'Investimentos';
+  if(/CUSTO|INSUMO|MERCADORIA|MAT[EÉ]RIA/.test(c))return 'Custos';
+  return 'Despesas Operacionais';
+}
+function dreLinhasMes(mes){
+  const empresa=selectedCompanyName();
+  return (store.fluxo||[]).filter(x=>{
+    const okEmp=empresa==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresa.toUpperCase();
+    return okEmp&&String(x.data||'').slice(0,7)===mes;
+  });
+}
+function dreMapa(mes){
+  const map=new Map();
+  for(const x of dreLinhasMes(mes)){
+    const conta=x.plano_contas||'Não classificado';
+    const grupo=dreGrupoDaConta(conta,x.tipo);
+    const sinal=x.tipo==='Entrada'?1:-1;
+    const valor=(numeroValor(x.valor)||0)*sinal;
+    const k=grupo+'|||'+conta;
+    const cur=map.get(k)||{grupo,conta,valor:0,rows:[]};
+    cur.valor+=valor;cur.rows.push(x);map.set(k,cur);
+  }
+  return map;
+}
+function dreDetalhes(conta,mes){
+  const rows=dreLinhasMes(mes).filter(x=>String(x.plano_contas||'Não classificado')===conta);
+  modalState={type:'dreDetalhes'};
+  modalTitle.textContent=conta+' · '+nomeMesCurto(mes);
+  const total=rows.reduce((s,x)=>s+(x.tipo==='Entrada'?1:-1)*(numeroValor(x.valor)||0),0);
+  modalForm.innerHTML='<div class="field full"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>'+rows.length+' lançamento(s)</b><b class="'+(total>=0?'green':'red')+'">'+(total<0?'-':'')+money(String(Math.abs(total)).replace('.',','))+'</b></div><div style="overflow:auto"><table><thead><tr><th>Data</th><th>Histórico</th><th>Banco</th><th>Tipo</th><th>Valor</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico||'')+'</td><td>'+esc(x.banco||'')+'</td><td>'+esc(x.tipo||'')+'</td><td>'+money(x.valor)+'</td></tr>').join('')+'</tbody></table></div></div>';
+  modalSave.style.display='none';modalCancel.textContent='Fechar';modalBg.classList.add('show');
+}
+function renderDre(){
+  if(!window.dreBody)return;
+  const meses=dreMesesDisponiveis();
+  const atualPrev=dreMesFiltro?.value;
+  dreMesFiltro.innerHTML=meses.map(m=>'<option value="'+m+'">'+nomeMesCompetencia(m)+'</option>').join('');
+  dreMesFiltro.value=meses.includes(atualPrev)?atualPrev:meses[0];
+  const atual=dreMesFiltro.value, anterior=mesAnteriorIso(atual);
+  dreMesAtualLabel.textContent=nomeMesCurto(atual);dreMesAnteriorLabel.textContent=nomeMesCurto(anterior);
+  const ma=dreMapa(atual), mp=dreMapa(anterior);
+  const keys=[...new Set([...ma.keys(),...mp.keys()])];
+  const gruposOrdem=['Receitas','Outras Receitas','Deduções','Custos','Despesas Operacionais','Investimentos'];
+  const dados=keys.map(k=>({k,a:ma.get(k),p:mp.get(k)})).map(o=>({grupo:(o.a||o.p).grupo,conta:(o.a||o.p).conta,atual:o.a?.valor||0,anterior:o.p?.valor||0}));
+  const receita=dados.filter(x=>x.grupo==='Receitas').reduce((s,x)=>s+x.atual,0);
+  const receitaAnt=dados.filter(x=>x.grupo==='Receitas').reduce((s,x)=>s+x.anterior,0);
+  const custos=Math.abs(dados.filter(x=>x.grupo==='Custos').reduce((s,x)=>s+x.atual,0));
+  const despesas=Math.abs(dados.filter(x=>x.grupo==='Despesas Operacionais').reduce((s,x)=>s+x.atual,0));
+  const custosAnt=Math.abs(dados.filter(x=>x.grupo==='Custos').reduce((s,x)=>s+x.anterior,0));
+  const despesasAnt=Math.abs(dados.filter(x=>x.grupo==='Despesas Operacionais').reduce((s,x)=>s+x.anterior,0));
+  const investimentos=Math.abs(dados.filter(x=>x.grupo==='Investimentos').reduce((s,x)=>s+x.atual,0));
+  const investimentosAnt=Math.abs(dados.filter(x=>x.grupo==='Investimentos').reduce((s,x)=>s+x.anterior,0));
+  const resultadoOp=receita-custos-despesas, resultadoOpAnt=receitaAnt-custosAnt-despesasAnt;
+  const resultadoFinal=resultadoOp-investimentos, resultadoFinalAnt=resultadoOpAnt-investimentosAnt;
+  const pct=v=>receita?((v/Math.abs(receita))*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'0,00%';
+  const row=(label,ant,atu,cls='',conta='')=>'<div class="dre-row '+cls+(conta?' dre-line':'')+'" '+(conta?'onclick="dreDetalhes('+JSON.stringify(conta).replace(/"/g,'&quot;')+','+JSON.stringify(atual).replace(/"/g,'&quot;')+')"':'')+'><div class="'+(conta?'dre-indent':'')+'">'+label+'</div><div>'+money(String(Math.abs(ant)).replace('.',','))+'</div><div>'+money(String(Math.abs(atu)).replace('.',','))+'</div><div>'+pct(Math.abs(atu))+'</div></div>';
+  let html='';
+  for(const grupo of gruposOrdem){
+    const lista=dados.filter(x=>x.grupo===grupo&&(Math.abs(x.atual)>.004||Math.abs(x.anterior)>.004)).sort((a,b)=>a.conta.localeCompare(b.conta,'pt-BR'));
+    if(!lista.length)continue;
+    const ga=lista.reduce((s,x)=>s+x.atual,0), gp=lista.reduce((s,x)=>s+x.anterior,0);
+    html+=row(grupo,Math.abs(gp),Math.abs(ga),'dre-group');
+    for(const x of lista)html+=row((x.atual<0||['Custos','Despesas Operacionais','Investimentos'].includes(grupo)?'(-) ':'(+) ')+esc(x.conta),x.anterior,x.atual,'',x.conta);
+    if(grupo==='Receitas')html+=row('(=) Receita operacional',receitaAnt,receita,'dre-subtotal');
+  }
+  html+=row('(=) Resultado operacional',resultadoOpAnt,resultadoOp,resultadoOp>=0?'dre-result-positive':'dre-result-negative');
+  if(investimentos||investimentosAnt)html+=row('(-) Investimentos',investimentosAnt,investimentos,'dre-subtotal');
+  html+=row('(=) Resultado após investimentos',resultadoFinalAnt,resultadoFinal,resultadoFinal>=0?'dre-result-positive':'dre-result-negative');
+  dreBody.innerHTML=html||'<div style="padding:30px;text-align:center;color:var(--muted)">Nenhum lançamento realizado nesta competência.</div>';
+  dreReceitaKpi.textContent=money(String(Math.abs(receita)).replace('.',','));
+  dreDespesaPctKpi.textContent=receita?(((custos+despesas)/Math.abs(receita))*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'0,0%';
+  dreMargemKpi.textContent=receita?((resultadoOp/Math.abs(receita))*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'0,0%';
+  dreResultadoKpi.textContent=(resultadoFinal<0?'-':'')+money(String(Math.abs(resultadoFinal)).replace('.',','));
+  dreResultadoKpi.className='value '+(resultadoFinal>=0?'green':'red');
+}
+function gerarPdfDre(){
+  if(!window.jspdf?.jsPDF){notify('Gerador de PDF indisponível.');return}
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const mes=dreMesFiltro.value;doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('DRE Gerencial - '+selectedCompanyName(),14,16);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Competência: '+nomeMesCompetencia(mes)+' | Comparativo: '+nomeMesCurto(mesAnteriorIso(mes))+' x '+nomeMesCurto(mes),14,22);
+  const rows=[...dreBody.querySelectorAll('.dre-row')].map(r=>[...r.children].map(c=>c.textContent.trim()));
+  doc.autoTable({startY:28,head:[['Conta',nomeMesCurto(mesAnteriorIso(mes)),nomeMesCurto(mes),'% Receita']],body:rows,styles:{fontSize:8,cellPadding:1.8},columnStyles:{0:{cellWidth:90},1:{halign:'right'},2:{halign:'right'},3:{halign:'right'}}});
+  doc.save('DRE-'+selectedCompanyName().replace(/[^a-z0-9]+/gi,'-')+'-'+mes+'.pdf');
+}
 function renderAll(){
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
  usuariosBody.innerHTML=store.usuarios.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email)+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa)+'</td><td>'+acts('usuarios',x.id)+'</td></tr>').join('');
@@ -700,6 +821,7 @@ function renderAll(){
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
  renderFinanceiros();
  renderFluxo();
+ renderDre();
  reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
@@ -953,6 +1075,8 @@ if(window.clientesRelatorioBtn) clientesRelatorioBtn.onclick=gerarRelatorioClien
 });
 if(window.pagarRelatorioBtn)pagarRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('pagar');
 if(window.receberRelatorioBtn)receberRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('receber');
+if(window.dreMesFiltro)dreMesFiltro.onchange=renderDre;
+if(window.drePdfBtn)drePdfBtn.onclick=gerarPdfDre;
 if(window.pagarLimparBtn)pagarLimparBtn.onclick=()=>{pagarBusca.value='';pagarStatusFiltro.value='Todos';pagarMesFiltro.value='Todos';renderFinanceiros()};
 if(window.receberLimparBtn)receberLimparBtn.onclick=()=>{receberBusca.value='';receberStatusFiltro.value='Todos';receberMesFiltro.value='Todos';renderFinanceiros()};
 
