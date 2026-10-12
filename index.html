@@ -78,7 +78,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .finance-filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto}
 .finance-filter-actions .btn{height:42px;white-space:nowrap}
 @media(max-width:900px){.finance-filters{align-items:stretch}.finance-filter,.finance-filter.searchwide{min-width:100%;width:100%}.finance-filter-actions{width:100%;margin-left:0}.finance-filter-actions .btn{flex:1}}
-</style>
+.finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:20px;font-weight:900;color:#334f55;margin-top:4px}.finance-totalizer .total-sub{font-size:9px;color:var(--muted);margin-top:3px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
@@ -131,14 +131,14 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   <div class="finance-filter"><label>Status</label><select id="pagarStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></div>
   <div class="finance-filter"><label>Competência</label><select id="pagarMesFiltro"><option value="Todos">Todos os meses</option></select></div>
   <div class="finance-filter-actions"><button id="pagarLimparBtn" class="btn">Limpar</button><button id="pagarRelatorioBtn" class="btn primary">Gerar relatório</button></div>
-</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Anexo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
+</div><div class="finance-totalizer"><div class="total-box"><div class="total-label">Total a pagar</div><div id="pagarTotal" class="total-value">R$ 0,00</div><div id="pagarTotalSub" class="total-sub">Todos os meses</div></div></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Anexo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
 <section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div>
 <div class="finance-filters">
   <div class="finance-filter searchwide"><label>Pesquisar</label><input id="receberBusca" placeholder="Cliente, histórico, conta..."></div>
   <div class="finance-filter"><label>Status</label><select id="receberStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Recebido">Recebido</option></select></div>
   <div class="finance-filter"><label>Competência</label><select id="receberMesFiltro"><option value="Todos">Todos os meses</option></select></div>
   <div class="finance-filter-actions"><button id="receberLimparBtn" class="btn">Limpar</button><button id="receberRelatorioBtn" class="btn primary">Gerar relatório</button></div>
-</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
+</div><div class="finance-totalizer"><div class="total-box"><div class="total-label">Total a receber</div><div id="receberTotal" class="total-value">R$ 0,00</div><div id="receberTotalSub" class="total-sub">Todos os meses</div></div></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen">
   <div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas por banco</div></div><button class="btn">Exportar PDF</button></div>
@@ -595,6 +595,18 @@ function renderFinanceiros(){
   preencherFiltroMes(window.receberMesFiltro,baseReceber);
   const pagarVisiveis=filtrarFinanceiro('pagar');
   const receberVisiveis=filtrarFinanceiro('receber');
+
+  const pagarTotalValor=pagarVisiveis.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
+  const receberTotalValor=receberVisiveis.reduce((s,x)=>{
+    const v=x.tipo_recebimento==='fiuza'?(x.valor_real||x.valor_projetado||x.valor):x.valor;
+    return s+(numeroValor(v)||0);
+  },0);
+  if(window.pagarTotal)pagarTotal.textContent=money(String(pagarTotalValor).replace('.',','));
+  if(window.receberTotal)receberTotal.textContent=money(String(receberTotalValor).replace('.',','));
+  const pagarMes=window.pagarMesFiltro?.value||'Todos';
+  const receberMes=window.receberMesFiltro?.value||'Todos';
+  if(window.pagarTotalSub)pagarTotalSub.textContent=pagarMes==='Todos'?'Todos os meses':nomeMesCompetencia(pagarMes);
+  if(window.receberTotalSub)receberTotalSub.textContent=receberMes==='Todos'?'Todos os meses':nomeMesCompetencia(receberMes);
   if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td>'+pagarAnexoHtml(x)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
   if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
 }
@@ -615,15 +627,19 @@ function gerarRelatorioFinanceiro(tipo){
   doc.text('Período: '+(mes==='Todos'?'Todos os meses':nomeMesCompetencia(mes))+' | Status: '+status+(busca?' | Busca: '+busca:''),14,26);
   doc.text('Emitido em: '+new Date().toLocaleString('pt-BR'),14,31);
   if(tipo==='pagar'){
+    const total=rows.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
+    doc.text('Total filtrado: '+money(String(total).replace('.',',')),14,36);
     doc.autoTable({
-      startY:36,
+      startY:41,
       head:[['Vencimento','Fornecedor','Histórico','Conta','Valor','Anexo','Status']],
       body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.documento_nome||'',x.status||'']),
       styles:{fontSize:8,cellPadding:1.6}
     });
   }else{
+    const total=rows.reduce((s,x)=>s+(numeroValor(x.tipo_recebimento==='fiuza'?(x.valor_real||x.valor_projetado||x.valor):x.valor)||0),0);
+    doc.text('Total filtrado: '+money(String(total).replace('.',',')),14,36);
     doc.autoTable({
-      startY:36,
+      startY:41,
       head:[['Vencimento','Cliente','Histórico','Conta','Projetado','Real','Status']],
       body:rows.map(x=>[brDate(x.vencimento),x.cliente||'',x.descricao||'',x.categoria||'',x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—',x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor),x.status||'']),
       styles:{fontSize:8,cellPadding:1.6}
