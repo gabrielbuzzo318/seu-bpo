@@ -68,6 +68,16 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .launch-foot{border-top:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:#fff}.launch-foot small{color:var(--muted);font-size:9px}.launch-actions{display:flex;gap:9px}
 .parcel-box{border:1px solid var(--border);border-radius:11px;overflow:hidden}.parcel-row{display:grid;grid-template-columns:60px 1fr 1fr 42px;gap:8px;align-items:center;padding:9px 12px;border-top:1px solid var(--border)}.parcel-row:first-child{border-top:0;background:#f7f8fa;font-size:9px;font-weight:900;text-transform:uppercase;color:var(--muted)}.parcel-row input{height:34px;border:1px solid var(--border);border-radius:7px;padding:0 8px}.parcel-add{margin:10px 0 0;border:0;background:#285f6d;color:#fff;border-radius:8px;padding:8px 11px;font-size:10px;font-weight:700;cursor:pointer}
 @media(max-width:950px){.launch-grid{grid-template-columns:1fr}.launch-right{display:none}.c3,.c4,.c5,.c6,.c7{grid-column:span 12}}
+.finance-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:rgba(255,253,251,.88);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:12px 0 16px;box-shadow:0 8px 24px rgba(80,58,42,.05)}
+.finance-filter{display:flex;flex-direction:column;gap:6px;min-width:170px;flex:1}
+.finance-filter.searchwide{min-width:280px;flex:2}
+.finance-filter label{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8b7767}
+.finance-filter input,.finance-filter select{height:42px;border:1px solid #decfc3;border-radius:11px;background:#fffdfa;padding:0 12px;color:#334f55;font:inherit;outline:none;transition:.18s ease}
+.finance-filter input::placeholder{color:#a99c92}
+.finance-filter input:focus,.finance-filter select:focus{border-color:#b9965d;box-shadow:0 0 0 4px rgba(185,150,93,.10);background:#fff}
+.finance-filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto}
+.finance-filter-actions .btn{height:42px;white-space:nowrap}
+@media(max-width:900px){.finance-filters{align-items:stretch}.finance-filter,.finance-filter.searchwide{min-width:100%;width:100%}.finance-filter-actions{width:100%;margin-left:0}.finance-filter-actions .btn{flex:1}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -116,18 +126,18 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <div id="all" class="grid2"><div class="card"><div class="section-title">Resumo por empresa</div><table><thead><tr><th>Empresa</th><th>A receber</th><th>A pagar</th><th>Inadimplência</th><th>Status</th></tr></thead><tbody><tr><td><b>DPMZ</b></td><td>R$ 28.600</td><td>R$ 17.800</td><td>R$ 2.300</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Tugão Imóveis</b></td><td>R$ 24.300</td><td>R$ 16.100</td><td>R$ 6.100</td><td><span class="status warn">Atenção</span></td></tr><tr><td><b>IZA Comunica</b></td><td>R$ 18.900</td><td>R$ 13.500</td><td>R$ 3.400</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Clínica Aurora</b></td><td>R$ 20.650</td><td>R$ 13.900</td><td>R$ 2.400</td><td><span class="status ok">Saudável</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Pendências da carteira</div><table><tbody><tr><td>Conciliações pendentes</td><td><b>3 empresas</b></td></tr><tr><td>NF pendentes de vínculo</td><td><b>8 notas</b></td></tr><tr><td>Títulos vencidos</td><td class="red"><b>19</b></td></tr><tr><td>Documentos pendentes</td><td><b>11</b></td></tr></tbody></table></div></div>
 <div id="one" class="grid2" style="display:none"><div class="card"><div class="section-title">Últimos lançamentos</div><table><tbody><tr><td>29/09</td><td>Recebimento Cliente A</td><td class="green">R$ 3.500</td><td><span class="status ok">Recebido</span></td></tr><tr><td>29/09</td><td>Fornecedor X</td><td class="red">R$ 1.200</td><td><span class="status warn">Em aberto</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Ações rápidas</div><p>+ Novo pagamento</p><p>+ Novo recebimento</p><p>Baixar título</p><p>Gerar relatório</p></div></div></section>
 <section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div>
-<div class="toolbar" style="flex-wrap:wrap">
-  <input id="pagarBusca" class="search" placeholder="Pesquisar fornecedor, histórico, conta...">
-  <select id="pagarStatusFiltro" class="search" style="min-width:150px"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select>
-  <select id="pagarMesFiltro" class="search" style="min-width:165px"><option value="Todos">Todos os meses</option></select>
-  <button id="pagarRelatorioBtn" class="btn">Gerar relatório</button>
+<div class="finance-filters">
+  <div class="finance-filter searchwide"><label>Pesquisar</label><input id="pagarBusca" placeholder="Fornecedor, histórico, conta..."></div>
+  <div class="finance-filter"><label>Status</label><select id="pagarStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></div>
+  <div class="finance-filter"><label>Competência</label><select id="pagarMesFiltro"><option value="Todos">Todos os meses</option></select></div>
+  <div class="finance-filter-actions"><button id="pagarLimparBtn" class="btn">Limpar</button><button id="pagarRelatorioBtn" class="btn primary">Gerar relatório</button></div>
 </div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
 <section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div>
-<div class="toolbar" style="flex-wrap:wrap">
-  <input id="receberBusca" class="search" placeholder="Pesquisar cliente, histórico, conta...">
-  <select id="receberStatusFiltro" class="search" style="min-width:150px"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Recebido">Recebido</option></select>
-  <select id="receberMesFiltro" class="search" style="min-width:165px"><option value="Todos">Todos os meses</option></select>
-  <button id="receberRelatorioBtn" class="btn">Gerar relatório</button>
+<div class="finance-filters">
+  <div class="finance-filter searchwide"><label>Pesquisar</label><input id="receberBusca" placeholder="Cliente, histórico, conta..."></div>
+  <div class="finance-filter"><label>Status</label><select id="receberStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Recebido">Recebido</option></select></div>
+  <div class="finance-filter"><label>Competência</label><select id="receberMesFiltro"><option value="Todos">Todos os meses</option></select></div>
+  <div class="finance-filter-actions"><button id="receberLimparBtn" class="btn">Limpar</button><button id="receberRelatorioBtn" class="btn primary">Gerar relatório</button></div>
 </div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div><div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th></tr></thead><tbody id="fluxoBody"></tbody></table></div></section>
@@ -802,6 +812,8 @@ if(window.clientesRelatorioBtn) clientesRelatorioBtn.onclick=gerarRelatorioClien
 });
 if(window.pagarRelatorioBtn)pagarRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('pagar');
 if(window.receberRelatorioBtn)receberRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('receber');
+if(window.pagarLimparBtn)pagarLimparBtn.onclick=()=>{pagarBusca.value='';pagarStatusFiltro.value='Todos';pagarMesFiltro.value='Todos';renderFinanceiros()};
+if(window.receberLimparBtn)receberLimparBtn.onclick=()=>{receberBusca.value='';receberStatusFiltro.value='Todos';receberMesFiltro.value='Todos';renderFinanceiros()};
 
 function clientesFiltradosAtual(){
   const fiuza=isFiuzaSelected();
