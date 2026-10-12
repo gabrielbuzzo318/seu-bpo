@@ -78,7 +78,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .finance-filter-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto}
 .finance-filter-actions .btn{height:42px;white-space:nowrap}
 @media(max-width:900px){.finance-filters{align-items:stretch}.finance-filter,.finance-filter.searchwide{min-width:100%;width:100%}.finance-filter-actions{width:100%;margin-left:0}.finance-filter-actions .btn{flex:1}}
-.finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:20px;font-weight:900;color:#334f55;margin-top:4px}.finance-totalizer .total-sub{font-size:9px;color:var(--muted);margin-top:3px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}}</style>
+.finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:20px;font-weight:900;color:#334f55;margin-top:4px}.finance-totalizer .total-sub{font-size:9px;color:var(--muted);margin-top:3px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}}.company-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}.company-access-option{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:#fffdfa;cursor:pointer}.company-access-option:hover{border-color:#c9ad83;background:#fffaf3}.company-access-option input{width:16px;height:16px;accent-color:#b9965d}.company-access-option span{font-size:12px;font-weight:700;color:#465b5f}@media(max-width:650px){.company-access-grid{grid-template-columns:1fr}}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
@@ -307,6 +307,10 @@ function goScreen(screenId,save=true){
 bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;goScreen(b.dataset.screen,true)});
 const d={dpmz:['DPMZ','R$ 28.600','R$ 17.800','R$ 2.300','R$ 31.450','26'],tugao:['Tugão Imóveis','R$ 24.300','R$ 16.100','R$ 6.100','R$ 18.900','31'],iza:['IZA Comunica','R$ 18.900','R$ 13.500','R$ 3.400','R$ 12.300','18'],aurora:['Clínica Aurora','R$ 20.650','R$ 13.900','R$ 2.400','R$ 22.280','14']};
 document.getElementById('company').onchange=function(){
+  if(currentUser&&currentUser.perfil==='Cliente'&&Array.isArray(currentUser.empresas)){
+    const selectedName=this.options[this.selectedIndex]?.textContent?.trim()||'';
+    if(!currentUser.empresas.some(e=>e.nome===selectedName)){refreshCompanySelect();return}
+  }
   saveUiState({companyValue:this.value,companyName:this.options[this.selectedIndex]?.textContent?.trim()||''});
   let a=this.value==='all';
   document.getElementById('all').style.display=a?'grid':'none';
@@ -690,9 +694,12 @@ function refreshCompanySelect(){
     company.innerHTML='<option value="all">Todas as empresas</option>'+store.empresas.map(x=>'<option value="emp_'+x.id+'">'+esc(x.nome)+'</option>').join('');
     if([...company.options].some(o=>o.value===cur))company.value=cur;
   }else{
-    const emp=findCompanyByName(currentUser.empresa);
-    company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(currentUser.empresa||'Minha empresa')+'</option>';
-    company.disabled=true;
+    const permitidas=Array.isArray(currentUser?.empresas)&&currentUser.empresas.length
+      ? currentUser.empresas
+      : [{id:findCompanyByName(currentUser?.empresa)?.id||'',nome:currentUser?.empresa||'Minha empresa'}];
+    company.innerHTML=permitidas.map(emp=>'<option value="'+(emp.id?'emp_'+emp.id:'client_company')+'">'+esc(emp.nome)+'</option>').join('');
+    if(cur&&[...company.options].some(o=>o.value===cur))company.value=cur;
+    company.disabled=permitidas.length<=1;
   }
 }
 function selectedCompanyName(){
@@ -762,7 +769,7 @@ function openModal(type,id=null){
     '<div class="field"><label>E-mail</label><input type="email" data-field="email"></div>'+
     '<div class="field"><label>Senha</label><input type="password" data-field="senha"></div>'+
     '<div class="field"><label>Perfil</label><select data-field="perfil"><option>Cliente</option><option>Gestor</option><option>Administrador</option></select></div>'+
-    '<div class="field full"><label>Empresa</label><select data-field="empresa_id"><option value="">Selecione a empresa</option>'+cloudCompanies.map(e=>'<option value="'+e.id+'">'+esc(e.nome)+'</option>').join('')+'</select></div>';
+    '<div class="field full"><label>Empresas com acesso</label><div class="sub" style="margin:3px 0 7px">Selecione uma ou mais empresas para este usuário.</div><div class="company-access-grid">'+cloudCompanies.map(e=>'<label class="company-access-option"><input type="checkbox" data-company-id="'+e.id+'"><span>'+esc(e.nome)+'</span></label>').join('')+'</div></div>';
  }else{
    modalForm.innerHTML=schemas[type].map(([key,label,tp,opts])=>{
      let val=item?.[key]??'';
@@ -1107,9 +1114,10 @@ modalSave.onclick=async()=>{
  }
  if(type==='usuarios'&&!id){
    const vals={}; modalForm.querySelectorAll('[data-field]').forEach(el=>vals[el.dataset.field]=el.value.trim());
+   const empresaIds=[...modalForm.querySelectorAll('[data-company-id]:checked')].map(el=>el.dataset.companyId).filter(Boolean);
    if(!vals.nome||!vals.email||!vals.senha){notify('Preencha nome, e-mail e senha.');return}
    if(vals.senha.length<6){notify('A senha precisa ter pelo menos 6 caracteres.');return}
-   if(vals.perfil==='Cliente'&&!vals.empresa_id){notify('Selecione a empresa do cliente.');return}
+   if(vals.perfil==='Cliente'&&empresaIds.length===0){notify('Selecione ao menos uma empresa para o cliente.');return}
    modalSave.disabled=true; modalSave.textContent='Criando...';
    try{
      const {data:{session}}=await sb.auth.getSession();
@@ -1117,12 +1125,12 @@ modalSave.onclick=async()=>{
      const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-create-user',{
        method:'POST',
        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
-       body:JSON.stringify({nome:vals.nome,email:vals.email,password:vals.senha,perfil:vals.perfil,empresa_id:vals.empresa_id||null})
+       body:JSON.stringify({nome:vals.nome,email:vals.email,password:vals.senha,perfil:vals.perfil,empresa_ids:empresaIds})
      });
      const out=await resp.json();
      if(!resp.ok)throw new Error(out.error||'Não foi possível criar o usuário.');
-     const emp=cloudCompanies.find(e=>e.id===vals.empresa_id);
-     store.usuarios.push({id:Date.now(),nome:vals.nome,email:vals.email,senha:'',perfil:vals.perfil,empresa:emp?.nome||'Todas'});
+     const empresasNomes=cloudCompanies.filter(e=>empresaIds.includes(e.id)).map(e=>e.nome);
+     store.usuarios.push({id:Date.now(),nome:vals.nome,email:vals.email,senha:'',perfil:vals.perfil,empresa:empresasNomes.length?empresasNomes.join(', '):'Todas',empresas:empresasNomes});
      persist(); closeModal(); notify('Usuário criado com login real.');
    }catch(e){notify(e.message||'Erro ao criar usuário.')}
    finally{modalSave.disabled=false;modalSave.textContent='Salvar'}
@@ -1571,15 +1579,19 @@ async function loadAccess(authUser){
       profile={user_id:authUser.id,nome:'Ester',perfil:'Administrador',ativo:true};
     }else throw new Error('Seu usuário ainda não possui acesso ao Seu BPO.');
   }
-  let empresa='Todas';
+  let empresa='Todas', empresas=[];
   if(profile.perfil==='Cliente'){
-    const {data:link}=await sb.from('seubpo_usuario_empresas').select('empresa_id').eq('user_id',authUser.id).maybeSingle();
-    if(link?.empresa_id){
-      const {data:emp}=await sb.from('seubpo_empresas').select('nome').eq('id',link.empresa_id).maybeSingle();
-      empresa=emp?.nome||'Minha empresa';
+    const {data:links,error:linksError}=await sb.from('seubpo_usuario_empresas').select('empresa_id').eq('user_id',authUser.id);
+    if(linksError)throw linksError;
+    const ids=(links||[]).map(x=>x.empresa_id).filter(Boolean);
+    if(ids.length){
+      const {data:emps,error:empsError}=await sb.from('seubpo_empresas').select('id,nome').in('id',ids);
+      if(empsError)throw empsError;
+      empresas=(emps||[]).map(e=>({id:e.id,nome:e.nome}));
+      empresa=empresas[0]?.nome||'Minha empresa';
     }
   }
-  return {id:authUser.id,nome:profile.nome,email:authUser.email||'',perfil:profile.perfil,empresa};
+  return {id:authUser.id,nome:profile.nome,email:authUser.email||'',perfil:profile.perfil,empresa,empresas};
 }
 async function applyAccess(user){
   currentUser=user;
@@ -1595,12 +1607,13 @@ async function applyAccess(user){
   if(isAdmin){
     company.disabled=false;
   }else{
-    const emp=findCompanyByName(user.empresa);
-    company.innerHTML='<option value="'+(emp?'emp_'+emp.id:'client_company')+'">'+esc(user.empresa||'Minha empresa')+'</option>';
-    company.disabled=true;
+    const permitidas=Array.isArray(user.empresas)&&user.empresas.length?user.empresas:[{id:findCompanyByName(user.empresa)?.id||'',nome:user.empresa||'Minha empresa'}];
+    const atual=permitidas.find(e=>'emp_'+e.id===company.value)||permitidas[0];
+    if(atual&&company.value!=='emp_'+atual.id)company.value=atual.id?'emp_'+atual.id:'client_company';
+    company.disabled=permitidas.length<=1;
     all.style.display='none'; one.style.display='grid';
-    dashTitle.textContent='Dashboard · '+(user.empresa||'Minha empresa');
-    dashSub.textContent='Visão financeira da sua empresa';
+    dashTitle.textContent='Dashboard · '+(atual?.nome||user.empresa||'Minha empresa');
+    dashSub.textContent='Visão financeira da empresa selecionada';
     l5.textContent='Clientes ativos'; v5.textContent='—';
     renderClientes();
   }
