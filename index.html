@@ -1148,16 +1148,32 @@ function extrairTexto(texto){
   const venc=dataRotulo(texto,['data\\s+(?:de\\s+)?vencimento','vencimento','venc']);
 
   let valor=null;
-  const valorRegex=isBoleto
-    ? [/(?:valor\s+do\s+documento)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,
-       /(?:r\$)\s*([0-9][0-9.,]*)/i]
-    : [/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,
-       /(?:r\$)\s*([0-9][0-9.,]*)/i];
-  for(const rx of valorRegex){const mm=texto.match(rx);valor=numeroValor(mm&&mm[1]);if(valor!=null&&valor>0)break}
+  if(isBoleto){
+    // In boletos, PDF text often separates the "Valor do Documento" label from the amount.
+    // Prefer an amount close to the label; otherwise use the largest explicit R$ amount on the page.
+    const pertoValor=(texto.match(/valor\s+do\s+documento[\s\S]{0,180}?r\s*\$\s*([0-9][0-9.\s]*,[0-9]{2})/i)||[])[1];
+    valor=numeroValor(pertoValor);
+    if(!(valor>0)){
+      const valores=[...texto.matchAll(/r\s*\$\s*([0-9][0-9.\s]*,[0-9]{2})/gi)]
+        .map(m=>numeroValor(m[1]))
+        .filter(v=>Number.isFinite(v)&&v>0);
+      if(valores.length)valor=Math.max(...valores);
+    }
+  }else{
+    const valorRegex=[/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,/(?:r\$)\s*([0-9][0-9.,]*)/i];
+    for(const rx of valorRegex){const mm=texto.match(rx);valor=numeroValor(mm&&mm[1]);if(valor!=null&&valor>0)break}
+  }
 
   let num='';
   if(isBoleto){
     num=(texto.match(/N[°ºo]?\s*Documento\s*[:\-]?\s*([0-9]{1,20})/i)||[])[1]||'';
+    if(!num){
+      // Common boleto layout: labels appear first, then "Data do Documento" and document number values.
+      num=(texto.match(/data\s+do\s+documento[\s\S]{0,260}?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})\s+([0-9]{6,20})\b/i)||[])[2]||'';
+    }
+    if(!num){
+      num=(texto.match(/N[°ºo]?\s*Documento[\s\S]{0,260}?\b([0-9]{6,20})\b(?=\s+(?:DM|NP|RC|DS|N)\b)/i)||[])[1]||'';
+    }
   }
   if(!num){
     num=(texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
