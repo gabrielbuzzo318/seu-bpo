@@ -466,6 +466,9 @@ const seed={
 {id:603,grupo:'Despesa Administrativa',conta:'Material de Escritório',tipo:'Saída'},
 {id:604,grupo:'Despesa Administrativa',conta:'Tarifas Bancárias',tipo:'Saída'},
 {id:605,grupo:'Despesa Administrativa',conta:'Serviços de Terceiros',tipo:'Saída'},
+{id:606,grupo:'Despesa Administrativa',conta:'Seguros',tipo:'Saída'},
+{id:607,grupo:'Despesa Administrativa',conta:'Segurança',tipo:'Saída'},
+{id:608,grupo:'Despesa Administrativa',conta:'Combustível / Pedágios',tipo:'Saída'},
 {id:606,grupo:'Despesa Administrativa',conta:'Materiais de Uso e Consumo',tipo:'Saída'},
 {id:607,grupo:'Despesa Administrativa',conta:'Eventos / Decoração',tipo:'Saída'},
 {id:701,grupo:'Despesa de Limpeza e Manutenção',conta:'Produtos de Limpeza',tipo:'Saída'},
@@ -786,6 +789,97 @@ for(let offset=0;offset<14;offset++){
       status:'Em aberto'
     });
   }
+}
+
+
+const tugaoPagarOutDez2026=[
+  {mes:'2026-10',dia:5,despesa:'Aluguel',fornecedor:'J.M. Crespo Empreendimentos Imobiliários',conta:'Aluguel',valor:'2245,30',nf:'S/NF'},
+  {mes:'2026-11',dia:5,despesa:'Aluguel',fornecedor:'J.M. Crespo Empreendimentos Imobiliários',conta:'Aluguel',valor:'2245,30',nf:'S/NF'},
+  {mes:'2026-12',dia:5,despesa:'Aluguel',fornecedor:'J.M. Crespo Empreendimentos Imobiliários',conta:'Aluguel',valor:'2245,30',nf:''},
+
+  {mes:'2026-10',dia:6,despesa:'Honorários Contábeis',fornecedor:'Logucomarc Contabilidade',conta:'Contabilidade',valor:'1518,00',nf:''},
+  {mes:'2026-11',dia:6,despesa:'Honorários Contábeis',fornecedor:'Logucomarc Contabilidade',conta:'Contabilidade',valor:'1518,00',nf:''},
+  {mes:'2026-12',dia:6,despesa:'Honorários Contábeis',fornecedor:'Logucomarc Contabilidade',conta:'Contabilidade',valor:'1518,00',nf:''},
+
+  {mes:'2026-10',dia:6,despesa:'Pró-labore',fornecedor:'Antonio Marques da Silva Pereira (Tugão)',conta:'Pró-labore',valor:'1442,69',nf:'S/NF'},
+  {mes:'2026-11',dia:6,despesa:'Pró-labore',fornecedor:'Antonio Marques da Silva Pereira (Tugão)',conta:'Pró-labore',valor:'1442,69',nf:'S/NF'},
+  {mes:'2026-12',dia:6,despesa:'Pró-labore',fornecedor:'Antonio Marques da Silva Pereira (Tugão)',conta:'Pró-labore',valor:'1442,69',nf:''},
+
+  {mes:'2026-10',dia:6,despesa:'Salários',fornecedor:'Karen da Silva Carmo',conta:'Salários',valor:'2935,58',nf:'S/NF'},
+  {mes:'2026-10',dia:6,despesa:'Salários',fornecedor:'Marco Aurelio Pires',conta:'Salários',valor:'2801,25',nf:'S/NF'},
+  {mes:'2026-10',dia:6,despesa:'Salários',fornecedor:'Marcos de Souza Guimarães',conta:'Salários',valor:'4498,50',nf:'S/NF'},
+  {mes:'2026-10',dia:6,despesa:'Salários',fornecedor:'Regina Celia de Souza',conta:'Salários',valor:'1264,32',nf:'S/NF'},
+
+  {mes:'2026-10',dia:10,despesa:'Manutenção de Computadores',fornecedor:'Edison Antonio Trevizan Junior',conta:'Manutenção',valor:'520,00',nf:''},
+  {mes:'2026-10',dia:10,despesa:'BPO Financeiro',fornecedor:'Ester Marielli Zacchi e Silva',conta:'Serviços de Terceiros',valor:'4000,00',nf:''},
+  {mes:'2026-11',dia:10,despesa:'BPO Financeiro',fornecedor:'Ester Marielli Zacchi e Silva',conta:'Serviços de Terceiros',valor:'2000,00',nf:''},
+  {mes:'2026-12',dia:10,despesa:'BPO Financeiro',fornecedor:'Ester Marielli Zacchi e Silva',conta:'Serviços de Terceiros',valor:'2000,00',nf:''},
+  {mes:'2026-10',dia:10,despesa:'Sistema Icadi',fornecedor:'Microhouse Informatica Ltda',conta:'Software / Sistemas',valor:'1378,48',nf:''},
+  {mes:'2026-11',dia:10,despesa:'Sistema Icadi',fornecedor:'Microhouse Informatica Ltda',conta:'Software / Sistemas',valor:'1378,48',nf:''},
+  {mes:'2026-12',dia:10,despesa:'Sistema Icadi',fornecedor:'Microhouse Informatica Ltda',conta:'Software / Sistemas',valor:'1378,48',nf:''},
+  {mes:'2026-10',dia:10,despesa:'Hospedagem Sistema',fornecedor:'Man Web Hosting Ltda',conta:'Software / Sistemas',valor:'67,90',nf:''},
+  {mes:'2026-11',dia:10,despesa:'Hospedagem Sistema',fornecedor:'Man Web Hosting Ltda',conta:'Software / Sistemas',valor:'67,90',nf:''},
+  {mes:'2026-12',dia:10,despesa:'Hospedagem Sistema',fornecedor:'Man Web Hosting Ltda',conta:'Software / Sistemas',valor:'67,90',nf:''},
+  {mes:'2026-10',dia:10,despesa:'Vistorias',fornecedor:'Checasa Engenharia Rio Preto',conta:'Serviços de Terceiros',valor:'1212,00',nf:''},
+  {mes:'2026-10',dia:10,despesa:'Consultas',fornecedor:'Serasa',conta:'Serviços de Terceiros',valor:'129,50',nf:''},
+  {mes:'2026-10',dia:10,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',valor:'4254,32',nf:'S/NF'},
+
+  {mes:'2026-10',dia:13,despesa:'Sindicato',fornecedor:'Sindicato',conta:'Encargos',valor:'21,00',nf:'S/NF'},
+  {mes:'2026-11',dia:13,despesa:'Sindicato',fornecedor:'Sindicato',conta:'Encargos',valor:'21,00',nf:''},
+  {mes:'2026-12',dia:13,despesa:'Sindicato',fornecedor:'Sindicato',conta:'Encargos',valor:'21,00',nf:''},
+  {mes:'2026-10',dia:13,despesa:'Seguros de Locatários',fornecedor:'Too Seguros',conta:'Seguros',valor:'8400,44',nf:'S/NF'},
+  {mes:'2026-10',dia:13,despesa:'Plano de saúde',fornecedor:'ACIRP',conta:'Benefícios',valor:'1153,13',nf:''},
+
+  {mes:'2026-10',dia:15,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',valor:'2868,41',nf:'S/NF'},
+  {mes:'2026-10',dia:15,despesa:'Seguros de Locatários',fornecedor:'Tokio Marine Seguradora',conta:'Seguros',valor:'1733,34',nf:'S/NF'},
+  {mes:'2026-10',dia:15,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',valor:'1088,36',nf:'S/NF'},
+  {mes:'2026-10',dia:15,despesa:'Seguros de Locatários',fornecedor:'Pottencial Seguradora',conta:'Seguros',valor:'3005,37',nf:'S/NF'},
+  {mes:'2026-12',dia:15,despesa:'Taxa de Licença e Funcionamento',fornecedor:'Prefeitura de S. J. Rio Preto',conta:'Taxas de Funcionamento',valor:'93,45',nf:'',observacao:'IM 1292720'},
+  {mes:'2026-10',dia:15,despesa:'Taxa Municipais',fornecedor:'IPTU',conta:'IPTU',valor:'251,89',nf:'S/NF',observacao:'402544001'},
+  {mes:'2026-11',dia:15,despesa:'Taxa Municipais',fornecedor:'IPTU',conta:'IPTU',valor:'251,89',nf:'',observacao:'402544001'},
+  {mes:'2026-12',dia:15,despesa:'Taxa Municipais',fornecedor:'IPTU',conta:'IPTU',valor:'251,89',nf:'',observacao:'402544001'},
+
+  {mes:'2026-10',dia:20,despesa:'Impostos - FGTS',fornecedor:'Caixa Economica Federal',conta:'Encargos',valor:'1266,98',nf:'S/NF'},
+
+  {mes:'2026-10',dia:25,despesa:'Segurança',fornecedor:'Orsegups Monitoramento Eletronico',conta:'Segurança',valor:'196,37',nf:'143937'},
+
+  {mes:'2026-10',dia:26,despesa:'Água e Esgoto',fornecedor:'SEMAE',conta:'Água',valor:'223,62',nf:'S/NF',observacao:'115108'},
+  {mes:'2026-10',dia:26,despesa:'Água e Esgoto',fornecedor:'SEMAE',conta:'Água',valor:'87,42',nf:'S/NF',observacao:'20772'}
+];
+
+for(const base of tugaoPagarOutDez2026){
+  const exists=(store.pagar||[]).some(x=>
+    String(x.empresa||'').toUpperCase()==='TUGÃO IMÓVEIS' &&
+    x.recorrencia_origem==='tugao_planilha_out_dez_2026' &&
+    x.competencia===base.mes &&
+    x.fornecedor===base.fornecedor &&
+    x.descricao===base.despesa &&
+    String(x.valor)===String(base.valor)
+  );
+  if(exists)continue;
+  const [ano,mes]=base.mes.split('-').map(Number);
+  const last=new Date(ano,mes,0).getDate();
+  const dia=Math.min(Math.max(Number(base.dia)||1,1),last);
+  const vencimento=base.mes+'-'+String(dia).padStart(2,'0');
+  store.pagar.push({
+    id:970000000+store.pagar.length+1,
+    empresa:'Tugão Imóveis',
+    competencia:base.mes,
+    recorrencia:'mensal',
+    recorrencia_origem:'tugao_planilha_out_dez_2026',
+    data_emissao:base.mes+'-01',
+    vencimento,
+    fornecedor:base.fornecedor,
+    descricao:base.despesa,
+    categoria:base.conta,
+    conta_contabil:base.conta,
+    objeto:base.despesa,
+    numero_documento:base.nf||'',
+    observacoes:base.observacao||'',
+    banco:'Outros',
+    valor:base.valor,
+    status:'Em aberto'
+  });
 }
 
 localStorage.setItem(DBKEY,JSON.stringify(store));
