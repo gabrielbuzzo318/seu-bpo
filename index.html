@@ -419,6 +419,8 @@ document.getElementById('company').onchange=function(){
     dashTitle.textContent='Dashboard · '+selected;dashSub.textContent='Visão financeira da empresa selecionada';
     l5.textContent='Clientes ativos';
   }
+  if(window.navCartoes)navCartoes.style.display=isFiuzaSelected()?'':'none';
+  if(document.getElementById('cartoes')?.classList.contains('active')&&!isFiuzaSelected())goScreen('dashboard',true);
   renderClientes();
   renderAll();
   renderDashboard();
@@ -678,6 +680,23 @@ for(const x of store.fluxo||[]){
   }
 }
 
+
+const fiuzaFornecedoresLegado=new Set([
+  'HELEM M. PUPIN','ANA LUCIA VECHIATO','ALINE LOURENÇO','JOSELAINE REGINA DA SILVA','VALÉRIA DO CARMO',
+  'NILVALDO/FERNANDO','IZA COMUNICA','ÓQUEI','OQUEI BR TELECOM LTDA','ASPEM','ACIRP','PREFEITURA MUNICIPAL',
+  'PREF DE RIO PRETO','BARUCI CONTABILIDADE','BRUNO - ALESSANDRA CAMILLO','RP LIMP','META ADS',
+  'ESTAÇÃO GRILL COMERCIO E DISTRIBUIÇÃO DE ALIMENTOS LTDA','IFOOD','53.368.078 DEBORA APARECIDA BERETA',
+  'AUTENTICAÇÃO MECÂNICA - FICHA DE COMPENSAÇÃO'
+].map(x=>x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()));
+for(const x of store.pagar||[]){
+  if(x.empresa)continue;
+  const forn=String(x.fornecedor||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  if(x.recorrencia_origem==='fiuza_out_2026'||fiuzaFornecedoresLegado.has(forn))x.empresa='FIUZA';
+}
+for(const x of store.receber||[]){
+  if(!x.empresa&&x.tipo_recebimento==='fiuza')x.empresa='FIUZA';
+}
+
 const telInternet=store.plano.find(x=>String(x.conta||'').trim().toUpperCase()==='TELEFONE / INTERNET');
 if(telInternet){telInternet.grupo='Despesa Administrativa';telInternet.tipo='Saída'}
 localStorage.setItem(DBKEY,JSON.stringify(store));
@@ -709,6 +728,7 @@ for(const r of fiuzaReceberSet2026){
   const venc=vencimentoFiuzaPorCompetencia('2026-09',cli.id);
   store.receber.push({
     id:92600000+store.receber.length+1,
+    empresa:'FIUZA',
     data_emissao:'2026-09-01',
     vencimento:venc,
     cliente:r.nome,
@@ -816,18 +836,14 @@ function preencherFiltroMes(el,arr){
 function registrosFinanceirosVisiveis(tipo){
   const empresaAtual=selectedCompanyName();
   let arr=store[tipo]||[];
-  if(empresaAtual!=='Todas as empresas'){
-    if(tipo==='pagar'){
-      arr=arr.filter(x=>!x.empresa||String(x.empresa).toUpperCase()===empresaAtual.toUpperCase());
-    }else{
-      arr=arr.filter(x=>{
-        if(x.empresa)return String(x.empresa).toUpperCase()===empresaAtual.toUpperCase();
-        if(empresaAtual.toUpperCase()==='FIUZA')return x.tipo_recebimento==='fiuza';
-        return x.tipo_recebimento!=='fiuza';
-      });
-    }
-  }
-  return arr;
+  if(empresaAtual==='Todas as empresas')return arr;
+  const emp=empresaAtual.toUpperCase();
+  return arr.filter(x=>{
+    if(x.empresa)return String(x.empresa).toUpperCase()===emp;
+    // legado FIUZA: só aparece na FIUZA; registros sem empresa não vazam para nenhuma empresa específica.
+    if(tipo==='receber'&&x.tipo_recebimento==='fiuza')return emp==='FIUZA';
+    return false;
+  });
 }
 function filtrarFinanceiro(tipo){
   let arr=registrosFinanceirosVisiveis(tipo);
@@ -924,7 +940,7 @@ function renderFluxo(){
   const rows=(store.fluxo||[]).filter(x=>{
     const banco=(x.banco||'Sicoob');
     const bancoOk=banco===fluxoBancoAtual;
-    const empresaOk=empresaAtual==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresaAtual.toUpperCase();
+    const empresaOk=empresaAtual==='Todas as empresas'||String(x.empresa||'').toUpperCase()===empresaAtual.toUpperCase();
     return bancoOk&&empresaOk;
   });
   const entradas=rows.filter(x=>x.tipo==='Entrada').reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
@@ -942,7 +958,7 @@ document.querySelectorAll('[data-fluxo-banco]').forEach(b=>b.onclick=()=>{
 });
 function dreMesesDisponiveis(){
   const empresa=selectedCompanyName();
-  const meses=[...new Set((store.fluxo||[]).filter(x=>empresa==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresa.toUpperCase()).map(x=>String(x.data||'').slice(0,7)).filter(x=>/^\d{4}-\d{2}$/.test(x)))].sort().reverse();
+  const meses=[...new Set((store.fluxo||[]).filter(x=>empresa==='Todas as empresas'||String(x.empresa||'').toUpperCase()===empresa.toUpperCase()).map(x=>String(x.data||'').slice(0,7)).filter(x=>/^\d{4}-\d{2}$/.test(x)))].sort().reverse();
   if(!meses.length)meses.push(new Date().toISOString().slice(0,7));
   return meses;
 }
@@ -988,7 +1004,7 @@ function dreGrupoDaConta(conta,tipo){
 function dreLinhasMes(mes){
   const empresa=selectedCompanyName();
   return (store.fluxo||[]).filter(x=>{
-    const okEmp=empresa==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresa.toUpperCase();
+    const okEmp=empresa==='Todas as empresas'||String(x.empresa||'').toUpperCase()===empresa.toUpperCase();
     return okEmp&&String(x.data||'').slice(0,7)===mes;
   });
 }
@@ -2244,7 +2260,7 @@ launchSave.onclick=async()=>{
   }
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
-  Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:isFiuzaSelected()?'Sicoob':lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
+  Object.assign(obj,{empresa:(tipo==='receber'&&receberTipo==='fiuza')?'FIUZA':selectedCompanyName(),data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:isFiuzaSelected()?'Sicoob':lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
   if(tipo==='pagar'){
     obj.fornecedor=parte;delete obj.cliente;
     if(launchState.arquivo){
