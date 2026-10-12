@@ -1157,22 +1157,27 @@ function gerarRelatorioFinanceiro(tipo){
   doc.save((tipo==='pagar'?'contas-a-pagar-':'contas-a-receber-')+slug+'.pdf');
 }
 let fluxoBancoAtual='Sicoob';
-function abrirFluxoManual(){
+function abrirFluxoManual(id=null){
   const empresa=selectedCompanyName();
-  if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa antes de criar um lançamento manual.');return}
-  modalState={type:'fluxoManual'};
-  modalTitle.textContent='Novo lançamento no fluxo';
+  if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa antes de criar ou editar um lançamento.');return}
+  const mov=id?(store.fluxo||[]).find(x=>Number(x.id)===Number(id)):null;
+  modalState={type:'fluxoManual',id:id||null};
+  modalTitle.textContent=mov?'Editar lançamento do fluxo':'Novo lançamento no fluxo';
   const hoje=new Date().toISOString().slice(0,10);
   const contas=(store.plano||[]).map(x=>x.conta).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
   modalForm.innerHTML=
-    '<div class="field"><label>Data</label><input type="date" data-field="data" value="'+hoje+'"></div>'+
+    '<div class="field"><label>Data</label><input type="date" data-field="data" value="'+esc(mov?.data||hoje)+'"></div>'+
     '<div class="field"><label>Tipo</label><select data-field="tipo"><option value="Entrada">Entrada</option><option value="Saída">Saída</option></select></div>'+
     '<div class="field"><label>Banco</label><select data-field="banco"><option value="Sicoob">Sicoob</option><option value="Caixa">Caixa</option></select></div>'+
-    '<div class="field"><label>Valor</label><input type="text" data-field="valor" inputmode="decimal" placeholder="0,00"></div>'+
-    '<div class="field full"><label>Histórico</label><input type="text" data-field="historico" placeholder="Descrição do lançamento"></div>'+
+    '<div class="field"><label>Valor</label><input type="text" data-field="valor" inputmode="decimal" placeholder="0,00" value="'+esc(mov?.valor||'')+'"></div>'+
+    '<div class="field full"><label>Histórico</label><input type="text" data-field="historico" placeholder="Descrição do lançamento" value="'+esc(mov?.historico||'')+'"></div>'+
     '<div class="field full"><label>Plano de contas</label><select data-field="plano_contas"><option value="">Selecione</option>'+contas.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+  const tipoEl=modalForm.querySelector('[data-field="tipo"]');
   const bancoEl=modalForm.querySelector('[data-field="banco"]');
-  if(bancoEl)bancoEl.value=fluxoBancoAtual||'Sicoob';
+  const planoEl=modalForm.querySelector('[data-field="plano_contas"]');
+  if(tipoEl)tipoEl.value=mov?.tipo||'Entrada';
+  if(bancoEl)bancoEl.value=mov?.banco||fluxoBancoAtual||'Sicoob';
+  if(planoEl)planoEl.value=mov?.plano_contas||'';
   modalBg.classList.add('show');
 }
 function excluirFluxoManual(id){
@@ -1216,7 +1221,7 @@ function renderFluxo(){
       return Number(b.id||0)-Number(a.id||0);
     }).map(x=>{
       const saldo=saldoMap.get(String(x.id))||0;
-      return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td><td><b>'+money(String(saldo).replace('.',','))+'</b></td><td>'+(x.origem?'—':'<button class="iconbtn danger" onclick="excluirFluxoManual('+x.id+')">Excluir</button>')+'</td></tr>';
+      return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td><td><b>'+money(String(saldo).replace('.',','))+'</b></td><td><div class="actions"><button class="iconbtn" onclick="abrirFluxoManual('+x.id+')">Editar</button>'+(x.origem?'':'<button class="iconbtn danger" onclick="excluirFluxoManual('+x.id+')">Excluir</button>')+'</div></td></tr>';
     }).join('');
   }
 }
@@ -2151,20 +2156,26 @@ modalSave.onclick=async()=>{
    if(!data||!tipo||!banco||!historico||!plano||!(numeroValor(valor)>0)){notify('Preencha data, tipo, banco, histórico, plano de contas e um valor maior que zero.');return}
    const empresa=selectedCompanyName();
    if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa específica.');return}
-   store.fluxo.push({
-     id:Date.now(),
-     data,
-     tipo,
-     banco,
-     historico,
-     plano_contas:plano,
-     valor,
-     empresa,
-     origem:'',
-     manual:true
-   });
+   if(id){
+     const mov=(store.fluxo||[]).find(x=>Number(x.id)===Number(id));
+     if(!mov){notify('Lançamento não encontrado.');return}
+     Object.assign(mov,{data,tipo,banco,historico,plano_contas:plano,valor,empresa});
+   }else{
+     store.fluxo.push({
+       id:Date.now(),
+       data,
+       tipo,
+       banco,
+       historico,
+       plano_contas:plano,
+       valor,
+       empresa,
+       origem:'',
+       manual:true
+     });
+   }
    fluxoBancoAtual=banco;
-   persist();closeModal();notify('Lançamento manual adicionado ao fluxo.');
+   persist();closeModal();notify(id?'Lançamento atualizado.':'Lançamento manual adicionado ao fluxo.');
    return;
  }
  if(type==='pagarBaixa'&&id){
