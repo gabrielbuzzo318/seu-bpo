@@ -131,7 +131,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   <div class="finance-filter"><label>Status</label><select id="pagarStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></div>
   <div class="finance-filter"><label>Competência</label><select id="pagarMesFiltro"><option value="Todos">Todos os meses</option></select></div>
   <div class="finance-filter-actions"><button id="pagarLimparBtn" class="btn">Limpar</button><button id="pagarRelatorioBtn" class="btn primary">Gerar relatório</button></div>
-</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
+</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Anexo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
 <section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div>
 <div class="finance-filters">
   <div class="finance-filter searchwide"><label>Pesquisar</label><input id="receberBusca" placeholder="Cliente, histórico, conta..."></div>
@@ -587,7 +587,7 @@ function renderFinanceiros(){
   preencherFiltroMes(window.receberMesFiltro,baseReceber);
   const pagarVisiveis=filtrarFinanceiro('pagar');
   const receberVisiveis=filtrarFinanceiro('receber');
-  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
+  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td>'+pagarAnexoHtml(x)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
   if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
 }
 function gerarRelatorioFinanceiro(tipo){
@@ -609,8 +609,8 @@ function gerarRelatorioFinanceiro(tipo){
   if(tipo==='pagar'){
     doc.autoTable({
       startY:36,
-      head:[['Vencimento','Fornecedor','Histórico','Conta','Valor','Status']],
-      body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.status||'']),
+      head:[['Vencimento','Fornecedor','Histórico','Conta','Valor','Anexo','Status']],
+      body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.documento_nome||'',x.status||'']),
       styles:{fontSize:8,cellPadding:1.6}
     });
   }else{
@@ -761,6 +761,42 @@ async function openContratoCliente(type,id){
   const {data,error}=await sb.storage.from('seubpo-contratos').createSignedUrl(item.contrato_path,300);
   if(error){notify(error.message||'Não foi possível abrir o contrato.');return}
   window.open(data.signedUrl,'_blank','noopener');
+}
+function currentCloudCompanyId(){
+  const nome=selectedCompanyName();
+  const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()===String(nome||'').trim().toUpperCase());
+  return emp?.id||null;
+}
+async function uploadDocumentoPagar(item,file){
+  if(!file)return;
+  if(file.size>20*1024*1024)throw new Error('O anexo deve ter no máximo 20 MB.');
+  const empresaId=currentCloudCompanyId();
+  if(!empresaId)throw new Error('Não foi possível identificar a empresa para salvar o anexo.');
+  const safe=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_');
+  const path=empresaId+'/pagar/'+item.id+'/'+Date.now()+'_'+safe;
+  const {error}=await sb.storage.from('seubpo-documentos').upload(path,file,{upsert:false,contentType:file.type||undefined});
+  if(error)throw error;
+  if(item.documento_path&&item.documento_path!==path){
+    await sb.storage.from('seubpo-documentos').remove([item.documento_path]);
+  }
+  item.documento_path=path;
+  item.documento_nome=file.name;
+}
+async function openDocumentoPagar(id){
+  const item=store.pagar.find(x=>x.id===id);
+  if(!item?.documento_nome){notify('Este lançamento não possui anexo.');return}
+  if(!item.documento_path){
+    notify('O anexo antigo aparece no cadastro, mas precisa ser reenviado uma vez para poder abrir.');
+    return;
+  }
+  const {data,error}=await sb.storage.from('seubpo-documentos').createSignedUrl(item.documento_path,300);
+  if(error){notify(error.message||'Não foi possível abrir o anexo.');return}
+  window.open(data.signedUrl,'_blank','noopener');
+}
+function pagarAnexoHtml(x){
+  if(x.documento_path)return '<button class="iconbtn" title="'+esc(x.documento_nome||'Anexo')+'" onclick="openDocumentoPagar('+x.id+')">📎 Abrir</button>';
+  if(x.documento_nome)return '<span title="'+esc(x.documento_nome)+'" style="display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b6b4c">📎 '+esc(x.documento_nome)+'</span>';
+  return '—';
 }
 function openPagarBaixa(id){
   const item=store.pagar.find(x=>x.id===id);
@@ -1278,7 +1314,7 @@ if(window.lfFiuzaValorDiaria)lfFiuzaValorDiaria.oninput=atualizaFiuzaReceberCalc
 if(window.lfFiuzaDiariasProjetadas)lfFiuzaDiariasProjetadas.oninput=atualizaFiuzaReceberCalculo;
 if(window.lfFiuzaDiariasRealizadas)lfFiuzaDiariasRealizadas.oninput=atualizaFiuzaReceberCalculo;
 
-launchSave.onclick=()=>{
+launchSave.onclick=async()=>{
   const tipo=launchState.tipo, receberTipo=document.querySelector('input[name="lfReceberTipo"]:checked')?.value||'comum';
   if(tipo==='receber'&&receberTipo==='comum'){
     lfParte.value=lfReceberCliente.value.trim();
@@ -1295,7 +1331,13 @@ launchSave.onclick=()=>{
   if(!parte||!venc||!valor){notify('Preencha nome, vencimento e valor.');return}
   let obj=launchState.id?store[tipo].find(x=>x.id===launchState.id):{id:Date.now()};
   Object.assign(obj,{data_emissao:emissao,vencimento:venc,descricao:lfHistorico.value.trim(),categoria:lfConta.value||'Não classificado',banco:lfBanco.value,valor,status:'Em aberto',numero_documento:lfNumero.value.trim(),chave_acesso:lfChave.value.trim(),linha_digitavel:lfLinha.value.trim(),documento_nome:launchState.arquivo?.name||obj.documento_nome||'',competencia_tipo:tipo==='pagar'?(document.querySelector('input[name="lfCompetencia"]:checked')?.value||'emissao'):'vencimento',tipo_pagamento:tipo==='pagar'?(launchState.parcelado?'parcelado':'unico'):'recorrente',parcelas:tipo==='pagar'&&launchState.parcelado?structuredClone(launchState.parcelas):[]});
-  if(tipo==='pagar'){obj.fornecedor=parte;delete obj.cliente}else{
+  if(tipo==='pagar'){
+    obj.fornecedor=parte;delete obj.cliente;
+    if(launchState.arquivo){
+      try{await uploadDocumentoPagar(obj,launchState.arquivo)}
+      catch(e){notify(e.message||'Erro ao salvar anexo.');return}
+    }
+  }else{
     obj.cliente=parte;delete obj.fornecedor;
     obj.tipo_recebimento=receberTipo;
     obj.recorrencia=window.lfRecorrencia?.value||'mensal';
