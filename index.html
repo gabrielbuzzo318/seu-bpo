@@ -174,7 +174,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <button type="button" class="launch-tab" data-fluxo-banco="Caixa">Caixa</button>
   </div>
   <div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div>
-  <div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th><th>Ações</th></tr></thead><tbody id="fluxoBody"></tbody></table></div>
+  <div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th><th>Saldo acumulado</th><th>Ações</th></tr></thead><tbody id="fluxoBody"></tbody></table></div>
 </section>
 <section id="dre" class="screen">
   <div class="page-title">
@@ -1197,7 +1197,28 @@ function renderFluxo(){
   if(window.fluxoSaidas)fluxoSaidas.textContent=money(String(saidas).replace('.',','));
   if(window.fluxoResultado)fluxoResultado.textContent=money(String(entradas-saidas).replace('.',','));
   if(window.fluxoSaldo)fluxoSaldo.textContent=money(String(entradas-saidas).replace('.',','));
-  if(window.fluxoBody)fluxoBody.innerHTML=rows.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td><td>'+(x.origem?'—':'<button class="iconbtn danger" onclick="excluirFluxoManual('+x.id+')">Excluir</button>')+'</td></tr>').join('');
+  if(window.fluxoBody){
+    const asc=rows.slice().sort((a,b)=>{
+      const d=String(a.data||'').localeCompare(String(b.data||''));
+      if(d!==0)return d;
+      return Number(a.id||0)-Number(b.id||0);
+    });
+    let saldoAcum=0;
+    const saldoMap=new Map();
+    for(const x of asc){
+      const v=numeroValor(x.valor)||0;
+      saldoAcum+=x.tipo==='Entrada'?v:-v;
+      saldoMap.set(String(x.id),saldoAcum);
+    }
+    fluxoBody.innerHTML=rows.slice().sort((a,b)=>{
+      const d=String(b.data||'').localeCompare(String(a.data||''));
+      if(d!==0)return d;
+      return Number(b.id||0)-Number(a.id||0);
+    }).map(x=>{
+      const saldo=saldoMap.get(String(x.id))||0;
+      return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.historico)+'</td><td>'+esc(x.plano_contas)+'</td><td>'+(x.tipo==='Entrada'?money(x.valor):'—')+'</td><td>'+(x.tipo==='Saída'?money(x.valor):'—')+'</td><td><b>'+money(String(saldo).replace('.',','))+'</b></td><td>'+(x.origem?'—':'<button class="iconbtn danger" onclick="excluirFluxoManual('+x.id+')">Excluir</button>')+'</td></tr>';
+    }).join('');
+  }
 }
 document.querySelectorAll('[data-fluxo-banco]').forEach(b=>b.onclick=()=>{
   fluxoBancoAtual=b.dataset.fluxoBanco;
