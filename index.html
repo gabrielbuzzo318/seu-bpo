@@ -359,7 +359,46 @@ const seed={
  clientes:[{id:1,nome:'Cliente A',documento:'00.000.000/0001-00',contato:'financeiro@cliente.com'}],
  fiuzaClientes:[],
  fornecedores:[{id:1,nome:'Fornecedor X',documento:'11.111.111/0001-11',categoria:'Serviços'}],
- plano:[{id:1,grupo:'Receitas',conta:'Receita de Serviços',tipo:'Entrada'},{id:2,grupo:'Despesas',conta:'Software',tipo:'Saída'}],
+ plano:[
+{id:101,grupo:'Receitas',conta:'Receita de Serviços',tipo:'Entrada'},
+{id:102,grupo:'Receitas',conta:'Outras Receitas',tipo:'Entrada'},
+{id:201,grupo:'Despesa com Pessoal',conta:'Salários',tipo:'Saída'},
+{id:202,grupo:'Despesa com Pessoal',conta:'Pró-labore',tipo:'Saída'},
+{id:203,grupo:'Despesa com Pessoal',conta:'Encargos',tipo:'Saída'},
+{id:204,grupo:'Despesa com Pessoal',conta:'Medicina do Trabalho',tipo:'Saída'},
+{id:205,grupo:'Despesa com Pessoal',conta:'Benefícios',tipo:'Saída'},
+{id:206,grupo:'Despesa com Pessoal',conta:'Treinamentos',tipo:'Saída'},
+{id:301,grupo:'Despesa com Alimentação',conta:'Alimentação',tipo:'Saída'},
+{id:302,grupo:'Despesa com Alimentação',conta:'Refeições',tipo:'Saída'},
+{id:303,grupo:'Despesa com Alimentação',conta:'Lanches / Eventos internos',tipo:'Saída'},
+{id:401,grupo:'Despesa Comercial',conta:'Marketing',tipo:'Saída'},
+{id:402,grupo:'Despesa Comercial',conta:'Agência / Tráfego Pago',tipo:'Saída'},
+{id:403,grupo:'Despesa Comercial',conta:'Publicidade',tipo:'Saída'},
+{id:404,grupo:'Despesa Comercial',conta:'Networking',tipo:'Saída'},
+{id:405,grupo:'Despesa Comercial',conta:'Comissões',tipo:'Saída'},
+{id:501,grupo:'Despesa de Ocupação',conta:'Aluguel',tipo:'Saída'},
+{id:502,grupo:'Despesa de Ocupação',conta:'IPTU',tipo:'Saída'},
+{id:503,grupo:'Despesa de Ocupação',conta:'Energia',tipo:'Saída'},
+{id:504,grupo:'Despesa de Ocupação',conta:'Água',tipo:'Saída'},
+{id:505,grupo:'Despesa de Ocupação',conta:'Telefone / Internet',tipo:'Saída'},
+{id:506,grupo:'Despesa de Ocupação',conta:'Taxas de Funcionamento',tipo:'Saída'},
+{id:601,grupo:'Despesa Administrativa',conta:'Contabilidade',tipo:'Saída'},
+{id:602,grupo:'Despesa Administrativa',conta:'Software / Sistemas',tipo:'Saída'},
+{id:603,grupo:'Despesa Administrativa',conta:'Material de Escritório',tipo:'Saída'},
+{id:604,grupo:'Despesa Administrativa',conta:'Tarifas Bancárias',tipo:'Saída'},
+{id:605,grupo:'Despesa Administrativa',conta:'Serviços de Terceiros',tipo:'Saída'},
+{id:701,grupo:'Despesa de Limpeza e Manutenção',conta:'Produtos de Limpeza',tipo:'Saída'},
+{id:702,grupo:'Despesa de Limpeza e Manutenção',conta:'Limpeza',tipo:'Saída'},
+{id:703,grupo:'Despesa de Limpeza e Manutenção',conta:'Jardim / Piscina',tipo:'Saída'},
+{id:704,grupo:'Despesa de Limpeza e Manutenção',conta:'Manutenção',tipo:'Saída'},
+{id:801,grupo:'Impostos e Taxas',conta:'Tributos',tipo:'Saída'},
+{id:802,grupo:'Impostos e Taxas',conta:'Taxas Municipais',tipo:'Saída'},
+{id:803,grupo:'Impostos e Taxas',conta:'Licenças',tipo:'Saída'},
+{id:901,grupo:'Investimentos',conta:'Equipamentos',tipo:'Saída'},
+{id:902,grupo:'Investimentos',conta:'Móveis',tipo:'Saída'},
+{id:903,grupo:'Investimentos',conta:'Reformas',tipo:'Saída'},
+{id:904,grupo:'Investimentos',conta:'Imobilizado',tipo:'Saída'}
+],
  pagar:[{id:1,vencimento:'2026-09-29',data_emissao:'2026-09-20',fornecedor:'Fornecedor X',descricao:'Prestação de serviços',categoria:'Serviços',valor:'1200,00',status:'Em aberto'}],
  receber:[{id:1,vencimento:'2026-09-30',data_emissao:'2026-09-20',cliente:'Cliente A',descricao:'Honorários mensais',categoria:'Receita de Serviços',valor:'3500,00',status:'Em aberto'}],
  reembolsos:[{id:1,data:'2026-09-27',solicitante:'Colaborador A',descricao:'Despesa operacional',valor:'184,90',status:'Pendente'}],
@@ -371,21 +410,21 @@ const seed={
 
 
 const fiuzaPagarRecorrentesOut2026=[
-  {venc:5,fornecedor:'Helem M. Pupin',conta:'Pessoal',categoria:'Pessoal - Salários',objeto:'Prolabore',via:'Pix',valor:'1,00'},
-  {venc:5,fornecedor:'Ana Lucia Vechiato',conta:'Pessoal',categoria:'Pessoal - Salários',objeto:'Operações',via:'Pix',valor:'1,00'},
-  {venc:5,fornecedor:'Aline Lourenço',conta:'Pessoal',categoria:'Pessoal - Salários',objeto:'Cuidadora',via:'Pix',valor:'1,00'},
-  {venc:5,fornecedor:'Joselaine Regina da Silva',conta:'Pessoal',categoria:'Pessoal - Salários',objeto:'Cuidadora',via:'Pix',valor:'1,00'},
-  {venc:5,fornecedor:'Valéria do Carmo',conta:'Pessoal',categoria:'Pessoal - Salários',objeto:'Aux de limpeza',via:'Pix',valor:'1,00'},
-  {venc:10,fornecedor:'Nilvaldo/Fernando',conta:'Ocupação',categoria:'Ocupação - Aluguel, IPTU, Tax Funcionamento',objeto:'Aluguel',via:'Pix',valor:'9025,00'},
-  {venc:10,fornecedor:'Iza Comunica',conta:'Marketing',categoria:'Marketing local - Agencia',objeto:'Gestão MKT e Trafego Pago',via:'Pix',valor:'2600,00'},
-  {venc:10,fornecedor:'Óquei',conta:'Ocupação',categoria:'Ocupação - Telefone e internet',objeto:'Internet/Telefone fixo',via:'Boleto',valor:'164,80'},
-  {venc:10,fornecedor:'Aspem',conta:'Pessoal',categoria:'Pessoal - Medicina Trabalho',objeto:'Clínica Ocupacional',via:'Boleto',valor:'70,00'},
-  {venc:12,fornecedor:'ACIRP',conta:'Marketing',categoria:'Marketing local - Ações',objeto:'MKT e neetwork',via:'',valor:'35,00'},
-  {venc:15,fornecedor:'Prefeitura Municipal',conta:'Ocupação',categoria:'Ocupação - Aluguel, IPTU, Tax Funcionamento',objeto:'IPTU',via:'Boleto',valor:'682,14'},
-  {venc:15,fornecedor:'Baruci Contabilidade',conta:'Serviços de terceiros',categoria:'Serviços de terceiros - Contador',objeto:'Contabilidade',via:'Boleto',valor:'540,33'},
-  {venc:20,fornecedor:'Bruno - Alessandra Camillo',conta:'Serviços de terceiros',categoria:'Serviços de terceiros - Jardim e piscina',objeto:'Limpeza piscina',via:'Pix',valor:'250,00'},
-  {venc:1,fornecedor:'Pref de Rio Preto',conta:'Ocupação',categoria:'Ocupação - Aluguel, IPTU, Tax Funcionamento',objeto:'Taxa de funcionamento',via:'Boleto',valor:'0,00'},
-  {venc:1,fornecedor:'RP Limp',conta:'Consumo',categoria:'Consumo - Produtos de limpeza, piscina e jardim',objeto:'Material limpeza',via:'Boleto',valor:'436,05'}
+  {venc:5,fornecedor:'Helem M. Pupin',conta:'Pró-labore',categoria:'Despesa com Pessoal',objeto:'Prolabore',via:'Pix',valor:'1,00'},
+  {venc:5,fornecedor:'Ana Lucia Vechiato',conta:'Salários',categoria:'Despesa com Pessoal',objeto:'Operações',via:'Pix',valor:'1,00'},
+  {venc:5,fornecedor:'Aline Lourenço',conta:'Salários',categoria:'Despesa com Pessoal',objeto:'Cuidadora',via:'Pix',valor:'1,00'},
+  {venc:5,fornecedor:'Joselaine Regina da Silva',conta:'Salários',categoria:'Despesa com Pessoal',objeto:'Cuidadora',via:'Pix',valor:'1,00'},
+  {venc:5,fornecedor:'Valéria do Carmo',conta:'Salários',categoria:'Despesa com Pessoal',objeto:'Aux de limpeza',via:'Pix',valor:'1,00'},
+  {venc:10,fornecedor:'Nilvaldo/Fernando',conta:'Aluguel',categoria:'Despesa de Ocupação',objeto:'Aluguel',via:'Pix',valor:'9025,00'},
+  {venc:10,fornecedor:'Iza Comunica',conta:'Agência / Tráfego Pago',categoria:'Despesa Comercial',objeto:'Gestão MKT e Trafego Pago',via:'Pix',valor:'2600,00'},
+  {venc:10,fornecedor:'Óquei',conta:'Telefone / Internet',categoria:'Despesa de Ocupação',objeto:'Internet/Telefone fixo',via:'Boleto',valor:'164,80'},
+  {venc:10,fornecedor:'Aspem',conta:'Medicina do Trabalho',categoria:'Despesa com Pessoal',objeto:'Clínica Ocupacional',via:'Boleto',valor:'70,00'},
+  {venc:12,fornecedor:'ACIRP',conta:'Networking',categoria:'Despesa Comercial',objeto:'MKT e neetwork',via:'',valor:'35,00'},
+  {venc:15,fornecedor:'Prefeitura Municipal',conta:'IPTU',categoria:'Despesa de Ocupação',objeto:'IPTU',via:'Boleto',valor:'682,14'},
+  {venc:15,fornecedor:'Baruci Contabilidade',conta:'Contabilidade',categoria:'Despesa Administrativa',objeto:'Contabilidade',via:'Boleto',valor:'540,33'},
+  {venc:20,fornecedor:'Bruno - Alessandra Camillo',conta:'Jardim / Piscina',categoria:'Despesa de Limpeza e Manutenção',objeto:'Limpeza piscina',via:'Pix',valor:'250,00'},
+  {venc:1,fornecedor:'Pref de Rio Preto',conta:'Taxas de Funcionamento',categoria:'Despesa de Ocupação',objeto:'Taxa de funcionamento',via:'Boleto',valor:'0,00'},
+  {venc:1,fornecedor:'RP Limp',conta:'Produtos de Limpeza',categoria:'Despesa de Limpeza e Manutenção',objeto:'Material limpeza',via:'Boleto',valor:'436,05'}
 ];
 
 const fiuzaReceberSet2026=[
@@ -451,6 +490,95 @@ let store=JSON.parse(localStorage.getItem(DBKEY)||'null')||seed;
 if(!Array.isArray(store.receber)) store.receber=structuredClone(seed.receber);
 if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
 if(!Array.isArray(store.fluxo)) store.fluxo=[];
+if(!Array.isArray(store.plano))store.plano=[];
+const planoGerencialPadrao=[
+{id:101,grupo:'Receitas',conta:'Receita de Serviços',tipo:'Entrada'},
+{id:102,grupo:'Receitas',conta:'Outras Receitas',tipo:'Entrada'},
+{id:201,grupo:'Despesa com Pessoal',conta:'Salários',tipo:'Saída'},
+{id:202,grupo:'Despesa com Pessoal',conta:'Pró-labore',tipo:'Saída'},
+{id:203,grupo:'Despesa com Pessoal',conta:'Encargos',tipo:'Saída'},
+{id:204,grupo:'Despesa com Pessoal',conta:'Medicina do Trabalho',tipo:'Saída'},
+{id:205,grupo:'Despesa com Pessoal',conta:'Benefícios',tipo:'Saída'},
+{id:206,grupo:'Despesa com Pessoal',conta:'Treinamentos',tipo:'Saída'},
+{id:301,grupo:'Despesa com Alimentação',conta:'Alimentação',tipo:'Saída'},
+{id:302,grupo:'Despesa com Alimentação',conta:'Refeições',tipo:'Saída'},
+{id:303,grupo:'Despesa com Alimentação',conta:'Lanches / Eventos internos',tipo:'Saída'},
+{id:401,grupo:'Despesa Comercial',conta:'Marketing',tipo:'Saída'},
+{id:402,grupo:'Despesa Comercial',conta:'Agência / Tráfego Pago',tipo:'Saída'},
+{id:403,grupo:'Despesa Comercial',conta:'Publicidade',tipo:'Saída'},
+{id:404,grupo:'Despesa Comercial',conta:'Networking',tipo:'Saída'},
+{id:405,grupo:'Despesa Comercial',conta:'Comissões',tipo:'Saída'},
+{id:501,grupo:'Despesa de Ocupação',conta:'Aluguel',tipo:'Saída'},
+{id:502,grupo:'Despesa de Ocupação',conta:'IPTU',tipo:'Saída'},
+{id:503,grupo:'Despesa de Ocupação',conta:'Energia',tipo:'Saída'},
+{id:504,grupo:'Despesa de Ocupação',conta:'Água',tipo:'Saída'},
+{id:505,grupo:'Despesa de Ocupação',conta:'Telefone / Internet',tipo:'Saída'},
+{id:506,grupo:'Despesa de Ocupação',conta:'Taxas de Funcionamento',tipo:'Saída'},
+{id:601,grupo:'Despesa Administrativa',conta:'Contabilidade',tipo:'Saída'},
+{id:602,grupo:'Despesa Administrativa',conta:'Software / Sistemas',tipo:'Saída'},
+{id:603,grupo:'Despesa Administrativa',conta:'Material de Escritório',tipo:'Saída'},
+{id:604,grupo:'Despesa Administrativa',conta:'Tarifas Bancárias',tipo:'Saída'},
+{id:605,grupo:'Despesa Administrativa',conta:'Serviços de Terceiros',tipo:'Saída'},
+{id:701,grupo:'Despesa de Limpeza e Manutenção',conta:'Produtos de Limpeza',tipo:'Saída'},
+{id:702,grupo:'Despesa de Limpeza e Manutenção',conta:'Limpeza',tipo:'Saída'},
+{id:703,grupo:'Despesa de Limpeza e Manutenção',conta:'Jardim / Piscina',tipo:'Saída'},
+{id:704,grupo:'Despesa de Limpeza e Manutenção',conta:'Manutenção',tipo:'Saída'},
+{id:801,grupo:'Impostos e Taxas',conta:'Tributos',tipo:'Saída'},
+{id:802,grupo:'Impostos e Taxas',conta:'Taxas Municipais',tipo:'Saída'},
+{id:803,grupo:'Impostos e Taxas',conta:'Licenças',tipo:'Saída'},
+{id:901,grupo:'Investimentos',conta:'Equipamentos',tipo:'Saída'},
+{id:902,grupo:'Investimentos',conta:'Móveis',tipo:'Saída'},
+{id:903,grupo:'Investimentos',conta:'Reformas',tipo:'Saída'},
+{id:904,grupo:'Investimentos',conta:'Imobilizado',tipo:'Saída'}
+];
+for(const pc of planoGerencialPadrao){
+  const existe=store.plano.some(x=>String(x.conta||'').trim().toUpperCase()===pc.conta.toUpperCase());
+  if(!existe)store.plano.push(structuredClone(pc));
+}
+function classificarPlanoGerencial(nome,historico=''){
+  const s=(String(nome||'')+' '+String(historico||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  if(/RECEITA DE SERVICOS|HONORARIO|DIARIAS FIUZA/.test(s))return 'Receita de Serviços';
+  if(/OUTRAS RECEITAS|JUROS RECEBIDOS|RENDIMENTO/.test(s))return 'Outras Receitas';
+  if(/PROLABORE|PRO-LABORE/.test(s))return 'Pró-labore';
+  if(/SALARIO|CUIDADORA|OPERACOES|AUX DE LIMPEZA/.test(s))return 'Salários';
+  if(/MEDICINA DO TRABALHO|CLINICA OCUPACIONAL|ASPEM/.test(s))return 'Medicina do Trabalho';
+  if(/ALIMENTACAO|ESTACAO GRILL|IFOOD/.test(s))return 'Alimentação';
+  if(/CUPCAKE|ANIVERSARIO ALUNO|DIA DAS CRIANCAS|LANCHE/.test(s))return 'Lanches / Eventos internos';
+  if(/TRAFEGO|FACEBOOK|META ADS|IZA COMUNICA|AGENCIA/.test(s))return 'Agência / Tráfego Pago';
+  if(/ACIRP|NETWORK|NEETWORK/.test(s))return 'Networking';
+  if(/ALUGUEL|NILVALDO|FERNANDO/.test(s))return 'Aluguel';
+  if(/IPTU/.test(s))return 'IPTU';
+  if(/TELEFONE|INTERNET|OQUEI|BR TELECOM/.test(s))return 'Telefone / Internet';
+  if(/TAXA DE FUNCIONAMENTO/.test(s))return 'Taxas de Funcionamento';
+  if(/CONTABILIDADE|BARUCI/.test(s))return 'Contabilidade';
+  if(/SOFTWARE|ASSINATURA ELETRONICA|AUTENTICACAO MECANICA/.test(s))return 'Software / Sistemas';
+  if(/RP LIMP|PRODUTO.*LIMPEZA|MATERIAL LIMPEZA/.test(s))return 'Produtos de Limpeza';
+  if(/PISCINA|JARDIM|BRUNO - ALESSANDRA/.test(s))return 'Jardim / Piscina';
+  if(/TARIFA BANCARIA/.test(s))return 'Tarifas Bancárias';
+  if(/IMPOSTO|DAS|TRIBUTO/.test(s))return 'Tributos';
+  if(/TAXA MUNICIPAL/.test(s))return 'Taxas Municipais';
+  if(/LICENCA/.test(s))return 'Licenças';
+  if(/EQUIPAMENTO/.test(s))return 'Equipamentos';
+  if(/MOVEIS|MOBILIARIO/.test(s))return 'Móveis';
+  if(/REFORMA/.test(s))return 'Reformas';
+  return '';
+}
+for(const p of store.pagar||[]){
+  if(String(p.empresa||'').toUpperCase()!=='FIUZA' && selectedCompanyName?.()!=='FIUZA')continue;
+  const nova=classificarPlanoGerencial(p.categoria||p.conta_contabil,p.descricao||p.objeto||'');
+  if(nova){p.categoria=nova;p.conta_contabil=nova}
+}
+for(const x of store.fluxo||[]){
+  if(String(x.empresa||'').toUpperCase()!=='FIUZA')continue;
+  if(x.tipo==='Saída'){
+    const nova=classificarPlanoGerencial(x.plano_contas,x.historico);
+    if(nova)x.plano_contas=nova;
+  }else if(x.tipo==='Entrada'&&!x.plano_contas){
+    x.plano_contas='Receita de Serviços';
+  }
+}
+
+localStorage.setItem(DBKEY,JSON.stringify(store));
 for(const r of store.receber){
   if(r?.tipo_recebimento==='fiuza'&&r.competencia_fiuza&&r.fiuza_cliente_id){
     const cli=store.fiuzaClientes.find(x=>String(x.id)===String(r.fiuza_cliente_id));
@@ -746,7 +874,14 @@ function dreGrupoDaConta(conta,tipo){
   if(grupoPlano.startsWith('INVEST')||/INVEST|IMOBILIZ|EQUIPAMENTO|MOVEIS|REFORMA/.test(c))return 'Investimentos';
   if(grupoPlano.startsWith('CUST')||/CUSTO|INSUMO|MERCADORIA|MATERIA PRIMA/.test(c))return 'Custos';
   if(grupoPlano.startsWith('DEDUC'))return 'Deduções';
-  return 'Despesas Operacionais';
+  if(grupoPlano.startsWith('DESPESA COM PESSOAL'))return 'Despesa com Pessoal';
+  if(grupoPlano.startsWith('DESPESA COM ALIMENTACAO'))return 'Despesa com Alimentação';
+  if(grupoPlano.startsWith('DESPESA COMERCIAL'))return 'Despesa Comercial';
+  if(grupoPlano.startsWith('DESPESA DE OCUPACAO'))return 'Despesa de Ocupação';
+  if(grupoPlano.startsWith('DESPESA ADMINISTRATIVA'))return 'Despesa Administrativa';
+  if(grupoPlano.startsWith('DESPESA DE LIMPEZA E MANUTENCAO'))return 'Despesa de Limpeza e Manutenção';
+  if(grupoPlano.startsWith('IMPOSTOS E TAXAS'))return 'Impostos e Taxas';
+  return 'Despesa Administrativa';
 }
 function dreLinhasMes(mes){
   const empresa=selectedCompanyName();
@@ -787,14 +922,15 @@ function renderDre(){
   dreMesAtualLabel.textContent=nomeMesCurto(atual);dreMesAnteriorLabel.textContent=nomeMesCurto(anterior);
   const ma=dreMapa(atual), mp=dreMapa(anterior);
   const keys=[...new Set([...ma.keys(),...mp.keys()])];
-  const gruposOrdem=['Receitas','Outras Receitas','Deduções','Custos','Despesas Operacionais','Investimentos'];
+  const gruposOrdem=['Receitas','Outras Receitas','Deduções','Custos','Despesa com Pessoal','Despesa com Alimentação','Despesa Comercial','Despesa de Ocupação','Despesa Administrativa','Despesa de Limpeza e Manutenção','Impostos e Taxas','Investimentos'];
   const dados=keys.map(k=>({k,a:ma.get(k),p:mp.get(k)})).map(o=>({grupo:(o.a||o.p).grupo,conta:(o.a||o.p).conta,atual:o.a?.valor||0,anterior:o.p?.valor||0}));
   const receita=dados.filter(x=>x.grupo==='Receitas').reduce((s,x)=>s+x.atual,0);
   const receitaAnt=dados.filter(x=>x.grupo==='Receitas').reduce((s,x)=>s+x.anterior,0);
   const custos=Math.abs(dados.filter(x=>x.grupo==='Custos').reduce((s,x)=>s+x.atual,0));
-  const despesas=Math.abs(dados.filter(x=>x.grupo==='Despesas Operacionais').reduce((s,x)=>s+x.atual,0));
+  const despesaGrupos=['Despesa com Pessoal','Despesa com Alimentação','Despesa Comercial','Despesa de Ocupação','Despesa Administrativa','Despesa de Limpeza e Manutenção','Impostos e Taxas'];
+  const despesas=Math.abs(dados.filter(x=>despesaGrupos.includes(x.grupo)).reduce((s,x)=>s+x.atual,0));
   const custosAnt=Math.abs(dados.filter(x=>x.grupo==='Custos').reduce((s,x)=>s+x.anterior,0));
-  const despesasAnt=Math.abs(dados.filter(x=>x.grupo==='Despesas Operacionais').reduce((s,x)=>s+x.anterior,0));
+  const despesasAnt=Math.abs(dados.filter(x=>despesaGrupos.includes(x.grupo)).reduce((s,x)=>s+x.anterior,0));
   const investimentos=Math.abs(dados.filter(x=>x.grupo==='Investimentos').reduce((s,x)=>s+x.atual,0));
   const investimentosAnt=Math.abs(dados.filter(x=>x.grupo==='Investimentos').reduce((s,x)=>s+x.anterior,0));
   const resultadoOp=receita-custos-despesas, resultadoOpAnt=receitaAnt-custosAnt-despesasAnt;
@@ -807,7 +943,7 @@ function renderDre(){
     if(!lista.length)continue;
     const ga=lista.reduce((s,x)=>s+x.atual,0), gp=lista.reduce((s,x)=>s+x.anterior,0);
     html+=row(grupo,Math.abs(gp),Math.abs(ga),'dre-group');
-    for(const x of lista)html+=row((x.atual<0||['Custos','Despesas Operacionais','Investimentos'].includes(grupo)?'(-) ':'(+) ')+esc(x.conta),x.anterior,x.atual,'',x.conta);
+    for(const x of lista)html+=row((x.atual<0||grupo==='Custos'||grupo==='Investimentos'||despesaGrupos.includes(grupo)?'(-) ':'(+) ')+esc(x.conta),x.anterior,x.atual,'',x.conta);
     if(grupo==='Receitas')html+=row('(=) Receita operacional',receitaAnt,receita,'dre-subtotal');
   }
   html+=row('(=) Resultado operacional',resultadoOpAnt,resultadoOp,resultadoOp>=0?'dre-result-positive':'dre-result-negative');
@@ -907,7 +1043,7 @@ const schemas={
  clientes:[['tipo_cliente','Tipo de cliente','select',['Comum','Detalhado']],['nome','Nome / Razão social','text'],['documento','CPF/CNPJ','text'],['contato','Contato','text']],
  fiuzaClientes:[['nome','Nome','text'],['data_nascimento','Data de nascimento','date'],['responsavel','Responsável','text'],['cpf_responsavel','CPF do responsável','text'],['email_responsavel','E-mail do responsável','email'],['data_inicio','Data de início','date'],['frequencia_semanal','Frequência','number'],['apostila','Valor apostila','text'],['dia_vencimento','Vencimento','number'],['valor_diaria','Valor diária','text'],['observacoes_contrato','Observações do contrato','text'],['status_cliente','Status','select',['Ativo','Inativo','Negociação']]],
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
- plano:[['grupo','Grupo','select',['Receitas','Custos','Despesas','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
+ plano:[['grupo','Grupo','select',['Receitas','Despesa com Pessoal','Despesa com Alimentação','Despesa Comercial','Despesa de Ocupação','Despesa Administrativa','Despesa de Limpeza e Manutenção','Impostos e Taxas','Custos','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
  pagar:[['vencimento','Vencimento','date'],['fornecedor','Fornecedor','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Pago','Vencido']]],
  receber:[['vencimento','Vencimento','date'],['cliente','Cliente','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Recebido','Vencido']]],
  reembolsos:[['data','Data','date'],['solicitante','Solicitante','text'],['descricao','Descrição','text'],['valor','Valor','text'],['status','Status','select',['Pendente','Pago']]],
