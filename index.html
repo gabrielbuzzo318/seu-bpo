@@ -882,6 +882,80 @@ for(const base of tugaoPagarOutDez2026){
   });
 }
 
+
+const tugaoPagarZerosOutDez2026=[
+  {dia:6,despesa:'Salários',fornecedor:'Karen da Silva Carmo',conta:'Salários',meses:['2026-11','2026-12']},
+  {dia:6,despesa:'Salários',fornecedor:'Marco Aurelio Pires',conta:'Salários',meses:['2026-11','2026-12']},
+  {dia:6,despesa:'Salários',fornecedor:'Marcos de Souza Guimarães',conta:'Salários',meses:['2026-11','2026-12']},
+  {dia:6,despesa:'Salários',fornecedor:'Regina Celia de Souza',conta:'Salários',meses:['2026-11','2026-12']},
+
+  {dia:10,despesa:'Manutenção de Computadores',fornecedor:'Edison Antonio Trevizan Junior',conta:'Manutenção',meses:['2026-11','2026-12']},
+  {dia:10,despesa:'Vistorias',fornecedor:'Checasa Engenharia Rio Preto',conta:'Serviços de Terceiros',meses:['2026-11','2026-12']},
+  {dia:10,despesa:'Recarga de Tonner',fornecedor:'Prime-x',conta:'Material de Escritório',meses:['2026-10','2026-11','2026-12']},
+  {dia:10,despesa:'Cartório',fornecedor:'Cartório',conta:'Serviços de Terceiros',meses:['2026-10','2026-11','2026-12'],nf:'S/NF'},
+  {dia:10,despesa:'Consultas',fornecedor:'Serasa',conta:'Serviços de Terceiros',meses:['2026-11','2026-12']},
+  {dia:10,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',meses:['2026-11','2026-12']},
+
+  {dia:13,despesa:'Seguros de Locatários',fornecedor:'Too Seguros',conta:'Seguros',meses:['2026-11','2026-12']},
+  {dia:13,despesa:'Plano de saúde',fornecedor:'ACIRP',conta:'Benefícios',meses:['2026-11','2026-12']},
+
+  {dia:15,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',meses:['2026-11','2026-12'],chave:'porto_2868'},
+  {dia:15,despesa:'Seguros de Locatários',fornecedor:'Tokio Marine Seguradora',conta:'Seguros',meses:['2026-11','2026-12']},
+  {dia:15,despesa:'Seguros de Locatários',fornecedor:'Porto Seguro Cia de Seguros',conta:'Seguros',meses:['2026-11','2026-12'],chave:'porto_1088'},
+  {dia:15,despesa:'Seguros de Locatários',fornecedor:'Pottencial Seguradora',conta:'Seguros',meses:['2026-11','2026-12']},
+  {dia:15,despesa:'Taxa de Licença e Funcionamento',fornecedor:'Prefeitura de S. J. Rio Preto',conta:'Taxas de Funcionamento',meses:['2026-10','2026-11'],nf:'S/NF',observacao:'IM 1292720'},
+  {dia:15,despesa:'Energia Elétrica',fornecedor:'CPFL - Companhia Paulista de Força e Luz',conta:'Energia',meses:['2026-10','2026-11','2026-12'],observacao:'3919',chave:'energia_3919'},
+
+  {dia:18,despesa:'Impostos - DAS',fornecedor:'Receita Federal',conta:'Tributos',meses:['2026-10','2026-11','2026-12'],nf:'S/NF'},
+  {dia:20,despesa:'Impostos - FGTS',fornecedor:'Caixa Economica Federal',conta:'Encargos',meses:['2026-11','2026-12'],nf:'S/NF'},
+  {dia:22,despesa:'Energia Elétrica',fornecedor:'CPFL - Companhia Paulista de Força e Luz',conta:'Energia',meses:['2026-10','2026-11','2026-12'],observacao:'3915',chave:'energia_3915'},
+  {dia:23,despesa:'Plano de Saúde',fornecedor:'Bradesco Saude',conta:'Benefícios',meses:['2026-10','2026-11','2026-12']},
+  {dia:25,despesa:'Segurança',fornecedor:'Orsegups Monitoramento Eletronico',conta:'Segurança',meses:['2026-11','2026-12'],nf:'143937'},
+  {dia:26,despesa:'Água e Esgoto',fornecedor:'SEMAE',conta:'Água',meses:['2026-11','2026-12'],nf:'S/NF',observacao:'115108',chave:'agua_115108'},
+  {dia:26,despesa:'Água e Esgoto',fornecedor:'SEMAE',conta:'Água',meses:['2026-11','2026-12'],nf:'S/NF',observacao:'20772',chave:'agua_20772'},
+  {dia:28,despesa:'Telefone/Internet',fornecedor:'Algar Telecom',conta:'Telefone / Internet',meses:['2026-10','2026-11','2026-12']},
+  {dia:31,despesa:'Vale Alimentação',fornecedor:'Alelo',conta:'Benefícios',meses:['2026-10','2026-11','2026-12']},
+  {dia:31,despesa:'Vale Combustível, pedágios e outros',fornecedor:'Veloe Go',conta:'Combustível / Pedágios',meses:['2026-10','2026-11','2026-12']}
+];
+
+for(const base of tugaoPagarZerosOutDez2026){
+  for(const mesComp of base.meses){
+    const exists=(store.pagar||[]).some(x=>
+      String(x.empresa||'').toUpperCase()==='TUGÃO IMÓVEIS' &&
+      x.recorrencia_origem==='tugao_planilha_out_dez_2026' &&
+      x.competencia===mesComp &&
+      x.fornecedor===base.fornecedor &&
+      x.descricao===base.despesa &&
+      String(x.observacoes||'')===String(base.observacao||'') &&
+      String(x.valor)==='0,00'
+    );
+    if(exists)continue;
+    const [ano,mes]=mesComp.split('-').map(Number);
+    const last=new Date(ano,mes,0).getDate();
+    const dia=Math.min(Math.max(Number(base.dia)||1,1),last);
+    store.pagar.push({
+      id:971000000+store.pagar.length+1,
+      empresa:'Tugão Imóveis',
+      competencia:mesComp,
+      recorrencia:'mensal',
+      recorrencia_origem:'tugao_planilha_out_dez_2026',
+      data_emissao:mesComp+'-01',
+      vencimento:mesComp+'-'+String(dia).padStart(2,'0'),
+      fornecedor:base.fornecedor,
+      descricao:base.despesa,
+      categoria:base.conta,
+      conta_contabil:base.conta,
+      objeto:base.despesa,
+      numero_documento:base.nf||'',
+      observacoes:base.observacao||'',
+      banco:'Outros',
+      valor:'0,00',
+      status:'Em aberto'
+    });
+  }
+}
+
+
 localStorage.setItem(DBKEY,JSON.stringify(store));
 if(!store.empresas.some(e=>String(e.nome||'').trim().toUpperCase()==='FIUZA')) store.empresas.push({id:Date.now()+7,nome:'FIUZA',cnpj:'',responsavel:'Ester'});
 function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll()}
