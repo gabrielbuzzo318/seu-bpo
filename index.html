@@ -116,7 +116,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 </div>
 <div id="appShell" class="app hidden-app">
 <aside class="sidebar"><div class="brand"><div class="logo"><img src="atria-logo.svg" alt="Atria"></div></div><div class="nav">
-<button class="active" data-screen="dashboard">▣ Dashboard</button><button data-screen="pagar">💸 A Pagar</button><button data-screen="receber">💰 A Receber</button><button class="fiuza-only" data-screen="cartoes" style="display:none">💳 Cartões de Crédito</button><button data-screen="reembolsos">↩ Reembolsos</button><button data-screen="fluxo">📈 Fluxo de Caixa</button><button data-screen="dre">📊 DRE</button>
+<button class="active" data-screen="dashboard">▣ Dashboard</button><button data-screen="pagar">💸 A Pagar</button><button data-screen="receber">💰 A Receber</button><button class="fiuza-only" data-screen="cartoes" style="display:none">💳 Cartões de Crédito</button><button data-screen="fluxo">📈 Fluxo de Caixa</button><button data-screen="dre">📊 DRE</button>
 <div class="nav-title">Cadastros</div><button data-screen="plano">🗂 Plano de Contas</button><button data-screen="clientes">👥 Clientes</button><button data-screen="fornecedores">🏭 Fornecedores</button><button data-screen="boletos">🧾 Boletos</button><button data-screen="nf">📄 Notas Fiscais</button>
 <div class="nav-title admin-access">Gestão BPO</div><button class="admin-access" data-screen="empresas">🏢 Empresas</button><button class="admin-access" data-screen="usuarios">🔐 Usuários e Acessos</button></div></aside>
 <main class="main"><div class="header"><div><select id="company" class="company-select"><option value="all">Todas as empresas</option><option value="dpmz">DPMZ</option><option value="tugao">Tugão Imóveis</option><option value="iza">IZA Comunica</option><option value="aurora">Clínica Aurora</option></select> <span class="pill">Acesso BPO</span></div><div class="user"><div class="avatar" id="userAvatar">ES</div><div><b id="userName">Ester</b><div class="sub" id="userRole">Administrador</div></div><button id="logoutBtn" class="logout-btn">Sair</button></div></div>
@@ -167,7 +167,6 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     </table>
   </div>
 </section>
-<section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen">
   <div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas por banco</div></div><button class="btn">Exportar PDF</button></div>
   <div class="launch-tabs" style="max-width:420px;margin:0 0 16px 0">
@@ -1278,7 +1277,6 @@ function renderAll(){
  renderDre();
  renderCartoes();
  document.querySelectorAll('.fiuza-only').forEach(el=>el.style.display=isFiuzaSelected()?'':'none');
- reembolsosBody.innerHTML=store.reembolsos.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.solicitante)+'</td><td>'+esc(x.descricao)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('reembolsos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'reembolsos\','+x.id+',\'Pago\')">Pagar</button>')+'</td></tr>').join('');
  boletosBody.innerHTML=store.boletos.map(x=>'<tr><td>'+esc(x.cliente)+'</td><td>'+esc(x.vencimento)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('boletos',x.id,'<button class="iconbtn" onclick="toggleStatus(\'boletos\','+x.id+',\'Recebido\')">Receber</button>')+'</td></tr>').join('');
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
  refreshCompanySelect();
@@ -1351,7 +1349,6 @@ const schemas={
  plano:[['grupo','Grupo','select',['Receitas','Despesa com Pessoal','Despesa com Alimentação','Despesa Comercial','Despesa de Ocupação','Despesa Administrativa','Despesa de Limpeza e Manutenção','Impostos e Taxas','Custos','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
  pagar:[['vencimento','Vencimento','date'],['fornecedor','Fornecedor','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Pago','Vencido']]],
  receber:[['vencimento','Vencimento','date'],['cliente','Cliente','text'],['descricao','Descrição','text'],['categoria','Categoria','text'],['valor','Valor','text'],['status','Status','select',['Em aberto','Recebido','Vencido']]],
- reembolsos:[['data','Data','date'],['solicitante','Solicitante','text'],['descricao','Descrição','text'],['valor','Valor','text'],['status','Status','select',['Pendente','Pago']]],
  boletos:[['cliente','Cliente','text'],['vencimento','Vencimento','date'],['valor','Valor','text'],['status','Status','select',['Em aberto','Recebido parcial','Recebido','Vencido']]],
  nf:[['data','Data','date'],['tipo','Tipo','select',['Emitida','Recebida']],['numero','Número da NF','text'],['pessoa','Cliente / Fornecedor','text'],['valor','Valor','text'],['status','Status','select',['Emitida','Vinculada','Pendente de vínculo','Cancelada']]]
 };
