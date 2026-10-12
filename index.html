@@ -380,7 +380,7 @@ const seed={
 {id:502,grupo:'Despesa de Ocupação',conta:'IPTU',tipo:'Saída'},
 {id:503,grupo:'Despesa de Ocupação',conta:'Energia',tipo:'Saída'},
 {id:504,grupo:'Despesa de Ocupação',conta:'Água',tipo:'Saída'},
-{id:505,grupo:'Despesa de Ocupação',conta:'Telefone / Internet',tipo:'Saída'},
+{id:505,grupo:'Despesa Administrativa',conta:'Telefone / Internet',tipo:'Saída'},
 {id:506,grupo:'Despesa de Ocupação',conta:'Taxas de Funcionamento',tipo:'Saída'},
 {id:601,grupo:'Despesa Administrativa',conta:'Contabilidade',tipo:'Saída'},
 {id:602,grupo:'Despesa Administrativa',conta:'Software / Sistemas',tipo:'Saída'},
@@ -417,7 +417,7 @@ const fiuzaPagarRecorrentesOut2026=[
   {venc:5,fornecedor:'Valéria do Carmo',conta:'Salários',categoria:'Despesa com Pessoal',objeto:'Aux de limpeza',via:'Pix',valor:'1,00'},
   {venc:10,fornecedor:'Nilvaldo/Fernando',conta:'Aluguel',categoria:'Despesa de Ocupação',objeto:'Aluguel',via:'Pix',valor:'9025,00'},
   {venc:10,fornecedor:'Iza Comunica',conta:'Agência / Tráfego Pago',categoria:'Despesa Comercial',objeto:'Gestão MKT e Trafego Pago',via:'Pix',valor:'2600,00'},
-  {venc:10,fornecedor:'Óquei',conta:'Telefone / Internet',categoria:'Despesa de Ocupação',objeto:'Internet/Telefone fixo',via:'Boleto',valor:'164,80'},
+  {venc:10,fornecedor:'Óquei',conta:'Telefone / Internet',categoria:'Despesa Administrativa',objeto:'Internet/Telefone fixo',via:'Boleto',valor:'164,80'},
   {venc:10,fornecedor:'Aspem',conta:'Medicina do Trabalho',categoria:'Despesa com Pessoal',objeto:'Clínica Ocupacional',via:'Boleto',valor:'70,00'},
   {venc:12,fornecedor:'ACIRP',conta:'Networking',categoria:'Despesa Comercial',objeto:'MKT e neetwork',via:'',valor:'35,00'},
   {venc:15,fornecedor:'Prefeitura Municipal',conta:'IPTU',categoria:'Despesa de Ocupação',objeto:'IPTU',via:'Boleto',valor:'682,14'},
@@ -532,8 +532,9 @@ const planoGerencialPadrao=[
 {id:904,grupo:'Investimentos',conta:'Imobilizado',tipo:'Saída'}
 ];
 for(const pc of planoGerencialPadrao){
-  const existe=store.plano.some(x=>String(x.conta||'').trim().toUpperCase()===pc.conta.toUpperCase());
-  if(!existe)store.plano.push(structuredClone(pc));
+  const existente=store.plano.find(x=>String(x.conta||'').trim().toUpperCase()===pc.conta.toUpperCase());
+  if(!existente)store.plano.push(structuredClone(pc));
+  else if(pc.conta==='Telefone / Internet'){existente.grupo='Despesa Administrativa';existente.tipo='Saída'}
 }
 function classificarPlanoGerencial(nome,historico=''){
   const s=(String(nome||'')+' '+String(historico||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -578,6 +579,8 @@ for(const x of store.fluxo||[]){
   }
 }
 
+const telInternet=store.plano.find(x=>String(x.conta||'').trim().toUpperCase()==='TELEFONE / INTERNET');
+if(telInternet){telInternet.grupo='Despesa Administrativa';telInternet.tipo='Saída'}
 localStorage.setItem(DBKEY,JSON.stringify(store));
 for(const r of store.receber){
   if(r?.tipo_recebimento==='fiuza'&&r.competencia_fiuza&&r.fiuza_cliente_id){
