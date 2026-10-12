@@ -162,7 +162,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   </div>
   <div class="card" style="overflow:auto;margin-top:14px">
     <table>
-      <thead><tr><th>Data compra</th><th>Cartão</th><th>Fornecedor</th><th>Objeto</th><th>Plano de contas</th><th>Parcela</th><th>Valor parcela</th><th>Valor compra</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Data compra</th><th>Cartão</th><th>Fornecedor</th><th>Objeto</th><th>Plano de contas</th><th>Parcela</th><th>Valor parcela</th><th>Valor compra</th><th>Anexo</th><th>Ações</th></tr></thead>
       <tbody id="cartaoBody"></tbody>
     </table>
   </div>
@@ -1218,8 +1218,50 @@ function renderCartoes(){
     '<td class="cartao-parcela">'+indice+'/'+(compra.qtd_parcelas||compra.parcelas.length)+'</td>'+
     '<td>'+money(String(parcela.valor).replace('.',','))+'</td>'+
     '<td>'+money(String(compra.valor_total).replace('.',','))+'</td>'+
+    '<td>'+cartaoAnexoHtml(compra)+'</td>'+
     '<td><div class="actions"><button class="iconbtn" onclick="editarCompraCartao('+compra.id+')">Editar</button><button class="iconbtn danger" onclick="excluirCompraCartao('+compra.id+')">Excluir</button></div></td>'+
   '</tr>').join('');
+}
+async function uploadDocumentoCartao(item,file){
+  if(!file)return;
+  if(file.size>20*1024*1024)throw new Error('O anexo deve ter no máximo 20 MB.');
+  const empresaId=currentCloudCompanyId();
+  if(!empresaId)throw new Error('Não foi possível identificar a FIUZA para salvar o anexo.');
+  const safe=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_');
+  const path=empresaId+'/cartoes/'+item.id+'/'+Date.now()+'_'+safe;
+  const {error}=await sb.storage.from('seubpo-documentos').upload(path,file,{upsert:false,contentType:file.type||undefined});
+  if(error)throw error;
+  if(item.documento_path&&item.documento_path!==path){
+    await sb.storage.from('seubpo-documentos').remove([item.documento_path]);
+  }
+  item.documento_path=path;
+  item.documento_nome=file.name;
+}
+async function openDocumentoCartao(id){
+  const item=(store.cartoesFiuza||[]).find(x=>Number(x.id)===Number(id));
+  if(!item?.documento_nome){notify('Esta compra não possui anexo.');return}
+  if(!item.documento_path){notify('Esse lançamento veio da planilha e ainda não possui arquivo anexado. Edite a compra e anexe o documento.');return}
+  const {data,error}=await sb.storage.from('seubpo-documentos').createSignedUrl(item.documento_path,600);
+  if(error){notify(error.message||'Não foi possível abrir o anexo.');return}
+  const nome=String(item.documento_nome||'Anexo');
+  const ext=nome.split('.').pop().toLowerCase();
+  const modalEl=modalBg.querySelector('.modal');
+  const bodyEl=modalBg.querySelector('.modal-body');
+  if(modalEl){modalEl.style.width='min(1120px,96vw)';modalEl.style.maxWidth='1120px'}
+  if(bodyEl){bodyEl.style.height='78vh';bodyEl.style.overflow='hidden';bodyEl.style.padding='0'}
+  modalState={type:'visualizarDocumentoCartao',id};
+  modalTitle.textContent=nome;
+  modalSave.style.display='none';
+  modalCancel.textContent='Fechar';
+  if(['jpg','jpeg','png','webp'].includes(ext)){
+    modalForm.innerHTML='<div style="width:100%;height:78vh;display:grid;place-items:center;background:#f7f4f0;padding:18px"><img src="'+data.signedUrl+'" alt="'+esc(nome)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px"></div>';
+  }else{
+    modalForm.innerHTML='<iframe src="'+data.signedUrl+'" title="'+esc(nome)+'" style="width:100%;height:78vh;border:0;background:#fff"></iframe>';
+  }
+  modalBg.classList.add('show');
+}
+function cartaoAnexoHtml(compra){
+  return compra.documento_path?'<button class="iconbtn" onclick="openDocumentoCartao('+compra.id+')">📎 Abrir</button>':'—';
 }
 function abrirNovaCompraCartao(id=null){
   const item=id?(store.cartoesFiuza||[]).find(x=>Number(x.id)===Number(id)):null;
@@ -1236,12 +1278,15 @@ function abrirNovaCompraCartao(id=null){
     '<div class="field full"><label>Plano de contas</label><select data-field="plano">'+contas.map(c=>'<option value="'+esc(c)+'" '+((item?.plano_manual||planoCartaoCompra(item))===c?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div>'+
     '<div class="field"><label>Valor total</label><input data-field="valor_total" placeholder="0,00" value="'+(valor?String(valor).replace('.',','):'')+'"></div>'+
     '<div class="field"><label>Parcelas</label><input type="number" min="1" max="48" data-field="qtd_parcelas" value="'+esc(item?.qtd_parcelas||1)+'"></div>'+
-    '<div class="field full"><label>Primeira fatura</label><input type="month" data-field="primeira_fatura" value="'+esc(primeira||'')+'"></div>';
+    '<div class="field full"><label>Primeira fatura</label><input type="month" data-field="primeira_fatura" value="'+esc(primeira||'')+'"></div>'+
+    '<div class="field full"><label>Documento / comprovante</label><div class="sub" style="margin:3px 0 7px">PDF, XML, JPG, PNG ou WEBP · até 20 MB</div><input type="file" data-cartao-file accept=".pdf,.xml,.jpg,.jpeg,.png,.webp,application/pdf,application/xml,text/xml,image/jpeg,image/png,image/webp">'+(item?.documento_nome?'<div style="margin-top:7px;font-size:10px;color:var(--muted)">Anexo atual: <b>'+esc(item.documento_nome)+'</b></div>':'')+'</div>';
   modalBg.classList.add('show');
 }
 function editarCompraCartao(id){abrirNovaCompraCartao(id)}
-function excluirCompraCartao(id){
+async function excluirCompraCartao(id){
   if(!confirm('Excluir esta compra e todas as parcelas?'))return;
+  const item=(store.cartoesFiuza||[]).find(x=>Number(x.id)===Number(id));
+  if(item?.documento_path)await sb.storage.from('seubpo-documentos').remove([item.documento_path]);
   store.cartoesFiuza=(store.cartoesFiuza||[]).filter(x=>Number(x.id)!==Number(id));
   persist();notify('Compra excluída.');
 }
@@ -1635,7 +1680,10 @@ modalSave.onclick=async()=>{
    }
    let item=id?(store.cartoesFiuza||[]).find(x=>Number(x.id)===Number(id)):null;
    if(!item){item={id:Date.now(),importado:false};store.cartoesFiuza.push(item)}
-   Object.assign(item,{data_compra:dataCompra,cartao,fornecedor,objeto,plano_manual:plano,conta_original:'',categoria_original:'',parcelas,valor_total:valor,qtd_parcelas:qtd,primeira_fatura:parcelas[0].competencia,ultima_fatura:parcelas[parcelas.length-1].competencia,status:'Aberta'});
+   Object.assign(item,{data_compra:dataCompra,cartao,fornecedor,objeto,plano_manual:plano,conta_original:item.conta_original||'',categoria_original:item.categoria_original||'',parcelas,valor_total:valor,qtd_parcelas:qtd,primeira_fatura:parcelas[0].competencia,ultima_fatura:parcelas[parcelas.length-1].competencia,status:'Aberta'});
+   const arquivo=modalForm.querySelector('[data-cartao-file]')?.files?.[0];
+   try{if(arquivo)await uploadDocumentoCartao(item,arquivo)}
+   catch(e){notify(e.message||'Erro ao anexar documento.');return}
    persist();closeModal();notify('Compra salva e parcelas geradas.');
    return;
  }
