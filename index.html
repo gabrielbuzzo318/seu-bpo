@@ -115,8 +115,20 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <div class="cards"><div class="card"><div class="label">A receber</div><div class="value" id="r">R$ 92.450</div></div><div class="card"><div class="label">A pagar</div><div class="value" id="p">R$ 61.300</div></div><div class="card"><div class="label">Inadimplência</div><div class="value red" id="i">R$ 14.200</div></div><div class="card"><div class="label">Saldo</div><div class="value green" id="s">R$ 84.930</div></div><div class="card"><div class="label" id="l5">Empresas ativas</div><div class="value" id="v5">4</div></div></div>
 <div id="all" class="grid2"><div class="card"><div class="section-title">Resumo por empresa</div><table><thead><tr><th>Empresa</th><th>A receber</th><th>A pagar</th><th>Inadimplência</th><th>Status</th></tr></thead><tbody><tr><td><b>DPMZ</b></td><td>R$ 28.600</td><td>R$ 17.800</td><td>R$ 2.300</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Tugão Imóveis</b></td><td>R$ 24.300</td><td>R$ 16.100</td><td>R$ 6.100</td><td><span class="status warn">Atenção</span></td></tr><tr><td><b>IZA Comunica</b></td><td>R$ 18.900</td><td>R$ 13.500</td><td>R$ 3.400</td><td><span class="status ok">Saudável</span></td></tr><tr><td><b>Clínica Aurora</b></td><td>R$ 20.650</td><td>R$ 13.900</td><td>R$ 2.400</td><td><span class="status ok">Saudável</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Pendências da carteira</div><table><tbody><tr><td>Conciliações pendentes</td><td><b>3 empresas</b></td></tr><tr><td>NF pendentes de vínculo</td><td><b>8 notas</b></td></tr><tr><td>Títulos vencidos</td><td class="red"><b>19</b></td></tr><tr><td>Documentos pendentes</td><td><b>11</b></td></tr></tbody></table></div></div>
 <div id="one" class="grid2" style="display:none"><div class="card"><div class="section-title">Últimos lançamentos</div><table><tbody><tr><td>29/09</td><td>Recebimento Cliente A</td><td class="green">R$ 3.500</td><td><span class="status ok">Recebido</span></td></tr><tr><td>29/09</td><td>Fornecedor X</td><td class="red">R$ 1.200</td><td><span class="status warn">Em aberto</span></td></tr></tbody></table></div><div class="card"><div class="section-title">Ações rápidas</div><p>+ Novo pagamento</p><p>+ Novo recebimento</p><p>Baixar título</p><p>Gerar relatório</p></div></div></section>
-<section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
-<section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
+<section id="pagar" class="screen"><div class="page-title"><div><h1>A Pagar</h1><div class="sub">Controle das obrigações da empresa selecionada</div></div><button class="btn primary" data-open-launch="pagar">+ Novo lançamento</button></div>
+<div class="toolbar" style="flex-wrap:wrap">
+  <input id="pagarBusca" class="search" placeholder="Pesquisar fornecedor, histórico, conta...">
+  <select id="pagarStatusFiltro" class="search" style="min-width:150px"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select>
+  <select id="pagarMesFiltro" class="search" style="min-width:165px"><option value="Todos">Todos os meses</option></select>
+  <button id="pagarRelatorioBtn" class="btn">Gerar relatório</button>
+</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
+<section id="receber" class="screen"><div class="page-title"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div>
+<div class="toolbar" style="flex-wrap:wrap">
+  <input id="receberBusca" class="search" placeholder="Pesquisar cliente, histórico, conta...">
+  <select id="receberStatusFiltro" class="search" style="min-width:150px"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Recebido">Recebido</option></select>
+  <select id="receberMesFiltro" class="search" style="min-width:165px"><option value="Todos">Todos os meses</option></select>
+  <button id="receberRelatorioBtn" class="btn">Gerar relatório</button>
+</div><div class="card"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Histórico</th><th>Conta</th><th>Projetado</th><th>Real</th><th>Status</th><th>Ações</th></tr></thead><tbody id="receberBody"></tbody></table></div></section>
 <section id="reembolsos" class="screen"><div class="page-title"><div><h1>Reembolsos</h1><div class="sub">Solicitações e pagamentos de reembolso</div></div><button class="btn primary" data-add="reembolsos">+ Novo reembolso</button></div><div class="card"><table><thead><tr><th>Data</th><th>Solicitante</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reembolsosBody"></tbody></table></div></section>
 <section id="fluxo" class="screen"><div class="page-title"><div><h1>Fluxo de Caixa</h1><div class="sub">Entradas e saídas realizadas</div></div><button class="btn">Exportar PDF</button></div><div class="cards"><div class="card"><div class="label">Entradas</div><div id="fluxoEntradas" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saídas</div><div id="fluxoSaidas" class="value red">R$ 0,00</div></div><div class="card"><div class="label">Resultado</div><div id="fluxoResultado" class="value green">R$ 0,00</div></div><div class="card"><div class="label">Saldo final</div><div id="fluxoSaldo" class="value">R$ 0,00</div></div></div><div class="card" style="overflow:auto;margin-top:14px"><table><thead><tr><th>Data</th><th>Histórico</th><th>Plano de contas</th><th>Entrada</th><th>Saída</th></tr></thead><tbody id="fluxoBody"></tbody></table></div></section>
 <section id="dre" class="screen"><div class="page-title"><div><h1>DRE</h1><div class="sub">Demonstrativo de resultado gerencial</div></div><button class="btn">Gerar PDF</button></div><div class="card"><table><tbody><tr><td><b>Receita Operacional</b></td><td class="green"><b>R$ 48.700</b></td><td>100%</td></tr><tr><td>(-) Custos</td><td class="red">R$ 12.400</td><td>25,5%</td></tr><tr><td>(-) Despesas Operacionais</td><td class="red">R$ 18.300</td><td>37,6%</td></tr><tr><td><b>Resultado após Investimentos</b></td><td class="green"><b>R$ 16.800</b></td><td><b>34,5%</b></td></tr></tbody></table></div></section>
@@ -512,16 +524,103 @@ function clientActs(type,id,item){
     : '<button class="iconbtn" onclick="openInativarCliente(\''+type+'\','+id+')">Inativar</button>';
   return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+btn+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>';
 }
+function competenciaRegistro(x){
+  if(x?.competencia)return String(x.competencia).slice(0,7);
+  if(x?.competencia_fiuza)return String(x.competencia_fiuza).slice(0,7);
+  if(x?.vencimento)return String(x.vencimento).slice(0,7);
+  return '';
+}
+function nomeMesCompetencia(v){
+  if(!v||!/^\d{4}-\d{2}$/.test(v))return v||'';
+  const [a,m]=v.split('-');
+  const nomes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return nomes[Number(m)-1]+'/'+a;
+}
+function preencherFiltroMes(el,arr){
+  if(!el)return;
+  const atual=el.value||'Todos';
+  const meses=[...new Set(arr.map(competenciaRegistro).filter(Boolean))].sort().reverse();
+  el.innerHTML='<option value="Todos">Todos os meses</option>'+meses.map(m=>'<option value="'+m+'">'+nomeMesCompetencia(m)+'</option>').join('');
+  el.value=meses.includes(atual)?atual:'Todos';
+}
+function registrosFinanceirosVisiveis(tipo){
+  const empresaAtual=selectedCompanyName();
+  let arr=store[tipo]||[];
+  if(empresaAtual!=='Todas as empresas'){
+    if(tipo==='pagar'){
+      arr=arr.filter(x=>!x.empresa||String(x.empresa).toUpperCase()===empresaAtual.toUpperCase());
+    }else{
+      arr=arr.filter(x=>{
+        if(x.empresa)return String(x.empresa).toUpperCase()===empresaAtual.toUpperCase();
+        if(empresaAtual.toUpperCase()==='FIUZA')return x.tipo_recebimento==='fiuza';
+        return x.tipo_recebimento!=='fiuza';
+      });
+    }
+  }
+  return arr;
+}
+function filtrarFinanceiro(tipo){
+  let arr=registrosFinanceirosVisiveis(tipo);
+  const prefix=tipo==='pagar'?'pagar':'receber';
+  const busca=String(window[prefix+'Busca']?.value||'').trim().toLowerCase();
+  const status=window[prefix+'StatusFiltro']?.value||'Todos';
+  const mes=window[prefix+'MesFiltro']?.value||'Todos';
+  if(status!=='Todos')arr=arr.filter(x=>x.status===status);
+  if(mes!=='Todos')arr=arr.filter(x=>competenciaRegistro(x)===mes);
+  if(busca)arr=arr.filter(x=>Object.values(x||{}).some(v=>String(v??'').toLowerCase().includes(busca)));
+  return arr;
+}
+function renderFinanceiros(){
+  const basePagar=registrosFinanceirosVisiveis('pagar');
+  const baseReceber=registrosFinanceirosVisiveis('receber');
+  preencherFiltroMes(window.pagarMesFiltro,basePagar);
+  preencherFiltroMes(window.receberMesFiltro,baseReceber);
+  const pagarVisiveis=filtrarFinanceiro('pagar');
+  const receberVisiveis=filtrarFinanceiro('receber');
+  if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
+  if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
+}
+function gerarRelatorioFinanceiro(tipo){
+  if(!window.jspdf?.jsPDF){notify('Gerador de PDF indisponível. Atualize a página e tente novamente.');return}
+  const rows=filtrarFinanceiro(tipo);
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const empresa=selectedCompanyName()||'Todas as empresas';
+  const prefix=tipo==='pagar'?'pagar':'receber';
+  const status=window[prefix+'StatusFiltro']?.value||'Todos';
+  const mes=window[prefix+'MesFiltro']?.value||'Todos';
+  const busca=window[prefix+'Busca']?.value?.trim()||'';
+  const titulo=tipo==='pagar'?'Relatório de Contas a Pagar':'Relatório de Contas a Receber';
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(titulo,14,15);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text('Empresa: '+empresa,14,21);
+  doc.text('Período: '+(mes==='Todos'?'Todos os meses':nomeMesCompetencia(mes))+' | Status: '+status+(busca?' | Busca: '+busca:''),14,26);
+  doc.text('Emitido em: '+new Date().toLocaleString('pt-BR'),14,31);
+  if(tipo==='pagar'){
+    doc.autoTable({
+      startY:36,
+      head:[['Vencimento','Fornecedor','Histórico','Conta','Valor','Status']],
+      body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.status||'']),
+      styles:{fontSize:8,cellPadding:1.6}
+    });
+  }else{
+    doc.autoTable({
+      startY:36,
+      head:[['Vencimento','Cliente','Histórico','Conta','Projetado','Real','Status']],
+      body:rows.map(x=>[brDate(x.vencimento),x.cliente||'',x.descricao||'',x.categoria||'',x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—',x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor),x.status||'']),
+      styles:{fontSize:8,cellPadding:1.6}
+    });
+  }
+  const slug=(empresa+'-'+(mes==='Todos'?'todos':mes)).toLowerCase().replace(/[^a-z0-9]+/gi,'-');
+  doc.save((tipo==='pagar'?'contas-a-pagar-':'contas-a-receber-')+slug+'.pdf');
+}
 function renderAll(){
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
  usuariosBody.innerHTML=store.usuarios.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email)+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa)+'</td><td>'+acts('usuarios',x.id)+'</td></tr>').join('');
  renderClientes();
  fornecedoresBody.innerHTML=store.fornecedores.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.categoria)+'</td><td>'+acts('fornecedores',x.id)+'</td></tr>').join('');
  planoBody.innerHTML=store.plano.map(x=>'<tr><td>'+esc(x.grupo)+'</td><td><b>'+esc(x.conta)+'</b></td><td>'+esc(x.tipo)+'</td><td>'+acts('plano',x.id)+'</td></tr>').join('');
- const empresaAtual=selectedCompanyName();
- const pagarVisiveis=store.pagar.filter(x=>empresaAtual==='Todas as empresas'||!x.empresa||String(x.empresa).toUpperCase()===empresaAtual.toUpperCase());
- pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,'<button class="iconbtn" onclick="toggleStatus(\'pagar\','+x.id+',\'Pago\')">Baixar</button>')+'</td></tr>').join('');
- receberBody.innerHTML=store.receber.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
+ renderFinanceiros();
  const fluxoEntradasTotal=store.fluxo.filter(x=>x.tipo==='Entrada').reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
  const fluxoSaidasTotal=store.fluxo.filter(x=>x.tipo==='Saída').reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
  if(window.fluxoEntradas)fluxoEntradas.textContent=money(String(fluxoEntradasTotal).replace('.',','));
@@ -696,6 +795,13 @@ novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
 if(window.clientesBusca) clientesBusca.oninput=renderClientes;
 if(window.clientesRelatorioBtn) clientesRelatorioBtn.onclick=gerarRelatorioClientes;
+['pagarBusca','pagarStatusFiltro','pagarMesFiltro','receberBusca','receberStatusFiltro','receberMesFiltro'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.addEventListener(el.tagName==='INPUT'?'input':'change',renderFinanceiros);
+});
+if(window.pagarRelatorioBtn)pagarRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('pagar');
+if(window.receberRelatorioBtn)receberRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('receber');
 
 function clientesFiltradosAtual(){
   const fiuza=isFiuzaSelected();
