@@ -2731,7 +2731,10 @@ window.toggleStatus=(t,id,status)=>{
   let x=store[t].find(x=>x.id===id);if(x){x.status=status;persist();notify('Status atualizado.')}
 };
 function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
-document.querySelectorAll('#fluxo .btn,#dre .btn').forEach(b=>b.onclick=()=>window.print());
+document.querySelectorAll('#fluxo .btn,#dre .btn').forEach(b=>{
+  if(b.id==='fluxoNovoBtn'||b.id==='drePdfBtn')return;
+  b.onclick=()=>window.print();
+});
 document.querySelectorAll('#one p').forEach(p=>{p.style.cursor='pointer';p.onclick=()=>notify(p.textContent+' aberto para teste.')});
 
 
