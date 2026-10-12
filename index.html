@@ -123,7 +123,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <div class="content">
 <section id="dashboard" class="screen active"><div class="page-title"><div><h1 id="dashTitle">Dashboard Geral</h1><div id="dashSub" class="sub">Visão consolidada de todas as empresas atendidas</div></div><span class="pill" id="dashPeriodo">—</span></div>
 <div class="cards dashboard-main-cards">
-  <button class="card dashboard-card-link" type="button" onclick="goScreen('receber',true)"><div class="label">A receber</div><div class="value" id="r">R$ 0,00</div><div class="dashboard-card-hint">Ver contas a receber</div></button>
+  <button class="card dashboard-card-link" type="button" onclick="abrirReceberDashboard()"><div class="label">A receber</div><div class="value" id="r">R$ 0,00</div><div class="dashboard-card-hint" id="receberDashHint">Ver contas a receber</div></button>
   <button class="card dashboard-card-link" type="button" onclick="goScreen('pagar',true)"><div class="label">A pagar</div><div class="value" id="p">R$ 0,00</div><div class="dashboard-card-hint">Ver contas a pagar</div></button>
   <button class="card dashboard-card-link" type="button" onclick="goScreen('clientes',true)"><div class="label" id="l5">Empresas ativas</div><div class="value" id="v5">0</div><div class="dashboard-card-hint" id="v5hint">Ver cadastro</div></button>
 </div>
@@ -328,10 +328,28 @@ function goScreen(screenId,save=true){
 }
 bs.forEach(b=>b.onclick=()=>{if(b.classList.contains('role-hidden'))return;goScreen(b.dataset.screen,true)});
 const d={dpmz:['DPMZ','R$ 28.600','R$ 17.800','R$ 2.300','R$ 31.450','26'],tugao:['Tugão Imóveis','R$ 24.300','R$ 16.100','R$ 6.100','R$ 18.900','31'],iza:['IZA Comunica','R$ 18.900','R$ 13.500','R$ 3.400','R$ 12.300','18'],aurora:['Clínica Aurora','R$ 20.650','R$ 13.900','R$ 2.400','R$ 22.280','14']};
+function dashboardCompetenciaAtual(){
+  const hoje=new Date();
+  return String(hoje.getFullYear())+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+}
+function dashboardCompetenciaReceber(){
+  const atual=dashboardCompetenciaAtual();
+  return isFiuzaSelected()?mesAnteriorIso(atual):atual;
+}
+function abrirReceberDashboard(){
+  const alvo=dashboardCompetenciaReceber();
+  goScreen('receber',true);
+  renderFinanceiros();
+  if(window.receberMesFiltro){
+    const existe=[...receberMesFiltro.options].some(o=>o.value===alvo);
+    if(existe)receberMesFiltro.value=alvo;
+    renderFinanceiros();
+  }
+}
 function renderDashboard(){
   const empresa=selectedCompanyName();
-  const hoje=new Date();
-  const competencia=String(hoje.getFullYear())+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  const competencia=dashboardCompetenciaAtual();
+  const competenciaReceber=isFiuzaSelected()?mesAnteriorIso(competencia):competencia;
   if(window.dashPeriodo)dashPeriodo.textContent=nomeMesCompetencia(competencia);
 
   if(empresa==='Todas as empresas'){
@@ -342,15 +360,17 @@ function renderDashboard(){
     l5.textContent='Empresas ativas';
     v5.textContent=String(store?.empresas?.length||0);
     if(window.v5hint)v5hint.textContent='Ver empresas';
+    if(window.receberDashHint)receberDashHint.textContent='Ver contas a receber';
     return;
   }
 
   const paga=registrosFinanceirosVisiveis('pagar').filter(x=>competenciaRegistro(x)===competencia&&x.status!=='Pago');
-  const recebe=registrosFinanceirosVisiveis('receber').filter(x=>competenciaRegistro(x)===competencia&&x.status!=='Recebido');
+  const recebe=registrosFinanceirosVisiveis('receber').filter(x=>competenciaRegistro(x)===competenciaReceber&&x.status!=='Recebido');
   const totalPagar=paga.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
   const totalReceber=recebe.reduce((s,x)=>s+(numeroValor(x.tipo_recebimento==='fiuza'?(x.valor_real||x.valor_projetado||x.valor):x.valor)||0),0);
   r.textContent=money(String(totalReceber).replace('.',','));
   p.textContent=money(String(totalPagar).replace('.',','));
+  if(window.receberDashHint)receberDashHint.textContent=isFiuzaSelected()?'Competência '+nomeMesCompetencia(competenciaReceber):'Ver contas a receber';
   l5.textContent='Clientes ativos';
   if(window.v5hint)v5hint.textContent='Ver clientes';
   if(isFiuzaSelected()){
