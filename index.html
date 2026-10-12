@@ -988,12 +988,101 @@ function renderDre(){
 }
 function gerarPdfDre(){
   if(!window.jspdf?.jsPDF){notify('Gerador de PDF indisponível.');return}
-  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const mes=dreMesFiltro.value;doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('DRE Gerencial - '+selectedCompanyName(),14,16);
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Competência: '+nomeMesCompetencia(mes)+' | Comparativo: '+nomeMesCurto(mesAnteriorIso(mes))+' x '+nomeMesCurto(mes),14,22);
-  const rows=[...dreBody.querySelectorAll('.dre-row')].map(r=>[...r.children].map(c=>c.textContent.trim()));
-  doc.autoTable({startY:28,head:[['Conta',nomeMesCurto(mesAnteriorIso(mes)),nomeMesCurto(mes),'% Receita']],body:rows,styles:{fontSize:8,cellPadding:1.8},columnStyles:{0:{cellWidth:90},1:{halign:'right'},2:{halign:'right'},3:{halign:'right'}}});
-  doc.save('DRE-'+selectedCompanyName().replace(/[^a-z0-9]+/gi,'-')+'-'+mes+'.pdf');
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const mes=dreMesFiltro.value;
+  const anterior=mesAnteriorIso(mes);
+  const empresa=selectedCompanyName();
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const ml=14,mr=14;
+  const teal=[47,105,116], gold=[185,150,93], ink=[51,79,85], muted=[125,113,103], line=[229,218,208], cream=[248,244,239];
+
+  // Cabeçalho
+  doc.setFillColor(...cream);doc.roundedRect(ml,12,pageW-ml-mr,28,4,4,'F');
+  doc.setFont('helvetica','bold');doc.setTextColor(...teal);doc.setFontSize(17);
+  doc.text('DRE GERENCIAL',ml+7,22);
+  doc.setTextColor(...ink);doc.setFontSize(11);
+  doc.text(empresa,ml+7,29);
+  doc.setFont('helvetica','normal');doc.setTextColor(...muted);doc.setFontSize(8.5);
+  doc.text('Competência: '+nomeMesCompetencia(mes),ml+7,35);
+  doc.text('Comparativo: '+nomeMesCurto(anterior)+' x '+nomeMesCurto(mes),pageW-mr-7,35,{align:'right'});
+
+  // Indicadores
+  const kpis=[
+    ['Receita operacional',dreReceitaKpi?.textContent||'R$ 0,00'],
+    ['Despesas / Receita',dreDespesaPctKpi?.textContent||'0,0%'],
+    ['Margem operacional',dreMargemKpi?.textContent||'0,0%'],
+    ['Resultado após investimentos',dreResultadoKpi?.textContent||'R$ 0,00']
+  ];
+  const gap=3, cardW=(pageW-ml-mr-gap*3)/4;
+  kpis.forEach((k,i)=>{
+    const x=ml+i*(cardW+gap);
+    doc.setDrawColor(...line);doc.setFillColor(255,253,251);doc.roundedRect(x,45,cardW,22,3,3,'FD');
+    doc.setFont('helvetica','bold');doc.setTextColor(...muted);doc.setFontSize(6.8);
+    doc.text(k[0].toUpperCase(),x+4,51,{maxWidth:cardW-8});
+    doc.setTextColor(...ink);doc.setFontSize(i===3?9.5:11);
+    doc.text(k[1],x+4,61,{maxWidth:cardW-8});
+  });
+
+  const body=[...dreBody.querySelectorAll('.dre-row')].map(r=>{
+    const cells=[...r.children].map(c=>c.textContent.trim());
+    let kind='line';
+    if(r.classList.contains('dre-group'))kind='group';
+    else if(r.classList.contains('dre-subtotal'))kind='subtotal';
+    else if(r.classList.contains('dre-total'))kind='total';
+    else if(r.classList.contains('dre-result-positive')||r.classList.contains('dre-result-negative'))kind='result';
+    return {cells,kind,positive:r.classList.contains('dre-result-positive')};
+  });
+
+  doc.autoTable({
+    startY:73,
+    head:[['Conta',nomeMesCurto(anterior),nomeMesCurto(mes),'% Receita']],
+    body:body.map(x=>x.cells),
+    margin:{left:ml,right:mr,bottom:18},
+    styles:{font:'helvetica',fontSize:8,cellPadding:{top:2.3,right:2.5,bottom:2.3,left:2.5},textColor:ink,lineColor:line,lineWidth:.15},
+    headStyles:{fillColor:teal,textColor:[255,255,255],fontStyle:'bold',fontSize:7.5,halign:'right'},
+    columnStyles:{0:{cellWidth:96,halign:'left'},1:{cellWidth:30,halign:'right'},2:{cellWidth:30,halign:'right'},3:{cellWidth:25,halign:'right'}},
+    didParseCell:data=>{
+      if(data.section!=='body')return;
+      const meta=body[data.row.index];
+      if(!meta)return;
+      if(meta.kind==='group'){
+        data.cell.styles.fillColor=[241,236,230];
+        data.cell.styles.fontStyle='bold';
+        data.cell.styles.textColor=ink;
+        data.cell.styles.fontSize=7.7;
+      }else if(meta.kind==='subtotal'){
+        data.cell.styles.fillColor=[249,246,242];
+        data.cell.styles.fontStyle='bold';
+      }else if(meta.kind==='total'){
+        data.cell.styles.fillColor=[242,244,244];
+        data.cell.styles.fontStyle='bold';
+      }else if(meta.kind==='result'){
+        data.cell.styles.fillColor=meta.positive?[237,247,241]:[255,240,239];
+        data.cell.styles.textColor=meta.positive?[52,113,83]:[166,86,80];
+        data.cell.styles.fontStyle='bold';
+      }else if(data.column.index===0){
+        data.cell.styles.cellPadding={top:2.3,right:2.5,bottom:2.3,left:6};
+      }
+    },
+    didDrawPage:()=>{
+      const n=doc.internal.getNumberOfPages();
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...muted);
+      doc.text('Seu BPO • DRE Gerencial',ml,pageH-8);
+      doc.text('Página '+n,pageW-mr,pageH-8,{align:'right'});
+    }
+  });
+
+  const finalY=doc.lastAutoTable?.finalY||73;
+  if(finalY<pageH-34){
+    doc.setDrawColor(...line);doc.line(ml,finalY+6,pageW-mr,finalY+6);
+    doc.setFont('helvetica','normal');doc.setTextColor(...muted);doc.setFontSize(7.5);
+    doc.text('Relatório gerencial elaborado com base nas movimentações realizadas no fluxo de caixa.',ml,finalY+12);
+    doc.text('Emitido em '+new Date().toLocaleString('pt-BR'),ml,finalY+17);
+  }
+
+  doc.save('DRE-'+empresa.replace(/[^a-z0-9]+/gi,'-')+'-'+mes+'.pdf');
 }
 function renderAll(){
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
