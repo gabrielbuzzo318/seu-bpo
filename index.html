@@ -571,23 +571,23 @@ if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
 if(!Array.isArray(store.fluxo)) store.fluxo=[];
 if(!Array.isArray(store.cartoesFiuza))store.cartoesFiuza=[];
 if(!Array.isArray(store.cartoesFaturas))store.cartoesFaturas=[];
-function parseFiuzaCartoesImport(){
-  const raw=String(window.FIUZA_CARTOES_RAW||'');
-  if(!raw)return [];
-  return raw.split('\x1e').filter(Boolean).map(rec=>{
-    const [id,linha,conta_original,categoria_original,objeto,fornecedor,cartao,data_compra,parcelasRaw]=rec.split('\x1f');
-    const parcelas=String(parcelasRaw||'').split(',').filter(Boolean).map(p=>{
-      const pos=p.lastIndexOf(':');return {competencia:p.slice(0,pos),valor:Number(p.slice(pos+1))||0};
-    });
-    return {
-      id:Number(id),linha_origem:Number(linha),conta_original,categoria_original,objeto,fornecedor,cartao,data_compra,
-      parcelas,valor_total:Number(parcelas.reduce((s,p)=>s+p.valor,0).toFixed(2)),qtd_parcelas:parcelas.length,
-      primeira_fatura:parcelas[0]?.competencia||'',ultima_fatura:parcelas[parcelas.length-1]?.competencia||'',status:'Aberta',importado:true
-    };
-  });
-}
-for(const item of parseFiuzaCartoesImport()){
-  if(!store.cartoesFiuza.some(x=>Number(x.id)===Number(item.id)))store.cartoesFiuza.push(item);
+const FIUZA_CARTOES_GZIP='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';
+async function carregarImportCartoesFiuza(){
+  if(!('DecompressionStream' in window))throw new Error('Seu navegador não suporta a importação automática dos cartões.');
+  const bin=Uint8Array.from(atob(FIUZA_CARTOES_GZIP),c=>c.charCodeAt(0));
+  const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const texto=await new Response(stream).text();
+  const itens=JSON.parse(texto);
+  let inseridos=0;
+  for(const item of itens){
+    if(!store.cartoesFiuza.some(x=>Number(x.id)===Number(item.id))){
+      store.cartoesFiuza.push(item);
+      inseridos++;
+    }
+  }
+  localStorage.setItem(DBKEY,JSON.stringify(store));
+  renderCartoes();
+  return inseridos;
 }
 if(!Array.isArray(store.plano))store.plano=[];
 const planoGerencialPadrao=[
@@ -2368,6 +2368,7 @@ loginForm.addEventListener('submit',async e=>{
 logoutBtn.onclick=async()=>{await sb.auth.signOut();showLogin()};
 
 renderAll();
+carregarImportCartoesFiuza().then(n=>{if(n)console.info('Cartões FIUZA importados:',n)}).catch(e=>console.error('Falha ao importar cartões FIUZA:',e));
 (async()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(!session){showLogin();return}
