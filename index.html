@@ -1174,83 +1174,144 @@ function linhaPareceFornecedor(l){
   if((l.match(/\d/g)||[]).length>l.length*.45)return false;
   return /[a-zA-ZÀ-ÿ]{3}/.test(l);
 }
-function fornecedorTexto(texto){
-  const linhas=texto.split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(x=>x.length>=3&&x.length<=120);
-  for(const l of linhas){
-    let m=l.match(/(?:benefici[aá]rio|cedente|raz[aã]o\s+social|emitente|estabelecimento|fornecedor)\s*[:\-]\s*(.+)$/i);
-    if(m&&m[1].trim().length>=3)return m[1].trim();
+function limparTextoDocumento(v){
+  return String(v||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').replace(/\s+([,.;:])/g,'$1').trim();
+}
+function linhasDocumento(texto){
+  return String(texto||'').split(/\r?\n/).map(limparTextoDocumento).filter(Boolean);
+}
+function valorDepoisRotulo(linhas,rotulos,{datas=false,numeros=false,moeda=false}={}){
+  const rs=rotulos.map(r=>new RegExp(r,'i'));
+  for(let i=0;i<linhas.length;i++){
+    if(!rs.some(r=>r.test(linhas[i])))continue;
+    const candidatos=[linhas[i],linhas[i+1]||'',linhas[i+2]||''];
+    for(const c of candidatos){
+      if(datas){
+        const m=c.match(/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/);
+        if(m)return m[0];
+      }
+      if(moeda){
+        const m=c.match(/(?:R\$\s*)?([0-9]{1,3}(?:[.\s][0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2})/i);
+        if(m)return m[1];
+      }
+      if(numeros){
+        const m=c.match(/\b([0-9]{4,20})\b/);
+        if(m)return m[1];
+      }
+    }
   }
+  return '';
+}
+function textoDepoisRotulo(linhas,rotulos){
+  const rs=rotulos.map(r=>new RegExp(r,'i'));
+  for(let i=0;i<linhas.length;i++){
+    for(const r of rs){
+      if(!r.test(linhas[i]))continue;
+      const inline=linhas[i].replace(r,'').replace(/^\s*[:\-]?\s*/,'').trim();
+      if(inline&&inline.length>2&&!/^(CPF|CNPJ|Ag[eê]ncia|C[oó]digo)/i.test(inline))return inline;
+      const prox=linhas[i+1]||'';
+      if(prox&&prox.length>2)return prox;
+    }
+  }
+  return '';
+}
+function fornecedorTexto(texto){
+  const linhas=linhasDocumento(texto);
+
+  // On boletos, Sacador/Avalista is often the actual supplier while Beneficiário can be a payment intermediary.
+  const sacador=textoDepoisRotulo(linhas,['^sacador\\s*\\/\\s*avalista\\b','^sacador\\b']);
+  if(sacador){
+    const limpo=sacador.replace(/\s*-?\s*CNPJ\s*:.*/i,'').replace(/\s*-?\s*CPF\s*:.*/i,'').trim();
+    if(limpo.length>=3)return limpo;
+  }
+
+  for(const rotulo of ['^benefici[aá]rio\\b','^cedente\\b','^raz[aã]o\\s+social\\b','^emitente\\b','^estabelecimento\\b','^fornecedor\\b']){
+    const v=textoDepoisRotulo(linhas,[rotulo]);
+    if(v){
+      const limpo=v.replace(/\s*-?\s*CNPJ\s*:.*/i,'').replace(/\s*-?\s*CPF\s*:.*/i,'').trim();
+      if(limpo.length>=3)return limpo;
+    }
+  }
+
   const idx=linhas.findIndex(l=>/cnpj\s*[:\-]?\s*\d/i.test(l));
   if(idx>0){for(let i=idx-1;i>=Math.max(0,idx-3);i--)if(linhaPareceFornecedor(linhas[i]))return linhas[i]}
-  for(const l of linhas.slice(0,14))if(linhaPareceFornecedor(l))return l;
+  for(const l of linhas.slice(0,16))if(linhaPareceFornecedor(l))return l;
   return '';
 }
 function dataRotulo(texto,rotulos){
-  for(const r of rotulos){const re=new RegExp(r+'[^0-9]{0,24}(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4})','i');const m=texto.match(re);const d=dataISO(m&&m[1]);if(d)return d}
-  return '';
+  const linhas=linhasDocumento(texto);
+  const bruto=valorDepoisRotulo(linhas,rotulos,{datas:true});
+  return dataISO(bruto);
 }
 function extrairTexto(texto){
-  texto=String(texto||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').trim();
-  const isBoleto=/linha\s+digit[aá]vel|ficha\s+de\s+compensa[cç][aã]o|nosso\s+n[uú]mero|local\s+de\s+pagamento/i.test(texto);
-  let fornecedor=fornecedorTexto(texto);
+  texto=String(texto||'').replace(/\u00a0/g,' ').trim();
+  const linhas=linhasDocumento(texto);
+  const isBoleto=/linha\s+digit[aá]vel|ficha\s+de\s+compensa[cç][aã]o|nosso\s+n[uú]mero|local\s+de\s+pagamento|banco\s+.+\d{3}-\d/i.test(texto);
+  const isNfe=/chave\s+de\s+acesso|nf-?e|nota\s+fiscal\s+eletr[oô]nica/i.test(texto);
 
+  const fornecedor=fornecedorTexto(texto);
+
+  let emissao='';
   if(isBoleto){
-    const benef=(texto.match(/Benefici[aá]rio\s+(.+?)(?=\s+CPF\/CNPJ|\s+CNPJ:|\s+Data\s+do\s+Documento|\s+Ag[eê]ncia)/i)||[])[1];
-    if(benef)fornecedor=benef.replace(/\s{2,}/g,' ').trim();
+    emissao=dataISO(valorDepoisRotulo(linhas,['data\\s+do\\s+documento','data\\s+de\\s+emiss[aã]o','emiss[aã]o'],{datas:true}))
+      || dataISO(valorDepoisRotulo(linhas,['data\\s+do\\s+processamento','data\\s+processamento'],{datas:true}));
+  }else{
+    emissao=dataISO(valorDepoisRotulo(linhas,['data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o','data\\s+da\\s+compra','data\\s+do\\s+documento'],{datas:true}));
   }
+  if(!emissao)emissao=dataISO((texto.match(/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/)||[])[0]);
 
-  const emissao=isBoleto
-    ? (dataRotulo(texto,['data\\s+do\\s+documento','data\\s+processamento','data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o'])
-       || dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]))
-    : (dataRotulo(texto,['data\\s+(?:de\\s+)?emiss[aã]o','emiss[aã]o','data\\s+da\\s+compra','data\\s+do\\s+documento'])
-       || dataISO((texto.match(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/)||[])[0]));
-
-  const venc=dataRotulo(texto,['data\\s+(?:de\\s+)?vencimento','vencimento','venc']);
+  const venc=dataISO(valorDepoisRotulo(linhas,['(?:data\\s+(?:de\\s+)?)?vencimento','^venc\\.?$'],{datas:true}))||emissao;
 
   let valor=null;
+  const brutoValor=valorDepoisRotulo(linhas,
+    isBoleto?['valor\\s+do\\s+documento','valor\\s+cobrado','total\\s+a\\s+pagar']:['valor\\s+total','total\\s+a\\s+pagar','valor\\s+do\\s+documento','valor\\s+l[ií]quido','total'],
+    {moeda:true});
+  valor=numeroValor(brutoValor);
+
+  if(!(valor>0)){
+    const vals=[...texto.matchAll(/(?:R\$\s*)?([0-9]{1,3}(?:[.\s][0-9]{3})*,[0-9]{2})/gi)]
+      .map(m=>numeroValor(m[1])).filter(v=>Number.isFinite(v)&&v>0);
+    if(vals.length)valor=Math.max(...vals);
+  }
+
+  let numeroDocumento='';
   if(isBoleto){
-    // In boletos, PDF text often separates the "Valor do Documento" label from the amount.
-    // Prefer an amount close to the label; otherwise use the largest explicit R$ amount on the page.
-    const pertoValor=(texto.match(/valor\s+do\s+documento[\s\S]{0,180}?r\s*\$\s*([0-9][0-9.\s]*,[0-9]{2})/i)||[])[1];
-    valor=numeroValor(pertoValor);
-    if(!(valor>0)){
-      const valores=[...texto.matchAll(/r\s*\$\s*([0-9][0-9.\s]*,[0-9]{2})/gi)]
-        .map(m=>numeroValor(m[1]))
-        .filter(v=>Number.isFinite(v)&&v>0);
-      if(valores.length)valor=Math.max(...valores);
+    numeroDocumento=valorDepoisRotulo(linhas,['n[úu]mero\\s+do\\s+documento','n[º°o]?\\s*documento'],{numeros:true});
+    if(!numeroDocumento){
+      for(let i=0;i<linhas.length-1;i++){
+        if(/data\s+do\s+documento/i.test(linhas[i])&&/n[úu]mero\s+do\s+documento/i.test(linhas[i])){
+          const m=(linhas[i+1]||'').match(/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b\s+([0-9]{4,20})\b/);
+          if(m){numeroDocumento=m[1];break}
+        }
+      }
     }
   }else{
-    const valorRegex=[/(?:valor\s+total|total\s+a\s+pagar|valor\s+do\s+documento|valor\s+pago|valor\s+l[ií]quido|total)\s*[:\-]?\s*(?:r\$\s*)?([0-9][0-9.,]*)/i,/(?:r\$)\s*([0-9][0-9.,]*)/i];
-    for(const rx of valorRegex){const mm=texto.match(rx);valor=numeroValor(mm&&mm[1]);if(valor!=null&&valor>0)break}
+    numeroDocumento=valorDepoisRotulo(linhas,['n[úu]mero\\s+da\\s+nota','n[º°o]?\\s*nota','n[º°o]?\\s*documento'],{numeros:true})
+      || (texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
   }
 
-  let num='';
+  let linhaDigitavel='';
   if(isBoleto){
-    num=(texto.match(/N[°ºo]?\s*Documento\s*[:\-]?\s*([0-9]{1,20})/i)||[])[1]||'';
-    if(!num){
-      // Common boleto layout: labels appear first, then "Data do Documento" and document number values.
-      num=(texto.match(/data\s+do\s+documento[\s\S]{0,260}?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})\s+([0-9]{6,20})\b/i)||[])[2]||'';
+    const fmt=(texto.match(/\b\d{5}\.\d{5}\s+\d{5}\.\d{6}\s+\d{5}\.\d{6}\s+\d\s+\d{14}\b/)||[])[0];
+    if(fmt)linhaDigitavel=fmt.replace(/\s+/g,' ').trim();
+    if(!linhaDigitavel){
+      const raw=(texto.match(/(?:\d[ .-]*){47,48}/)||[])[0]||'';
+      const digits=raw.replace(/\D/g,'');
+      if(digits.length===47||digits.length===48)linhaDigitavel=digits;
     }
-    if(!num){
-      num=(texto.match(/N[°ºo]?\s*Documento[\s\S]{0,260}?\b([0-9]{6,20})\b(?=\s+(?:DM|NP|RC|DS|N)\b)/i)||[])[1]||'';
-    }
-  }
-  if(!num){
-    num=(texto.match(/(?:nfc[-\s]?e|nf[-\s]?e|nota\s+fiscal|cupom\s+fiscal|recibo)\s*(?:n[º°o.]*)?\s*[:\-]?\s*([0-9]{1,15})/i)||[])[1]||'';
   }
 
-  let linha='';
-  const linhaFmt=(texto.match(/(?:linha\s+digit[aá]vel)[^0-9]{0,30}((?:\d[ .-]*){47,48})/i)||[])[1]||
-                 (texto.match(/\b\d{5}\.\d{5}\s+\d{5}\.\d{6}\s+\d{5}\.\d{6}\s+\d\s+\d{14}\b/)||[])[0]||'';
-  if(linhaFmt)linha=linhaFmt.replace(/\s+/g,' ').trim();
-
-  let chave='';
-  if(!isBoleto){
-    const chaveRaw=((texto.match(/(?:\d[ .-]*){44}/)||[])[0]||'').replace(/\D/g,'');
-    if(chaveRaw.length===44)chave=chaveRaw;
+  let chaveAcesso='';
+  if(isNfe&&!isBoleto){
+    const raw=((texto.match(/(?:\d[ .-]*){44}/)||[])[0]||'').replace(/\D/g,'');
+    if(raw.length===44)chaveAcesso=raw;
   }
 
-  return {fornecedor,dataEmissao:emissao,vencimento:venc||emissao,valor,numeroDocumento:num,chaveAcesso:chave,linhaDigitavel:linha};
+  let historico='';
+  const referente=textoDepoisRotulo(linhas,['^referente\\s+a\\b','^descri[cç][aã]o\\b','^hist[oó]rico\\b']);
+  if(referente)historico=referente.replace(/\s+PIN\s*:.*/i,'').trim();
+
+  return {tipoDocumento:isBoleto?'boleto':(isNfe?'nfe':'documento'),fornecedor,dataEmissao:emissao,vencimento:venc,valor,numeroDocumento,chaveAcesso,linhaDigitavel,historico};
 }
 async function lerDocumento(file){
   const nome=file.name.toLowerCase();
@@ -1270,7 +1331,18 @@ async function lerDocumento(file){
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
     let partes=[];
-    for(let p=1;p<=Math.min(pdf.numPages,4);p++){const pg=await pdf.getPage(p),ct=await pg.getTextContent();partes.push(ct.items.map(i=>i.str||'').join(' '))}
+    for(let p=1;p<=Math.min(pdf.numPages,4);p++){
+      const pg=await pdf.getPage(p),ct=await pg.getTextContent();
+      const rows=new Map();
+      for(const it of ct.items){
+        const txt=String(it.str||'').trim(); if(!txt)continue;
+        const x=Number(it.transform?.[4]||0), y=Math.round(Number(it.transform?.[5]||0)/3)*3;
+        if(!rows.has(y))rows.set(y,[]);
+        rows.get(y).push({x,txt});
+      }
+      const linhas=[...rows.entries()].sort((a,b)=>b[0]-a[0]).map(([,items])=>items.sort((a,b)=>a.x-b.x).map(i=>i.txt).join(' '));
+      partes.push(linhas.join('\n'));
+    }
     let texto=partes.join('\n');
     if(texto.replace(/\s/g,'').length<80 && window.Tesseract){
       partes=[];
@@ -1435,10 +1507,11 @@ lfFile.onchange=async()=>{
     if(d.fornecedor)lfParte.value=d.fornecedor;
     if(d.dataEmissao)lfEmissao.value=d.dataEmissao;
     lfVencimento.value=d.vencimento||d.dataEmissao||lfVencimento.value;
-    if(d.valor!=null)lfValor.value=formatValor(d.valor);
+    if(d.valor!=null&&d.valor>0)lfValor.value=formatValor(d.valor);
     if(d.numeroDocumento)lfNumero.value=d.numeroDocumento;
     lfChave.value=d.chaveAcesso||'';
     if(d.linhaDigitavel)lfLinha.value=d.linhaDigitavel;
+    if(d.historico&&!lfHistorico.value)lfHistorico.value=d.historico;
 
     const txtFornecedor=String(d.fornecedor||'').toUpperCase();
     const nomeArquivo=file.name.toUpperCase();
@@ -1448,8 +1521,15 @@ lfFile.onchange=async()=>{
       lfHistorico.value='Gestão MKT e Trafego Pago';
       lfConta.value='Marketing';
       lfBanco.value='Sicoob';
-    }else if(!lfHistorico.value && d.fornecedor){
-      lfHistorico.value=(d.numeroDocumento?'Documento '+d.numeroDocumento+' - ':'')+d.fornecedor;
+    }else{
+      // Reuse managerial classification from a prior payable for the same supplier when available.
+      const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+      const prev=store.pagar.find(x=>norm(x.fornecedor)===norm(lfParte.value)&&x.categoria&&x.categoria!=='Não classificado');
+      if(prev){
+        if(!lfConta.value)lfConta.value=prev.categoria;
+        if(!lfHistorico.value)lfHistorico.value=prev.descricao||'';
+      }
+      if(!lfHistorico.value&&d.fornecedor)lfHistorico.value=(d.numeroDocumento?'Documento '+d.numeroDocumento+' - ':'')+d.fornecedor;
     }
     readStatus.textContent='Documento lido automaticamente. Confira os campos antes de salvar.';readStatus.className='read-status show';updateCompetenciaHint();
   }catch(err){readStatus.textContent=err?.message||'Não foi possível ler o documento automaticamente.';readStatus.className='read-status show err'}
