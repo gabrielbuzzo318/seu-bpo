@@ -220,6 +220,34 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div class="sub" style="margin-top:10px">A senha do certificado não é salva no navegador. Ela será solicitada somente no momento da emissão da nota.</div>
   </div>
 
+  <div id="tugaoGissCard" class="card" style="display:none;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Integração NFS-e · GissOnline</div>
+        <div class="sub">São José do Rio Preto · Código IBGE 3549805</div>
+      </div>
+      <span id="tugaoGissBadge" class="status warn">Não testado</span>
+    </div>
+    <div class="launch-formgrid" style="margin-top:14px">
+      <div class="lf c3"><label>Ambiente</label><select id="gissAmbiente"><option value="producao">Produção</option><option value="homologacao">Homologação</option></select></div>
+      <div class="lf c3"><label>CNPJ prestador</label><input id="gissCnpj" placeholder="00.000.000/0000-00"></div>
+      <div class="lf c3"><label>Inscrição municipal</label><input id="gissIm" placeholder="IM da Tugão"></div>
+      <div class="lf c3"><label>Série RPS</label><input id="gissSerieRps" value="1"></div>
+      <div class="lf c3"><label>Próximo RPS</label><input id="gissProximoRps" type="number" min="1" value="1"></div>
+      <div class="lf c3"><label>Item da lista de serviço</label><input id="gissItemServico" placeholder="Ex.: 10.05"></div>
+      <div class="lf c3"><label>CNAE</label><input id="gissCnae" placeholder="Somente números"></div>
+      <div class="lf c3"><label>Código NBS</label><input id="gissNbs" placeholder="Exigido no layout atual"></div>
+      <div class="lf c3"><label>Alíquota ISS (%)</label><input id="gissAliquota" inputmode="decimal" placeholder="Ex.: 2,00"></div>
+      <div class="lf c3"><label>ISS retido?</label><select id="gissIssRetido"><option value="false">Não</option><option value="true">Sim</option></select></div>
+      <div class="lf c6"><label>Endpoint</label><input id="gissEndpointView" readonly></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px">
+      <button id="gissSalvarBtn" class="btn">Salvar configuração</button>
+      <button id="gissTestarBtn" class="btn primary">Testar conexão GISS</button>
+    </div>
+    <div id="gissResultado" class="sub" style="margin-top:10px"></div>
+  </div>
+
   <div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table></div>
 </section>
 <section id="empresas" class="screen"><div class="page-title"><div><h1>Empresas</h1><div class="sub">Gestão da carteira do BPO</div></div><button class="btn primary" data-add="empresas">+ Nova empresa</button></div><div class="card"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="empresasBody"></tbody></table></div></section>
@@ -1522,6 +1550,7 @@ function isTugaoSelected(){return selectedCompanyName().toUpperCase()==='TUGÃO 
 async function carregarCertificadoTugao(){
   if(!window.tugaoCertCard)return;
   tugaoCertCard.style.display=isTugaoSelected()?'':'none';
+  if(window.tugaoGissCard)tugaoGissCard.style.display=isTugaoSelected()?'':'none';
   if(!isTugaoSelected())return;
   const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
   if(!emp){tugaoCertStatus.textContent='Empresa Tugão Imóveis não localizada no cadastro online.';return}
@@ -1536,6 +1565,96 @@ async function carregarCertificadoTugao(){
     tugaoCertStatus.textContent='Nenhum certificado cadastrado.';
     tugaoCertRemoveBtn.style.display='none';
     tugaoCertBtn.textContent='Cadastrar certificado A1';
+  }
+  await carregarConfigGissTugao();
+}
+let tugaoGissConfig=null;
+function gissEndpointAtual(){
+  return (window.gissAmbiente?.value||'producao')==='homologacao'
+    ? 'https://ws-homologacao-rtc.giss.com.br/service-ws/nf/nfse-ws?wsdl'
+    : 'https://ws-sjrp.giss.com.br/service-ws/nf/nfse-ws?wsdl';
+}
+function atualizarEndpointGiss(){
+  if(window.gissEndpointView)gissEndpointView.value=gissEndpointAtual();
+}
+async function carregarConfigGissTugao(){
+  if(!window.tugaoGissCard||!isTugaoSelected())return;
+  const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
+  if(!emp)return;
+  const {data,error}=await sb.from('seubpo_nfse_config').select('*').eq('empresa_id',emp.id).maybeSingle();
+  if(error){gissResultado.textContent='Não foi possível carregar a configuração da GISS.';return}
+  tugaoGissConfig=data||null;
+  const cfg=data||{};
+  gissAmbiente.value=cfg.ambiente||'producao';
+  gissCnpj.value=cfg.cnpj||'';
+  gissIm.value=cfg.inscricao_municipal||'';
+  gissSerieRps.value=cfg.serie_rps||'1';
+  gissProximoRps.value=cfg.proximo_rps||1;
+  gissItemServico.value=cfg.item_lista_servico||'';
+  gissCnae.value=cfg.cnae||'';
+  gissNbs.value=cfg.codigo_nbs||'';
+  gissAliquota.value=cfg.aliquota_iss==null?'':String(cfg.aliquota_iss).replace('.',',');
+  gissIssRetido.value=String(!!cfg.iss_retido);
+  atualizarEndpointGiss();
+}
+async function salvarConfigGissTugao(){
+  const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
+  if(!emp){notify('Empresa Tugão Imóveis não localizada.');return}
+  const aliquota=numeroValor(gissAliquota.value);
+  const payload={
+    empresa_id:emp.id,
+    provedor:'GISS',
+    ambiente:gissAmbiente.value,
+    endpoint_producao:'https://ws-sjrp.giss.com.br/service-ws/nf/nfse-ws?wsdl',
+    endpoint_homologacao:'https://ws-homologacao-rtc.giss.com.br/service-ws/nf/nfse-ws?wsdl',
+    codigo_municipio:'3549805',
+    cnpj:gissCnpj.value.replace(/\D/g,'')||null,
+    inscricao_municipal:gissIm.value.trim()||null,
+    serie_rps:gissSerieRps.value.trim()||'1',
+    proximo_rps:Math.max(1,Number(gissProximoRps.value)||1),
+    item_lista_servico:gissItemServico.value.trim()||null,
+    cnae:gissCnae.value.replace(/\D/g,'')||null,
+    codigo_nbs:gissNbs.value.trim()||null,
+    aliquota_iss:aliquota||null,
+    iss_retido:gissIssRetido.value==='true',
+    atualizado_em:new Date().toISOString()
+  };
+  gissSalvarBtn.disabled=true;
+  try{
+    const {error}=await sb.from('seubpo_nfse_config').upsert(payload,{onConflict:'empresa_id'});
+    if(error)throw error;
+    tugaoGissConfig=payload;notify('Configuração GISS salva.');
+  }catch(e){notify(e.message||'Erro ao salvar configuração GISS.')}
+  finally{gissSalvarBtn.disabled=false}
+}
+async function testarConexaoGissTugao(){
+  if(!tugaoCertMeta){notify('Cadastre primeiro o certificado A1 da Tugão.');return}
+  const senha=prompt('Senha do certificado A1 da Tugão:');
+  if(senha===null)return;
+  if(!senha){notify('Informe a senha do certificado.');return}
+  const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
+  if(!emp)return;
+  gissTestarBtn.disabled=true;gissTestarBtn.textContent='Testando...';
+  gissResultado.textContent='Abrindo conexão segura com a GISS...';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada. Entre novamente.');
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-test',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+      body:JSON.stringify({empresa_id:emp.id,password:senha,ambiente:gissAmbiente.value})
+    });
+    const out=await resp.json();
+    if(!resp.ok)throw new Error(out.error||'Falha na conexão GISS.');
+    gissResultado.textContent='Conexão OK · '+(out.ambiente==='producao'?'Produção':'Homologação')+' · '+out.status+' · '+out.latency_ms+' ms';
+    tugaoGissBadge.className='status ok';tugaoGissBadge.textContent='Conectado';
+    notify('Conexão com a GISS validada.');
+  }catch(e){
+    gissResultado.textContent=e.message||'Falha ao testar conexão.';
+    tugaoGissBadge.className='status bad';tugaoGissBadge.textContent='Falha';
+    notify(e.message||'Falha ao testar GISS.');
+  }finally{
+    gissTestarBtn.disabled=false;gissTestarBtn.textContent='Testar conexão GISS';
   }
 }
 async function salvarCertificadoTugao(file){
@@ -1837,6 +1956,9 @@ if(window.drePdfBtn)drePdfBtn.onclick=gerarPdfDre;
 if(window.tugaoCertBtn)tugaoCertBtn.onclick=()=>tugaoCertFile.click();
 if(window.tugaoCertFile)tugaoCertFile.onchange=()=>{const f=tugaoCertFile.files?.[0];if(f)salvarCertificadoTugao(f);tugaoCertFile.value=''};
 if(window.tugaoCertRemoveBtn)tugaoCertRemoveBtn.onclick=removerCertificadoTugao;
+if(window.gissSalvarBtn)gissSalvarBtn.onclick=salvarConfigGissTugao;
+if(window.gissTestarBtn)gissTestarBtn.onclick=testarConexaoGissTugao;
+if(window.gissAmbiente)gissAmbiente.onchange=atualizarEndpointGiss;
 if(window.cartaoNovoBtn)cartaoNovoBtn.onclick=()=>abrirNovaCompraCartao();
 if(window.cartaoFecharBtn)cartaoFecharBtn.onclick=abrirFecharFaturaCartao;
 if(window.cartaoMesFiltro)cartaoMesFiltro.onchange=renderCartoes;
