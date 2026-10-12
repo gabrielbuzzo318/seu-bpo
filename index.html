@@ -2023,7 +2023,7 @@ if(window.pagarRelatorioBtn)pagarRelatorioBtn.onclick=()=>gerarRelatorioFinancei
 if(window.receberRelatorioBtn)receberRelatorioBtn.onclick=()=>gerarRelatorioFinanceiro('receber');
 if(window.dreMesFiltro)dreMesFiltro.onchange=renderDre;
 if(window.drePdfBtn)drePdfBtn.onclick=gerarPdfDre;
-if(window.fluxoNovoBtn)fluxoNovoBtn.onclick=abrirFluxoManual;
+if(window.fluxoNovoBtn)fluxoNovoBtn.onclick=()=>abrirFluxoManual();
 if(window.tugaoCertBtn)tugaoCertBtn.onclick=()=>tugaoCertFile.click();
 if(window.tugaoCertFile)tugaoCertFile.onchange=()=>{const f=tugaoCertFile.files?.[0];if(f)salvarCertificadoTugao(f);tugaoCertFile.value=''};
 if(window.tugaoCertRemoveBtn)tugaoCertRemoveBtn.onclick=removerCertificadoTugao;
