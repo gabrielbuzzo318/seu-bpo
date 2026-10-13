@@ -259,7 +259,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
       <div>
         <div class="section-title">Importar relatório para emissão</div>
-        <div class="sub">Para a Tugão: tomador = CPF da coluna B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H. Regras especiais de agrupamento são aplicadas automaticamente.</div>
+        <div class="sub">Para a Tugão: locador = coluna A, CPF/CNPJ do locador = B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H. Regras especiais de agrupamento são aplicadas automaticamente.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
@@ -1700,6 +1700,7 @@ function linhaRelatorioParaNf(row,idx){
   return {id,cliente:String(cliente||'').trim(),documento:String(documento||'').trim(),descricao:String(descricao||'').trim(),email:String(email||'').trim(),valor,status:valido?'Pronta':'Revisar',origem_relatorio:true};
 }
 function linhaRelatorioTugaoPorColunas(row,idx){
+  const locador=String(row?.[0]??'').trim();
   const cpf=String(row?.[1]??'').trim();
   const contrato=String(row?.[2]??'').trim();
   const locatario=String(row?.[3]??'').trim();
@@ -1715,15 +1716,16 @@ function linhaRelatorioTugaoPorColunas(row,idx){
     descricao='Taxa de Intermediação de Imóvel.\nContrato nº '+contrato+', locatário '+locatario;
   }
   const id=Date.now()+idx;
-  const valido=!!cpf && (numeroValor(valorH)||0)>0 && !!descricao;
+  const valido=!!locador && !!cpf && (numeroValor(valorH)||0)>0 && !!descricao;
   return {
     id,
-    cliente:locatario||cpf,
+    cliente:locador||cpf,
     documento:cpf,
     descricao,
     email:'',
     valor:valorH,
     contrato,
+    locador,
     locatario,
     taxa_administracao:valorE,
     taxa_intermediacao:valorG,
@@ -1739,9 +1741,9 @@ function combinarDescricoesTugao(itens){
   return [...new Set(itens.map(x=>String(x.descricao||'').trim()).filter(Boolean))].join('\n');
 }
 function aplicarRegrasEspeciaisNfTugao(itens){
-  let rows=(itens||[]).filter(x=>!nomeChaveTugao(x.locatario||x.cliente).includes('NILZA'));
+  let rows=(itens||[]).filter(x=>!nomeChaveTugao(x.cliente||x.locador||x.locatario).includes('NILZA'));
 
-  const marco=rows.find(x=>nomeChaveTugao(x.locatario||x.cliente)==='MARCO ANTONIO GODOI BUQUI');
+  const marco=rows.find(x=>nomeChaveTugao(x.cliente||x.locador||x.locatario)==='MARCO ANTONIO GODOI BUQUI');
   const regras=[
     {
       membros:['MARCO ANTONIO GODOI BUQUI','ROSICLER LIBERATO AMARAL BUQUI'],
@@ -1758,12 +1760,12 @@ function aplicarRegrasEspeciaisNfTugao(itens){
   const usados=new Set();
   const agregados=[];
   for(const regra of regras){
-    const grupo=rows.filter(x=>regra.membros.includes(nomeChaveTugao(x.locatario||x.cliente)));
+    const grupo=rows.filter(x=>regra.membros.includes(nomeChaveTugao(x.cliente||x.locador||x.locatario)));
     if(!grupo.length)continue;
     grupo.forEach(x=>usados.add(x.id));
     const base=regra.tomador==='MARCO ANTONIO GODOI BUQUI'
       ? (marco||grupo[0])
-      : (grupo.find(x=>nomeChaveTugao(x.locatario||x.cliente)===regra.tomador)||grupo[0]);
+      : (grupo.find(x=>nomeChaveTugao(x.cliente||x.locador||x.locatario)===regra.tomador)||grupo[0]);
     const total=grupo.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
     agregados.push({
       ...base,
