@@ -1935,6 +1935,15 @@ async function emitirNfIndividualTugao(id){
   if(!String(cadastroTomador.uf||'').trim())faltamTomador.push('UF');
   if(String(cadastroTomador.cep||'').replace(/\D/g,'').length!==8)faltamTomador.push('CEP');
   if(faltamTomador.length){notify('Complete o cadastro do locador na aba Clientes: '+faltamTomador.join(', ')+'.');return}
+  const addrMarker='[[SBPADDR|'+[
+    cadastroTomador.endereco||'',
+    cadastroTomador.numero||'',
+    cadastroTomador.complemento||'',
+    cadastroTomador.bairro||'',
+    cadastroTomador.cidade||'',
+    cadastroTomador.uf||'',
+    cadastroTomador.cep||''
+  ].map(v=>encodeURIComponent(String(v))).join('|')+']]';
   const nota={...x,
     cliente:cadastroTomador.nome||x.cliente,
     documento:cadastroTomador.documento||x.documento,
@@ -1946,6 +1955,7 @@ async function emitirNfIndividualTugao(id){
     cidade:cadastroTomador.cidade||'',
     uf:cadastroTomador.uf||'',
     cep:cadastroTomador.cep||'',
+    descricao:String(x.descricao||'')+' '+addrMarker,
     competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)};
   x.status='Emitindo';
   renderFilaNfTugao();
