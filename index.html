@@ -1958,7 +1958,7 @@ async function carregarCertificadoTugao(){
 let tugaoGissConfig=null;
 function gissEndpointAtual(){
   return (window.gissAmbiente?.value||'producao')==='homologacao'
-    ? 'https://ws-homologacao-rtc.giss.com.br/service-ws/nf/nfse-ws?wsdl'
+    ? 'https://v2-ws-homologacao.giss.com.br/service-ws/nf/nfse-ws?wsdl'
     : 'https://ws-sjrp.giss.com.br/service-ws/nf/nfse-ws?wsdl';
 }
 function atualizarEndpointGiss(){
@@ -2006,7 +2006,7 @@ async function salvarConfigGissTugao(){
     provedor:'GISS',
     ambiente:gissAmbiente.value,
     endpoint_producao:'https://ws-sjrp.giss.com.br/service-ws/nf/nfse-ws?wsdl',
-    endpoint_homologacao:'https://ws-homologacao-rtc.giss.com.br/service-ws/nf/nfse-ws?wsdl',
+    endpoint_homologacao:'https://v2-ws-homologacao.giss.com.br/service-ws/nf/nfse-ws?wsdl',
     codigo_municipio:'3549805',
     cnpj:gissCnpj.value.replace(/\D/g,'')||null,
     inscricao_municipal:gissIm.value.trim()||null,
