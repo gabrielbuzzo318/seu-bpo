@@ -47,10 +47,12 @@ function gissResignSoap(soap, certChain, privateKey){
   const m=String(soap||'').match(/<nfseDadosMsg><!\[CDATA\[([\s\S]*?)\]\]><\/nfseDadosMsg>/);
   if(!m) return soap;
   let xml=m[1];
-  if(!/EnviarLoteRpsEnvio/.test(xml)) return soap;
+  if(!/EnviarLoteRps(?:Sincrono)?Envio/.test(xml)) return soap;
 
   xml=xml
     .replace(/<(?:ds:)?Signature\b[\s\S]*?<\/(?:ds:)?Signature>/g,'')
+    .replace(/http:\/\/www\.giss\.com\.br\/enviar-lote-rps-envio-v2_04\.xsd/g,'http://www.giss.com.br/enviar-lote-rps-sincrono-envio-v2_04.xsd')
+    .replace(/EnviarLoteRpsEnvio/g,'EnviarLoteRpsSincronoEnvio')
     .replace(/xmlns:g=/g,'xmlns:giss=')
     .replace(/<g:/g,'<giss:')
     .replace(/<\/g:/g,'</giss:')
@@ -62,7 +64,7 @@ function gissResignSoap(soap, certChain, privateKey){
   const c14n='http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
   const rsa='http://www.w3.org/2000/09/xmldsig#rsa-sha1';
   const sha1='http://www.w3.org/2000/09/xmldsig#sha1';
-  const env='http://www.giss.com.br/enviar-lote-rps-envio-v2_04.xsd';
+  const env='http://www.giss.com.br/enviar-lote-rps-sincrono-envio-v2_04.xsd';
   const tipos='http://www.giss.com.br/tipos-v2_04.xsd';
   const ds='http://www.w3.org/2000/09/xmldsig#';
 
@@ -93,7 +95,9 @@ function gissResignSoap(soap, certChain, privateKey){
   if(loteId) xml=signOne(xml,loteId);
 
   console.log('GISS RESIGN',JSON.stringify({rpsIds,loteId,sigCount:(xml.match(/<ds:Signature\b/g)||[]).length}));
-  return String(soap).replace(m[1],xml);
+  let out=String(soap).replace(m[1],xml);
+  out=out.replace(/RecepcionarLoteRpsRequest/g,'RecepcionarLoteRpsSincronoRequest');
+  return out;
 }
 
 function mtlsRequest({url, method='POST', headers={}, body='', certChain, privateKey}){
@@ -141,7 +145,7 @@ async function handleProxy(req,res){
     if(!b.url || !b.certChain || !b.privateKey) return sendJson(res,400,{error:'Dados mTLS incompletos'});
     let soapBody=String(b.body || '');
     soapBody=gissResignSoap(soapBody,String(b.certChain||''),String(b.privateKey||''));
-    const refs=[...soapBody.matchAll(/<Reference\b[^>]*URI=["']([^"']*)["']/g)].map(m=>m[1]);
+    const refs=[...soapBody.matchAll(/<(?:\w+:)?Reference\b[^>]*URI=["']([^"']*)["']/g)].map(m=>m[1]);
     const sigCount=(soapBody.match(/<(?:\w+:)?Signature\b/g)||[]).length;
     const infIds=[...soapBody.matchAll(/<[^>]*InfDeclaracaoPrestacaoServico\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
     const loteIds=[...soapBody.matchAll(/<[^>]*LoteRps\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
@@ -149,7 +153,10 @@ async function handleProxy(req,res){
     const out=await mtlsRequest({
       url:String(b.url),
       method:String(b.method || 'POST'),
-      headers:b.headers && typeof b.headers==='object' ? b.headers : {},
+      headers:{
+        ...(b.headers && typeof b.headers==='object' ? b.headers : {}),
+        ...(soapBody.includes('RecepcionarLoteRpsSincronoRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/RecepcionarLoteRpsSincrono"'}:{})
+      },
       body:soapBody,
       certChain:String(b.certChain),
       privateKey:String(b.privateKey)
