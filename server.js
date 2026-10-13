@@ -3,6 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { SignedXml } = require('xml-crypto');
 
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
@@ -40,6 +41,59 @@ function readBody(req, limit=8*1024*1024){
     req.on('end', ()=>resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+function gissResignSoap(soap, certChain, privateKey){
+  const m=String(soap||'').match(/<nfseDadosMsg><!\[CDATA\[([\s\S]*?)\]\]><\/nfseDadosMsg>/);
+  if(!m) return soap;
+  let xml=m[1];
+  if(!/EnviarLoteRpsEnvio/.test(xml)) return soap;
+
+  xml=xml
+    .replace(/<(?:ds:)?Signature\b[\s\S]*?<\/(?:ds:)?Signature>/g,'')
+    .replace(/xmlns:g=/g,'xmlns:giss=')
+    .replace(/<g:/g,'<giss:')
+    .replace(/<\/g:/g,'</giss:')
+    .replace(/Id="Dec_(\d+)"/g,'Id="RPS$1"')
+    .replace(/Id="Lote_(\d+)"/g,'Id="LOTE$1"')
+    .replace(/<tipos:CodigoPais>1058<\/tipos:CodigoPais>/g,'<tipos:CodigoPais>0076</tipos:CodigoPais>');
+
+  const leaf=String(certChain||'').match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/)?.[0]||String(certChain||'');
+  const c14n='http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+  const rsa='http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+  const sha1='http://www.w3.org/2000/09/xmldsig#sha1';
+  const env='http://www.giss.com.br/enviar-lote-rps-envio-v2_04.xsd';
+  const tipos='http://www.giss.com.br/tipos-v2_04.xsd';
+  const ds='http://www.w3.org/2000/09/xmldsig#';
+
+  const signOne=(input,id)=>{
+    const sig=new SignedXml({
+      privateKey:String(privateKey),
+      publicCert:leaf,
+      signatureAlgorithm:rsa,
+      canonicalizationAlgorithm:c14n,
+      getKeyInfoContent:SignedXml.getKeyInfoContent
+    });
+    sig.addReference({
+      xpath:"//*[@Id='"+id+"']",
+      transforms:['http://www.w3.org/2000/09/xmldsig#enveloped-signature',c14n],
+      digestAlgorithm:sha1
+    });
+    sig.computeSignature(input,{
+      prefix:'ds',
+      location:{reference:"//*[@Id='"+id+"']",action:'after'},
+      existingPrefixes:{giss:env,tipos,ds}
+    });
+    return sig.getSignedXml();
+  };
+
+  const rpsIds=[...xml.matchAll(/<tipos:InfDeclaracaoPrestacaoServico\b[^>]*Id="([^"]+)"/g)].map(x=>x[1]);
+  const loteId=xml.match(/<giss:LoteRps\b[^>]*Id="([^"]+)"/)?.[1]||'';
+  if(rpsIds.length===1) xml=signOne(xml,rpsIds[0]);
+  if(loteId) xml=signOne(xml,loteId);
+
+  console.log('GISS RESIGN',JSON.stringify({rpsIds,loteId,sigCount:(xml.match(/<ds:Signature\b/g)||[]).length}));
+  return String(soap).replace(m[1],xml);
 }
 
 function mtlsRequest({url, method='POST', headers={}, body='', certChain, privateKey}){
@@ -85,7 +139,8 @@ async function handleProxy(req,res){
     const raw=await readBody(req);
     const b=JSON.parse(raw || '{}');
     if(!b.url || !b.certChain || !b.privateKey) return sendJson(res,400,{error:'Dados mTLS incompletos'});
-    const soapBody=String(b.body || '');
+    let soapBody=String(b.body || '');
+    soapBody=gissResignSoap(soapBody,String(b.certChain||''),String(b.privateKey||''));
     const refs=[...soapBody.matchAll(/<Reference\b[^>]*URI=["']([^"']*)["']/g)].map(m=>m[1]);
     const sigCount=(soapBody.match(/<(?:\w+:)?Signature\b/g)||[]).length;
     const infIds=[...soapBody.matchAll(/<[^>]*InfDeclaracaoPrestacaoServico\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
