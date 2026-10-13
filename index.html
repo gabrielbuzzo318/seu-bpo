@@ -253,7 +253,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
       <div>
         <div class="section-title">Importar relatório para emissão</div>
-        <div class="sub">Para a Tugão: tomador = CPF da coluna B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H.</div>
+        <div class="sub">Para a Tugão: tomador = CPF da coluna B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H. Regras especiais de agrupamento são aplicadas automaticamente.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
@@ -1693,6 +1693,55 @@ function linhaRelatorioTugaoPorColunas(row,idx){
     layout_tugao:true
   };
 }
+function nomeChaveTugao(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+}
+function combinarDescricoesTugao(itens){
+  return [...new Set(itens.map(x=>String(x.descricao||'').trim()).filter(Boolean))].join('\n');
+}
+function aplicarRegrasEspeciaisNfTugao(itens){
+  let rows=(itens||[]).filter(x=>!nomeChaveTugao(x.locatario||x.cliente).includes('NILZA'));
+
+  const marco=rows.find(x=>nomeChaveTugao(x.locatario||x.cliente)==='MARCO ANTONIO GODOI BUQUI');
+  const regras=[
+    {
+      membros:['MARCO ANTONIO GODOI BUQUI','ROSICLER LIBERATO AMARAL BUQUI'],
+      tomador:'MARCO ANTONIO GODOI BUQUI',
+      grupo:'marco_rosicler'
+    },
+    {
+      membros:['CONCEICAO CUALHETE','GENESIO CUALHETE'],
+      tomador:'MARCO ANTONIO GODOI BUQUI',
+      grupo:'conceicao_genesio'
+    }
+  ];
+
+  const usados=new Set();
+  const agregados=[];
+  for(const regra of regras){
+    const grupo=rows.filter(x=>regra.membros.includes(nomeChaveTugao(x.locatario||x.cliente)));
+    if(!grupo.length)continue;
+    grupo.forEach(x=>usados.add(x.id));
+    const base=regra.tomador==='MARCO ANTONIO GODOI BUQUI' ? (marco||grupo[0]) : grupo[0];
+    const total=grupo.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
+    agregados.push({
+      ...base,
+      id:Date.now()+100000+agregados.length,
+      cliente:regra.tomador==='MARCO ANTONIO GODOI BUQUI'?'Marco Antonio Godoi Buqui':base.cliente,
+      documento:(marco?.documento||base.documento||''),
+      valor:formatValor(total),
+      descricao:combinarDescricoesTugao(grupo),
+      contrato:grupo.map(x=>x.contrato).filter(Boolean).join(' / '),
+      locatario:grupo.map(x=>x.locatario).filter(Boolean).join(' / '),
+      taxa_administracao:grupo.reduce((s,x)=>s+(Number(x.taxa_administracao)||0),0),
+      taxa_intermediacao:grupo.reduce((s,x)=>s+(Number(x.taxa_intermediacao)||0),0),
+      regra_especial:regra.grupo,
+      status:(marco?.documento||base.documento) && total>0 ? 'Pronta' : 'Revisar'
+    });
+  }
+  rows=rows.filter(x=>!usados.has(x.id));
+  return rows.concat(agregados);
+}
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
   const rows=store.nfImportacaoTugao||[];
@@ -1747,7 +1796,7 @@ async function importarRelatorioNfTugao(file){
         const g=numeroValor(r?.[6])||0;
         return b && h>0 && (e>0||g>0);
       });
-      store.nfImportacaoTugao=candidatos.map((r,i)=>linhaRelatorioTugaoPorColunas(r,i));
+      store.nfImportacaoTugao=aplicarRegrasEspeciaisNfTugao(candidatos.map((r,i)=>linhaRelatorioTugaoPorColunas(r,i)));
     }else{
       const limpas=rows.filter(r=>Object.values(r||{}).some(v=>String(v??'').trim()!==''));
       store.nfImportacaoTugao=limpas.map((r,i)=>linhaRelatorioParaNf(r,i));
