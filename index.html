@@ -80,6 +80,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 @media(max-width:900px){.finance-filters{align-items:stretch}.finance-filter,.finance-filter.searchwide{min-width:100%;width:100%}.finance-filter-actions{width:100%;margin-left:0}.finance-filter-actions .btn{flex:1}}
 .finance-totalizer{display:flex;justify-content:flex-end;margin:-4px 0 12px}.finance-totalizer.inline-total{margin:0}.finance-totalizer.inline-total .total-box{min-width:180px;padding:9px 13px}.finance-totalizer .total-box{min-width:240px;background:#fffdfb;border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 6px 18px rgba(80,58,42,.05)}.finance-totalizer .total-label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:900;color:#8b7767}.finance-totalizer .total-value{font-size:18px;font-weight:900;color:#334f55;margin-top:3px}.finance-totalizer .total-sub{font-size:8px;color:var(--muted);margin-top:2px}@media(max-width:700px){.finance-totalizer{justify-content:stretch}.finance-totalizer .total-box{width:100%}.finance-totalizer.inline-total{width:100%}.finance-totalizer.inline-total .total-box{min-width:0}}.company-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}.company-access-option{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:#fffdfa;cursor:pointer}.company-access-option:hover{border-color:#c9ad83;background:#fffaf3}.company-access-option input{width:16px;height:16px;accent-color:#b9965d}.company-access-option span{font-size:12px;font-weight:700;color:#465b5f}@media(max-width:650px){.company-access-grid{grid-template-columns:1fr}}.dre-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.dre-card{padding:0}.dre-head-row,.dre-row{display:grid;grid-template-columns:minmax(280px,1fr) 140px 140px 90px;gap:12px;align-items:center}.dre-head-row{padding:11px 16px;background:#f5f0ea;border-bottom:1px solid var(--border);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#8b7767}.dre-row{padding:10px 16px;border-bottom:1px solid #eee4db;font-size:11px}.dre-row:last-child{border-bottom:0}.dre-row>div:not(:first-child){text-align:right}.dre-group{background:#f1ece6;font-weight:900;text-transform:uppercase;letter-spacing:.035em;color:#52666a}.dre-line{cursor:pointer}.dre-line:hover{background:#fcf8f3}.dre-indent{padding-left:18px;color:#647277}.dre-subtotal{background:#f8f5f1;font-weight:900}.dre-total{background:#f1f3f3;font-weight:900}.dre-result-positive{background:#edf7f1;color:#347153;font-weight:900}.dre-result-negative{background:#fff0ef;color:#a65650;font-weight:900}@media(max-width:900px){.dre-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dre-head-row,.dre-row{grid-template-columns:minmax(220px,1fr) 110px 110px 75px;min-width:620px}}@media(max-width:600px){.dre-kpis{grid-template-columns:1fr 1fr}}.dashboard-main-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.dashboard-actions-card{margin-top:14px}.dashboard-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.dashboard-action{border:1px solid var(--border);background:#fffdfa;border-radius:13px;padding:14px 15px;text-align:left;cursor:pointer;transition:.18s;color:#334f55}.dashboard-action:hover{border-color:#c9ad83;background:#fff8ef;transform:translateY(-1px)}.dashboard-action b{display:block;font-size:12px}.dashboard-action span{display:block;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.35}@media(max-width:900px){.dashboard-main-cards{grid-template-columns:1fr 1fr}.dashboard-actions{grid-template-columns:1fr 1fr}}@media(max-width:560px){.dashboard-main-cards,.dashboard-actions{grid-template-columns:1fr}}.dashboard-card-link{appearance:none;width:100%;text-align:left;cursor:pointer;color:inherit;font:inherit;transition:.18s ease}.dashboard-card-link:hover{transform:translateY(-2px);border-color:#c9ad83;box-shadow:0 10px 26px rgba(80,58,42,.08)}.dashboard-card-link:focus-visible{outline:3px solid rgba(185,150,93,.18);outline-offset:2px}.dashboard-card-hint{margin-top:7px;font-size:9px;color:var(--muted);font-weight:700}.dashboard-card-link:hover .dashboard-card-hint{color:#8a6a3d}.cartao-kpis{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:14px}.cartao-filters{margin-bottom:0}.cartao-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:900;background:#f3ece5;color:#53666a}.cartao-parcela{font-weight:900;color:#8a6a3d}@media(max-width:900px){.cartao-kpis{grid-template-columns:1fr 1fr}}@media(max-width:560px){.cartao-kpis{grid-template-columns:1fr}}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -248,7 +249,31 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div id="gissResultado" class="sub" style="margin-top:10px"></div>
   </div>
 
-  <div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table></div>
+  <div id="tugaoImportCard" class="card" style="display:none;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Importar relatório para emissão</div>
+        <div class="sub">Envie XLSX, XLS, CSV ou PDF. O sistema lê o relatório, monta a fila e deixa tudo pronto para emitir em lote.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
+        <button id="nfRelatorioBtn" class="btn">Importar relatório</button>
+        <button id="nfEmitirTodasBtn" class="btn primary" disabled>Emitir todas</button>
+      </div>
+    </div>
+    <div id="nfImportStatus" class="sub" style="margin-top:10px">Nenhum relatório importado.</div>
+    <div style="overflow:auto;margin-top:12px">
+      <table>
+        <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="nfImportBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:10px">NFS-e emitidas</div>
+    <table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table>
+  </div>
 </section>
 <section id="empresas" class="screen"><div class="page-title"><div><h1>Empresas</h1><div class="sub">Gestão da carteira do BPO</div></div><button class="btn primary" data-add="empresas">+ Nova empresa</button></div><div class="card"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="empresasBody"></tbody></table></div></section>
 <section id="usuarios" class="screen"><div class="page-title"><div><h1>Usuários e Acessos</h1><div class="sub">Permissões por empresa</div></div><button class="btn primary" data-add="usuarios">+ Novo usuário</button></div><div class="card"><table><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Empresa</th><th>Ações</th></tr></thead><tbody id="usuariosBody"></tbody></table></div></section>
@@ -630,6 +655,7 @@ if(!Array.isArray(store.fiuzaClientes)) store.fiuzaClientes=[];
 if(!Array.isArray(store.fluxo)) store.fluxo=[];
 if(!Array.isArray(store.cartoesFiuza))store.cartoesFiuza=[];
 if(!Array.isArray(store.cartoesFaturas))store.cartoesFaturas=[];
+if(!Array.isArray(store.nfImportacaoTugao))store.nfImportacaoTugao=[];
 const FIUZA_CARTOES_GZIP='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';
 async function carregarImportCartoesFiuza(){
   if(!('DecompressionStream' in window))throw new Error('Seu navegador não suporta a importação automática dos cartões.');
@@ -1603,10 +1629,147 @@ function abrirFecharFaturaCartao(){
 }
 let tugaoCertMeta=null;
 function isTugaoSelected(){return selectedCompanyName().toUpperCase()==='TUGÃO IMÓVEIS'}
+function normalizaCabecalhoNf(v){
+  return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function valorNfImport(v){
+  if(v==null||v==='')return '';
+  if(typeof v==='number')return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const n=numeroValor(v);return n==null?'':formatValor(n);
+}
+function acharCampoNf(row,aliases){
+  const keys=Object.keys(row||{});
+  for(const k of keys){
+    const nk=normalizaCabecalhoNf(k);
+    if(aliases.some(a=>nk===a||nk.includes(a)))return row[k];
+  }
+  return '';
+}
+function linhaRelatorioParaNf(row,idx){
+  const cliente=acharCampoNf(row,['cliente','tomador','nome','razao social','locatario','pagador']);
+  const documento=acharCampoNf(row,['cpf cnpj','cnpj cpf','documento','cnpj','cpf']);
+  const valor=valorNfImport(acharCampoNf(row,['valor nf','valor nota','valor servico','valor','total']));
+  const descricao=acharCampoNf(row,['descricao','discriminacao','historico','servico','referencia','observacao']);
+  const email=acharCampoNf(row,['email','e mail']);
+  const id=Date.now()+idx;
+  const valido=!!String(cliente||'').trim() && (numeroValor(valor)||0)>0;
+  return {id,cliente:String(cliente||'').trim(),documento:String(documento||'').trim(),descricao:String(descricao||'').trim(),email:String(email||'').trim(),valor,status:valido?'Pronta':'Revisar',origem_relatorio:true};
+}
+function renderFilaNfTugao(){
+  if(!window.nfImportBody)return;
+  const rows=store.nfImportacaoTugao||[];
+  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td><div class="actions"><button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
+  const prontas=rows.filter(x=>x.status==='Pronta').length;
+  const revisar=rows.filter(x=>x.status==='Revisar').length;
+  if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
+  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||prontas===0;
+}
+async function lerPdfRelatorioNf(file){
+  const data=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data}).promise;
+  const linhas=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const tc=await page.getTextContent();
+    const txt=tc.items.map(i=>i.str).join(' ');
+    txt.split(/\s{2,}|\n/).map(s=>s.trim()).filter(Boolean).forEach(s=>linhas.push(s));
+  }
+  // PDF sem estrutura tabular confiável: guarda cada linha candidata para revisão.
+  return linhas.map((l,i)=>({Cliente:l,Valor:''}));
+}
+async function importarRelatorioNfTugao(file){
+  if(!file)return;
+  nfImportStatus.textContent='Lendo '+file.name+'...';
+  try{
+    let rows=[];
+    const nome=file.name.toLowerCase();
+    if(nome.endsWith('.xlsx')||nome.endsWith('.xls')){
+      if(!window.XLSX)throw new Error('Leitor de Excel indisponível.');
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    }else if(nome.endsWith('.csv')){
+      const wb=XLSX.read(await file.text(),{type:'string'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    }else if(nome.endsWith('.pdf')){
+      rows=await lerPdfRelatorioNf(file);
+    }else throw new Error('Formato não suportado.');
+    const limpas=rows.filter(r=>Object.values(r||{}).some(v=>String(v??'').trim()!==''));
+    store.nfImportacaoTugao=limpas.map((r,i)=>linhaRelatorioParaNf(r,i));
+    persist();
+    renderFilaNfTugao();
+    notify('Relatório importado para a fila de emissão.');
+  }catch(e){
+    nfImportStatus.textContent=e.message||'Não foi possível ler o relatório.';
+    notify(e.message||'Erro ao importar relatório.');
+  }
+}
+function editarNfImportada(id){
+  const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));if(!x)return;
+  modalState={type:'nfImportada',id};
+  modalTitle.textContent='Revisar nota para emissão';
+  modalForm.innerHTML=
+    '<div class="field full"><label>Cliente / Tomador</label><input data-field="cliente" value="'+esc(x.cliente||'')+'"></div>'+
+    '<div class="field"><label>CPF/CNPJ</label><input data-field="documento" value="'+esc(x.documento||'')+'"></div>'+
+    '<div class="field"><label>Valor</label><input data-field="valor" value="'+esc(x.valor||'')+'"></div>'+
+    '<div class="field full"><label>Descrição do serviço</label><textarea data-field="descricao" rows="4">'+esc(x.descricao||'')+'</textarea></div>'+
+    '<div class="field full"><label>E-mail</label><input data-field="email" value="'+esc(x.email||'')+'"></div>';
+  modalBg.classList.add('show');
+}
+function removerNfImportada(id){
+  if(!confirm('Remover esta nota da fila?'))return;
+  store.nfImportacaoTugao=(store.nfImportacaoTugao||[]).filter(x=>Number(x.id)!==Number(id));
+  persist();renderFilaNfTugao();
+}
+async function emitirTodasNfTugao(){
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
+  if(!rows.length){notify('Não há notas prontas para emitir.');return}
+  if(!tugaoCertMeta){notify('Cadastre primeiro o certificado A1 da Tugão.');return}
+  const cfg=tugaoGissConfig||{};
+  const faltam=[];
+  if(!cfg.cnpj)faltam.push('CNPJ');
+  if(!cfg.inscricao_municipal)faltam.push('Inscrição Municipal');
+  if(!cfg.item_lista_servico)faltam.push('Item de Serviço');
+  if(!cfg.cnae)faltam.push('CNAE');
+  if(!cfg.codigo_nbs)faltam.push('NBS');
+  if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
+  const senha=prompt('Senha do certificado A1 da Tugão:');
+  if(senha===null)return;
+  if(!senha){notify('Informe a senha do certificado.');return}
+  if(!confirm('Emitir '+rows.length+' NFS-e em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'))return;
+  nfEmitirTodasBtn.disabled=true;nfEmitirTodasBtn.textContent='Emitindo...';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada.');
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+      body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,notas:rows})
+    });
+    const out=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(out.error||'O motor de emissão GISS ainda não está liberado.');
+    for(const ret of out.resultados||[]){
+      const x=store.nfImportacaoTugao.find(r=>Number(r.id)===Number(ret.id));
+      if(!x)continue;
+      x.status=ret.ok?'Emitida':'Erro';
+      x.numero=ret.numero_nfse||'';
+      x.erro=ret.erro||'';
+      if(ret.ok)store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,status:'Emitida',empresa:'Tugão Imóveis'});
+    }
+    persist();renderFilaNfTugao();notify('Emissão em lote concluída.');
+  }catch(e){
+    notify(e.message||'Falha na emissão em lote.');
+  }finally{
+    nfEmitirTodasBtn.textContent='Emitir todas';renderFilaNfTugao();
+  }
+}
 async function carregarCertificadoTugao(){
   if(!window.tugaoCertCard)return;
   tugaoCertCard.style.display=isTugaoSelected()?'':'none';
   if(window.tugaoGissCard)tugaoGissCard.style.display=isTugaoSelected()?'':'none';
+  if(window.tugaoImportCard)tugaoImportCard.style.display=isTugaoSelected()?'':'none';
+  if(isTugaoSelected())renderFilaNfTugao();
   if(!isTugaoSelected())return;
   const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
   if(!emp){tugaoCertStatus.textContent='Empresa Tugão Imóveis não localizada no cadastro online.';return}
@@ -1755,6 +1918,7 @@ function renderAll(){
  renderDre();
  renderCartoes();
  document.querySelectorAll('.fiuza-only').forEach(el=>el.style.display=isFiuzaSelected()?'':'none');
+ renderFilaNfTugao();
  nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
  refreshCompanySelect();
  renderDashboard();
@@ -2030,6 +2194,9 @@ if(window.tugaoCertRemoveBtn)tugaoCertRemoveBtn.onclick=removerCertificadoTugao;
 if(window.gissSalvarBtn)gissSalvarBtn.onclick=salvarConfigGissTugao;
 if(window.gissTestarBtn)gissTestarBtn.onclick=testarConexaoGissTugao;
 if(window.gissAmbiente)gissAmbiente.onchange=atualizarEndpointGiss;
+if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
+if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
+if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
 if(window.cartaoNovoBtn)cartaoNovoBtn.onclick=()=>abrirNovaCompraCartao();
 if(window.cartaoFecharBtn)cartaoFecharBtn.onclick=abrirFecharFaturaCartao;
 if(window.cartaoMesFiltro)cartaoMesFiltro.onchange=renderCartoes;
@@ -2148,6 +2315,15 @@ modalSave.onclick=async()=>{
    store.pagar.push({id:pagarId,vencimento:venc,data_emissao:new Date().toISOString().slice(0,10),fornecedor:'Fatura '+cartao,descricao:'Fatura '+cartao+' · '+nomeMesCompetencia(competencia),categoria:'Cartão de Crédito',conta_contabil:'Cartão de Crédito',banco:'Sicoob',valor:String(total).replace('.',','),status:'Em aberto',empresa:'FIUZA',origem_cartao_fatura:true,cartao_fatura:cartao,competencia_cartao:competencia});
    store.cartoesFaturas.push({id:Date.now()+1,cartao,competencia,total,pagar_id:pagarId,status:'Fechada'});
    persist();closeModal();notify('Fatura fechada e enviada para o Contas a Pagar.');
+   return;
+ }
+ if(type==='nfImportada'&&id){
+   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
+   if(!x){notify('Registro não encontrado.');return}
+   const get=f=>modalForm.querySelector('[data-field="'+f+'"]')?.value||'';
+   x.cliente=get('cliente').trim();x.documento=get('documento').trim();x.valor=get('valor').trim();x.descricao=get('descricao').trim();x.email=get('email').trim();
+   x.status=(x.cliente&&(numeroValor(x.valor)||0)>0)?'Pronta':'Revisar';
+   persist();renderFilaNfTugao();closeModal();notify('Registro atualizado.');
    return;
  }
  if(type==='fluxoManual'){
