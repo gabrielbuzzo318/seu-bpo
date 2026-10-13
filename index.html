@@ -1755,7 +1755,7 @@ function renderFilaNfTugao(){
   const rows=store.nfImportacaoTugao||[];
   const competenciaLote=window.nfCompetenciaLote?.value||'';
   const issLote=window.nfIssLote?.value||'';
-  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td><div class="actions">'+(x.status==='Pronta'?'<button class="iconbtn" onclick="emitirNfIndividualTugao('+x.id+')">Emitir</button>':'')+'<button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
+  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':x.status==='Erro'?'bad':'warn')+'">'+esc(x.status==='Emitindo'?'Enviando...':x.status)+'</span>'+(x.erro?'<div class="sub" style="margin-top:5px;max-width:260px;color:var(--red)">'+esc(x.erro)+'</div>':'')+'</td><td><div class="actions">'+((x.status==='Pronta'||x.status==='Erro')?'<button class="iconbtn" onclick="emitirNfIndividualTugao('+x.id+')">'+(x.status==='Erro'?'Tentar novamente':'Emitir')+'</button>':'')+'<button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
   const prontas=rows.filter(x=>x.status==='Pronta').length;
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
@@ -1837,7 +1837,7 @@ function removerNfImportada(id){
 async function emitirNfIndividualTugao(id){
   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
   if(!x)return;
-  if(x.status!=='Pronta'){notify('Essa nota ainda precisa ser revisada ou já foi emitida.');return}
+  if(!['Pronta','Erro'].includes(x.status)){notify('Essa nota ainda precisa ser revisada ou já foi emitida.');return}
   const competencia=x.competencia||window.nfCompetenciaLote?.value||'';
   const aliquotaIss=numeroValor(x.aliquota_iss??window.nfIssLote?.value??'');
   if(!competencia){notify('Informe a competência da NFS-e antes de emitir.');return}
@@ -1878,7 +1878,7 @@ async function emitirNfIndividualTugao(id){
     store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
     persist();renderFilaNfTugao();notify('NFS-e emitida com sucesso.');
   }catch(e){
-    x.status='Pronta';
+    x.status='Erro';
     x.erro=e.message||'Falha na emissão.';
     persist();renderFilaNfTugao();notify(x.erro);
   }
