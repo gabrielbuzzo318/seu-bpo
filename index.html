@@ -261,10 +261,15 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
         <button id="nfEmitirTodasBtn" class="btn primary" disabled>Emitir todas</button>
       </div>
     </div>
+    <div class="launch-formgrid" style="margin-top:14px">
+      <div class="lf c3"><label>Competência das NFS-e</label><input id="nfCompetenciaLote" type="month"></div>
+      <div class="lf c3"><label>ISS (%)</label><input id="nfIssLote" inputmode="decimal" placeholder="Ex.: 2,00"></div>
+      <div class="lf c6"><label>Observação</label><input value="A competência pode ser diferente do mês da emissão." readonly></div>
+    </div>
     <div id="nfImportStatus" class="sub" style="margin-top:10px">Nenhum relatório importado.</div>
     <div style="overflow:auto;margin-top:12px">
       <table>
-        <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Descrição</th><th>Valor</th><th>Competência</th><th>ISS</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody id="nfImportBody"></tbody>
       </table>
     </div>
@@ -272,7 +277,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 
   <div class="card">
     <div class="section-title" style="margin-bottom:10px">NFS-e emitidas</div>
-    <table><thead><tr><th>Data</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table>
+    <table><thead><tr><th>Emissão</th><th>Competência</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table>
   </div>
 </section>
 <section id="empresas" class="screen"><div class="page-title"><div><h1>Empresas</h1><div class="sub">Gestão da carteira do BPO</div></div><button class="btn primary" data-add="empresas">+ Nova empresa</button></div><div class="card"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="empresasBody"></tbody></table></div></section>
@@ -1691,7 +1696,9 @@ function linhaRelatorioTugaoPorColunas(row,idx){
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
   const rows=store.nfImportacaoTugao||[];
-  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td><div class="actions"><button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
+  const competenciaLote=window.nfCompetenciaLote?.value||'';
+  const issLote=window.nfIssLote?.value||'';
+  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td><div class="actions"><button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
   const prontas=rows.filter(x=>x.status==='Pronta').length;
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
@@ -1773,6 +1780,10 @@ function removerNfImportada(id){
 async function emitirTodasNfTugao(){
   const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
   if(!rows.length){notify('Não há notas prontas para emitir.');return}
+  const competencia=window.nfCompetenciaLote?.value||'';
+  const aliquotaIss=numeroValor(window.nfIssLote?.value||'');
+  if(!competencia){notify('Informe a competência das NFS-e antes de emitir.');return}
+  if(!(aliquotaIss>0)){notify('Informe a alíquota de ISS antes de emitir.');return}
   if(!tugaoCertMeta){notify('Cadastre primeiro o certificado A1 da Tugão.');return}
   const cfg=tugaoGissConfig||{};
   const faltam=[];
@@ -1785,7 +1796,8 @@ async function emitirTodasNfTugao(){
   const senha=prompt('Senha do certificado A1 da Tugão:');
   if(senha===null)return;
   if(!senha){notify('Informe a senha do certificado.');return}
-  if(!confirm('Emitir '+rows.length+' NFS-e em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'))return;
+  const notasParaEmitir=rows.map(x=>({...x,competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)}));
+  if(!confirm('Emitir '+rows.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'))return;
   nfEmitirTodasBtn.disabled=true;nfEmitirTodasBtn.textContent='Emitindo...';
   try{
     const {data:{session}}=await sb.auth.getSession();
@@ -1793,7 +1805,7 @@ async function emitirTodasNfTugao(){
     const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
-      body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,notas:rows})
+      body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,competencia,aliquota_iss:aliquotaIss,notas:notasParaEmitir})
     });
     const out=await resp.json().catch(()=>({}));
     if(!resp.ok)throw new Error(out.error||'O motor de emissão GISS ainda não está liberado.');
@@ -1803,7 +1815,9 @@ async function emitirTodasNfTugao(){
       x.status=ret.ok?'Emitida':'Erro';
       x.numero=ret.numero_nfse||'';
       x.erro=ret.erro||'';
-      if(ret.ok)store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,status:'Emitida',empresa:'Tugão Imóveis'});
+      x.competencia=competencia;
+      x.aliquota_iss=aliquotaIss;
+      if(ret.ok)store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
     }
     persist();renderFilaNfTugao();notify('Emissão em lote concluída.');
   }catch(e){
@@ -1863,6 +1877,13 @@ async function carregarConfigGissTugao(){
   gissAliquota.value=cfg.aliquota_iss==null?'':String(cfg.aliquota_iss).replace('.',',');
   gissIssRetido.value=String(!!cfg.iss_retido);
   atualizarEndpointGiss();
+  if(window.nfIssLote&&!nfIssLote.value&&cfg.aliquota_iss!=null)nfIssLote.value=String(cfg.aliquota_iss).replace('.',',');
+  if(window.nfCompetenciaLote&&!nfCompetenciaLote.value){
+    const d=new Date();
+    d.setMonth(d.getMonth()-1);
+    nfCompetenciaLote.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  renderFilaNfTugao();
 }
 async function salvarConfigGissTugao(){
   const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
@@ -1967,7 +1988,7 @@ function renderAll(){
  renderCartoes();
  document.querySelectorAll('.fiuza-only').forEach(el=>el.style.display=isFiuzaSelected()?'':'none');
  renderFilaNfTugao();
- nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
+ nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.competencia||'—')+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
  refreshCompanySelect();
  renderDashboard();
  carregarCertificadoTugao();
@@ -2245,6 +2266,8 @@ if(window.gissAmbiente)gissAmbiente.onchange=atualizarEndpointGiss;
 if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
 if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
 if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
+if(window.nfCompetenciaLote)nfCompetenciaLote.onchange=renderFilaNfTugao;
+if(window.nfIssLote)nfIssLote.oninput=renderFilaNfTugao;
 if(window.cartaoNovoBtn)cartaoNovoBtn.onclick=()=>abrirNovaCompraCartao();
 if(window.cartaoFecharBtn)cartaoFecharBtn.onclick=abrirFecharFaturaCartao;
 if(window.cartaoMesFiltro)cartaoMesFiltro.onchange=renderCartoes;
