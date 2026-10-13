@@ -253,7 +253,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
       <div>
         <div class="section-title">Importar relatório para emissão</div>
-        <div class="sub">Envie XLSX, XLS, CSV ou PDF. O sistema lê o relatório, monta a fila e deixa tudo pronto para emitir em lote.</div>
+        <div class="sub">Para a Tugão: tomador = CPF da coluna B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
@@ -1655,6 +1655,39 @@ function linhaRelatorioParaNf(row,idx){
   const valido=!!String(cliente||'').trim() && (numeroValor(valor)||0)>0;
   return {id,cliente:String(cliente||'').trim(),documento:String(documento||'').trim(),descricao:String(descricao||'').trim(),email:String(email||'').trim(),valor,status:valido?'Pronta':'Revisar',origem_relatorio:true};
 }
+function linhaRelatorioTugaoPorColunas(row,idx){
+  const cpf=String(row?.[1]??'').trim();
+  const contrato=String(row?.[2]??'').trim();
+  const locatario=String(row?.[3]??'').trim();
+  const valorE=numeroValor(row?.[4])||0;
+  const valorG=numeroValor(row?.[6])||0;
+  const valorH=valorNfImport(row?.[7]);
+  let descricao='';
+  if(valorE>0&&valorG>0){
+    descricao='Taxa de Administração de Locação de Imóvel e Intermediação de Imóvel.\nContrato nº '+contrato+', locatário '+locatario;
+  }else if(valorE>0){
+    descricao='Taxa de Administração de Locação de Imóvel.\nContrato nº '+contrato+', locatário '+locatario;
+  }else if(valorG>0){
+    descricao='Taxa de Intermediação de Imóvel.\nContrato nº '+contrato+', locatário '+locatario;
+  }
+  const id=Date.now()+idx;
+  const valido=!!cpf && (numeroValor(valorH)||0)>0 && !!descricao;
+  return {
+    id,
+    cliente:locatario||cpf,
+    documento:cpf,
+    descricao,
+    email:'',
+    valor:valorH,
+    contrato,
+    locatario,
+    taxa_administracao:valorE,
+    taxa_intermediacao:valorG,
+    status:valido?'Pronta':'Revisar',
+    origem_relatorio:true,
+    layout_tugao:true
+  };
+}
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
   const rows=store.nfImportacaoTugao||[];
@@ -1683,20 +1716,35 @@ async function importarRelatorioNfTugao(file){
   try{
     let rows=[];
     const nome=file.name.toLowerCase();
+    let layoutTugao=false;
     if(nome.endsWith('.xlsx')||nome.endsWith('.xls')){
       if(!window.XLSX)throw new Error('Leitor de Excel indisponível.');
       const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+      layoutTugao=true;
     }else if(nome.endsWith('.csv')){
       const wb=XLSX.read(await file.text(),{type:'string'});
       const ws=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+      layoutTugao=true;
     }else if(nome.endsWith('.pdf')){
       rows=await lerPdfRelatorioNf(file);
     }else throw new Error('Formato não suportado.');
-    const limpas=rows.filter(r=>Object.values(r||{}).some(v=>String(v??'').trim()!==''));
-    store.nfImportacaoTugao=limpas.map((r,i)=>linhaRelatorioParaNf(r,i));
+    if(layoutTugao){
+      const limpas=rows.filter(r=>Array.isArray(r)&&r.some(v=>String(v??'').trim()!==''));
+      const candidatos=limpas.filter(r=>{
+        const b=String(r?.[1]??'').trim();
+        const h=numeroValor(r?.[7])||0;
+        const e=numeroValor(r?.[4])||0;
+        const g=numeroValor(r?.[6])||0;
+        return b && h>0 && (e>0||g>0);
+      });
+      store.nfImportacaoTugao=candidatos.map((r,i)=>linhaRelatorioTugaoPorColunas(r,i));
+    }else{
+      const limpas=rows.filter(r=>Object.values(r||{}).some(v=>String(v??'').trim()!==''));
+      store.nfImportacaoTugao=limpas.map((r,i)=>linhaRelatorioParaNf(r,i));
+    }
     persist();
     renderFilaNfTugao();
     notify('Relatório importado para a fila de emissão.');
