@@ -85,11 +85,17 @@ async function handleProxy(req,res){
     const raw=await readBody(req);
     const b=JSON.parse(raw || '{}');
     if(!b.url || !b.certChain || !b.privateKey) return sendJson(res,400,{error:'Dados mTLS incompletos'});
+    const soapBody=String(b.body || '');
+    const refs=[...soapBody.matchAll(/<Reference\b[^>]*URI=["']([^"']*)["']/g)].map(m=>m[1]);
+    const sigCount=(soapBody.match(/<(?:\w+:)?Signature\b/g)||[]).length;
+    const infIds=[...soapBody.matchAll(/<[^>]*InfDeclaracaoPrestacaoServico\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
+    const loteIds=[...soapBody.matchAll(/<[^>]*LoteRps\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
+    console.log('GISS XML SIG DEBUG', JSON.stringify({sigCount,refs,infIds,loteIds}));
     const out=await mtlsRequest({
       url:String(b.url),
       method:String(b.method || 'POST'),
       headers:b.headers && typeof b.headers==='object' ? b.headers : {},
-      body:String(b.body || ''),
+      body:soapBody,
       certChain:String(b.certChain),
       privateKey:String(b.privateKey)
     });
