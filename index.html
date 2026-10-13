@@ -1049,7 +1049,40 @@ for(const base of tugaoPagarZerosOutDez2026){
 
 localStorage.setItem(DBKEY,JSON.stringify(store));
 if(!store.empresas.some(e=>String(e.nome||'').trim().toUpperCase()==='FIUZA')) store.empresas.push({id:Date.now()+7,nome:'FIUZA',cnpj:'',responsavel:'Ester'});
-function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll()}
+// Backup remoto protegido por usuario. Nunca apaga dados locais na inicializacao.
+let cloudBackupReady=false;
+let cloudBackupQueue=Promise.resolve();
+let cloudBackupUserId=null;
+function backupCloud(){
+  if(!cloudBackupReady||!cloudBackupUserId)return;
+  const snapshot=structuredClone(store);
+  cloudBackupQueue=cloudBackupQueue.catch(()=>{}).then(async()=>{
+    const {error}=await sb.from('seubpo_backup_usuario').upsert({
+      user_id:cloudBackupUserId,dados:snapshot,atualizado_em:new Date().toISOString()
+    },{onConflict:'user_id'});
+    if(error)console.error('Falha ao salvar backup do Seu BPO:',error);
+  });
+}
+async function iniciarBackupCloud(userId){
+  cloudBackupReady=false;
+  cloudBackupUserId=userId;
+  const {data,error}=await sb.from('seubpo_backup_usuario').select('dados').eq('user_id',userId).maybeSingle();
+  if(error){console.error('Falha ao consultar backup do Seu BPO:',error);return}
+  const remoto=data?.dados;
+  const localFluxo=Array.isArray(store.fluxo)?store.fluxo.length:0;
+  const remotoFluxo=Array.isArray(remoto?.fluxo)?remoto.fluxo.length:0;
+  // Recuperacao conservadora: apenas quando a lista local estiver vazia.
+  if(remoto&&remotoFluxo>0&&localFluxo===0){
+    localStorage.setItem('seubpo_backup_local_antes_restauro_'+Date.now(),JSON.stringify(store));
+    store=remoto;
+    localStorage.setItem(DBKEY,JSON.stringify(store));
+    renderAll();
+  }
+  cloudBackupReady=true;
+  // Se ja havia um backup remoto com dados, nao substitui-lo por um navegador vazio.
+  if(!remoto || !(remotoFluxo>0&&localFluxo===0))backupCloud();
+}
+function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll();backupCloud()}
 function money(v){if(!v)return'';let n=Number(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?v:n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function acts(type,id,extra=''){return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+extra+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>'}
@@ -3270,6 +3303,7 @@ async function loadAccess(authUser){
 }
 async function applyAccess(user){
   currentUser=user;
+  await iniciarBackupCloud(user.id);
   try{await loadCloudCompanies()}catch(e){console.warn('Falha ao carregar empresas do Seu BPO:',e)}
   loginScreen.style.display='none';
   appShell.classList.remove('hidden-app');
@@ -3296,6 +3330,8 @@ async function applyAccess(user){
   restoreUiState(isAdmin);
 }
 function showLogin(msg=''){
+  cloudBackupReady=false;
+  cloudBackupUserId=null;
   currentUser=null;
   appShell.classList.add('hidden-app');
   loginScreen.style.display='grid';
