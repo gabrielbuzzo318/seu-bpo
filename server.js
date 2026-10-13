@@ -104,7 +104,7 @@ function gissResignSoap(soap, certChain, privateKey){
       publicCert:leaf,
       signatureAlgorithm:rsa,
       canonicalizationAlgorithm:c14n,
-      getKeyInfoContent:()=>'<X509Data><X509Certificate>'+certBase64+'</X509Certificate></X509Data>'
+      getKeyInfoContent:()=>'<ds:X509Data><ds:X509Certificate>'+certBase64+'</ds:X509Certificate></ds:X509Data>'
     });
     sig.addReference({
       xpath:"//*[@Id='"+id+"']",
