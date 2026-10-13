@@ -1809,6 +1809,39 @@ async function lerPdfRelatorioNf(file){
   // PDF sem estrutura tabular confiável: guarda cada linha candidata para revisão.
   return linhas.map((l,i)=>({Cliente:l,Valor:''}));
 }
+function docChaveCliente(v){return String(v||'').replace(/\D/g,'')}
+function sincronizarLocadoresTugaoClientes(itens){
+  if(!Array.isArray(itens)||!itens.length)return;
+  store.clientes=Array.isArray(store.clientes)?store.clientes:[];
+  for(const x of itens){
+    const nome=String(x.locador||x.cliente||'').trim();
+    const documento=String(x.documento||'').trim();
+    if(!nome||!documento)continue;
+    const chave=docChaveCliente(documento);
+    let cli=store.clientes.find(c=>chave&&docChaveCliente(c.documento)===chave);
+    if(!cli)cli=store.clientes.find(c=>nomeChaveTugao(c.nome)===nomeChaveTugao(nome));
+    if(cli){
+      cli.nome=nome;
+      cli.documento=documento;
+      cli.empresa=cli.empresa||'TUGÃO IMÓVEIS';
+      cli.origem_tugao=true;
+      if(!cli.cidade)cli.cidade='São José do Rio Preto';
+      if(!cli.uf)cli.uf='SP';
+      if(cli.ativo==null)cli.ativo=true;
+      if(!cli.status_cliente)cli.status_cliente='Ativo';
+    }else{
+      store.clientes.push({
+        id:Date.now()+store.clientes.length,
+        tipo_cliente:'Comum',
+        nome,documento,contato:'',email:'',
+        endereco:'',numero:'',complemento:'',bairro:'',
+        cidade:'São José do Rio Preto',uf:'SP',cep:'',
+        ativo:true,status_cliente:'Ativo',
+        empresa:'TUGÃO IMÓVEIS',origem_tugao:true
+      });
+    }
+  }
+}
 async function importarRelatorioNfTugao(file){
   if(!file)return;
   nfImportStatus.textContent='Lendo '+file.name+'...';
@@ -1840,6 +1873,7 @@ async function importarRelatorioNfTugao(file){
         return b && h>0 && (e>0||g>0);
       });
       store.nfImportacaoTugao=aplicarRegrasEspeciaisNfTugao(candidatos.map((r,i)=>linhaRelatorioTugaoPorColunas(r,i)));
+      sincronizarLocadoresTugaoClientes(store.nfImportacaoTugao);
     }else{
       const limpas=rows.filter(r=>Object.values(r||{}).some(v=>String(v??'').trim()!==''));
       store.nfImportacaoTugao=limpas.map((r,i)=>linhaRelatorioParaNf(r,i));
@@ -1890,7 +1924,29 @@ async function emitirNfIndividualTugao(id){
   if(senha===null)return;
   if(!senha){notify('Informe a senha do certificado.');return}
   if(!confirm('Emitir esta NFS-e para '+x.cliente+' · '+money(x.valor)+' · competência '+competencia.split('-').reverse().join('/')+' · ISS '+formatValor(aliquotaIss)+'%?'))return;
-  const nota={...x,competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)};
+  const chaveTomador=docChaveCliente(x.documento);
+  const cadastroTomador=(store.clientes||[]).find(c=>chaveTomador&&docChaveCliente(c.documento)===chaveTomador);
+  if(!cadastroTomador){notify('Cadastre este locador na aba Clientes antes de emitir.');return}
+  const faltamTomador=[];
+  if(!String(cadastroTomador.endereco||'').trim())faltamTomador.push('endereço');
+  if(!String(cadastroTomador.numero||'').trim())faltamTomador.push('número');
+  if(!String(cadastroTomador.bairro||'').trim())faltamTomador.push('bairro');
+  if(!String(cadastroTomador.cidade||'').trim())faltamTomador.push('cidade');
+  if(!String(cadastroTomador.uf||'').trim())faltamTomador.push('UF');
+  if(String(cadastroTomador.cep||'').replace(/\D/g,'').length!==8)faltamTomador.push('CEP');
+  if(faltamTomador.length){notify('Complete o cadastro do locador na aba Clientes: '+faltamTomador.join(', ')+'.');return}
+  const nota={...x,
+    cliente:cadastroTomador.nome||x.cliente,
+    documento:cadastroTomador.documento||x.documento,
+    email:cadastroTomador.email||cadastroTomador.contato||x.email||'',
+    endereco:cadastroTomador.endereco||'',
+    numero_endereco:cadastroTomador.numero||'',
+    complemento:cadastroTomador.complemento||'',
+    bairro:cadastroTomador.bairro||'',
+    cidade:cadastroTomador.cidade||'',
+    uf:cadastroTomador.uf||'',
+    cep:cadastroTomador.cep||'',
+    competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)};
   x.status='Emitindo';
   renderFilaNfTugao();
   try{
@@ -2200,14 +2256,14 @@ function renderClientes(){
     clientesHead.innerHTML='<tr><th>Status</th><th>Nome</th><th>Data de nasc.</th><th>Responsável</th><th>CPF do responsável</th><th>E-mail do responsável</th><th>Data início</th><th>Frequência</th><th>Valor apostila</th><th>Vencimento</th><th>Valor diária</th><th>Observações do contrato</th><th>Contrato</th><th>Ações</th></tr>';
     clientesBody.innerHTML=filtraClientes(store.fiuzaClientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(brDate(x.data_nascimento))+'</td><td>'+esc(x.responsavel)+'</td><td>'+esc(x.cpf_responsavel)+'</td><td>'+esc(x.email_responsavel)+'</td><td>'+esc(brDate(x.data_inicio))+'</td><td>'+esc(x.frequencia_semanal)+'</td><td>'+money(x.apostila)+'</td><td>'+esc(x.dia_vencimento)+'</td><td>'+money(x.valor_diaria)+'</td><td>'+esc(x.observacoes_contrato||'')+'</td><td>'+(x.contrato_path?'<button class="iconbtn" onclick="openContratoCliente(\'fiuzaClientes\','+x.id+')">Abrir</button>':'—')+'</td><td>'+clientActs('fiuzaClientes',x.id,x)+'</td></tr>').join('');
   }else{
-    clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Contato</th><th>Ações</th></tr>';
-    clientesBody.innerHTML=filtraClientes(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc(x.contato)+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
+    clientesHead.innerHTML='<tr><th>Status</th><th>Tipo</th><th>Cliente</th><th>Documento</th><th>Endereço</th><th>CEP</th><th>Contato</th><th>Ações</th></tr>';
+    clientesBody.innerHTML=filtraClientes(store.clientes).map(x=>'<tr><td>'+clienteStatusHtml(x)+'</td><td>'+esc(x.tipo_cliente||'Comum')+'</td><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.documento)+'</td><td>'+esc([x.endereco,x.numero,x.bairro,x.cidade,x.uf].filter(Boolean).join(', ')||'—')+'</td><td>'+esc(x.cep||'—')+'</td><td>'+esc(x.email||x.contato||'—')+'</td><td>'+clientActs('clientes',x.id,x)+'</td></tr>').join('');
   }
 }
 const schemas={
  empresas:[['nome','Nome da empresa','text'],['cnpj','CNPJ','text'],['responsavel','Responsável','text']],
  usuarios:[['nome','Nome','text'],['email','E-mail','email'],['senha','Senha','password'],['perfil','Perfil','select',['Administrador','Gestor','Cliente']],['empresa','Empresa','text']],
- clientes:[['tipo_cliente','Tipo de cliente','select',['Comum','Detalhado']],['nome','Nome / Razão social','text'],['documento','CPF/CNPJ','text'],['contato','Contato','text']],
+ clientes:[['tipo_cliente','Tipo de cliente','select',['Comum','Detalhado']],['nome','Nome / Razão social','text'],['documento','CPF/CNPJ','text'],['contato','Contato','text'],['email','E-mail','email'],['endereco','Endereço','text'],['numero','Número','text'],['complemento','Complemento','text'],['bairro','Bairro','text'],['cidade','Cidade','text'],['uf','UF','text'],['cep','CEP','text']],
  fiuzaClientes:[['nome','Nome','text'],['data_nascimento','Data de nascimento','date'],['responsavel','Responsável','text'],['cpf_responsavel','CPF do responsável','text'],['email_responsavel','E-mail do responsável','email'],['data_inicio','Data de início','date'],['frequencia_semanal','Frequência','number'],['apostila','Valor apostila','text'],['dia_vencimento','Vencimento','number'],['valor_diaria','Valor diária','text'],['observacoes_contrato','Observações do contrato','text'],['status_cliente','Status','select',['Ativo','Inativo','Negociação']]],
  fornecedores:[['nome','Fornecedor','text'],['documento','CPF/CNPJ','text'],['categoria','Categoria','text']],
  plano:[['grupo','Grupo','select',['Receitas','Despesa com Pessoal','Despesa com Alimentação','Despesa Comercial','Despesa de Ocupação','Despesa Administrativa','Despesa de Limpeza e Manutenção','Impostos e Taxas','Custos','Investimentos']],['conta','Conta','text'],['tipo','Tipo','select',['Entrada','Saída']]],
@@ -2499,7 +2555,15 @@ function openNovoClienteModal(){
       box.innerHTML=
         '<div class="field"><label>Nome / Razão social</label><input type="text" data-field="nome"></div>'+
         '<div class="field"><label>CPF/CNPJ</label><input type="text" data-field="documento"></div>'+
-        '<div class="field"><label>Contato</label><input type="text" data-field="contato"></div>';
+        '<div class="field"><label>Contato</label><input type="text" data-field="contato"></div>'+
+        '<div class="field"><label>E-mail</label><input type="email" data-field="email"></div>'+
+        '<div class="field"><label>Endereço</label><input type="text" data-field="endereco"></div>'+
+        '<div class="field"><label>Número</label><input type="text" data-field="numero"></div>'+
+        '<div class="field"><label>Complemento</label><input type="text" data-field="complemento"></div>'+
+        '<div class="field"><label>Bairro</label><input type="text" data-field="bairro"></div>'+
+        '<div class="field"><label>Cidade</label><input type="text" data-field="cidade" value="São José do Rio Preto"></div>'+
+        '<div class="field"><label>UF</label><input type="text" data-field="uf" value="SP"></div>'+
+        '<div class="field"><label>CEP</label><input type="text" data-field="cep"></div>';
     }
   };
   sel.onchange=renderCampos;
