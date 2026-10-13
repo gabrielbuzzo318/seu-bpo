@@ -53,8 +53,7 @@ function gissResignSoap(soap, certChain, privateKey){
 
   xml=xml
     .replace(/<(?:ds:)?Signature\b[\s\S]*?<\/(?:ds:)?Signature>/g,'')
-    .replace(/http:\/\/www\.giss\.com\.br\/enviar-lote-rps-envio-v2_04\.xsd/g,'http://www.giss.com.br/enviar-lote-rps-sincrono-envio-v2_04.xsd')
-    .replace(/EnviarLoteRpsEnvio/g,'EnviarLoteRpsSincronoEnvio')
+    
     .replace(/xmlns:g=/g,'xmlns:giss=')
     .replace(/<g:/g,'<giss:')
     .replace(/<\/g:/g,'</giss:')
@@ -94,7 +93,7 @@ function gissResignSoap(soap, certChain, privateKey){
   const c14n='http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
   const rsa='http://www.w3.org/2000/09/xmldsig#rsa-sha1';
   const sha1='http://www.w3.org/2000/09/xmldsig#sha1';
-  const env='http://www.giss.com.br/enviar-lote-rps-sincrono-envio-v2_04.xsd';
+  const env='http://www.giss.com.br/enviar-lote-rps-envio-v2_04.xsd';
   const tipos='http://www.giss.com.br/tipos-v2_04.xsd';
   const ds='http://www.w3.org/2000/09/xmldsig#';
 
@@ -125,9 +124,7 @@ function gissResignSoap(soap, certChain, privateKey){
   if(loteId) xml=signOne(xml,loteId);
 
   console.log('GISS RESIGN',JSON.stringify({rpsIds,loteId,sigCount:(xml.match(/<ds:Signature\b/g)||[]).length}));
-  let out=String(soap).replace(m[1],xml);
-  out=out.replace(/RecepcionarLoteRpsRequest/g,'RecepcionarLoteRpsSincronoRequest');
-  return out;
+  return String(soap).replace(m[1],xml);
 }
 
 function mtlsRequest({url, method='POST', headers={}, body='', certChain, privateKey}){
@@ -185,7 +182,7 @@ async function handleProxy(req,res){
       method:String(b.method || 'POST'),
       headers:{
         ...(b.headers && typeof b.headers==='object' ? b.headers : {}),
-        ...(soapBody.includes('RecepcionarLoteRpsSincronoRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/RecepcionarLoteRpsSincrono"'}:{})
+        ...(soapBody.includes('RecepcionarLoteRpsRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/RecepcionarLoteRps"'}:{})
       },
       body:soapBody,
       certChain:String(b.certChain),
