@@ -1,1 +1,1 @@
-{"name":"seu-bpo","version":"1.0.0","private":true,"scripts":{"start":"node server.js"},"dependencies":{}}
+{"name":"seu-bpo","version":"1.0.0","private":true,"scripts":{"start":"node server.js"},"dependencies":{"node-forge":"1.3.1","xml-crypto":"6.0.1","@xmldom/xmldom":"0.8.10"}}
