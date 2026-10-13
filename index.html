@@ -1978,8 +1978,14 @@ async function carregarConfigGissTugao(){
   gissSerieRps.value=cfg.serie_rps||'1';
   gissProximoRps.value=cfg.proximo_rps||1;
   gissItemServico.value=cfg.item_lista_servico||'';
-  gissCnae.value=cfg.cnae||'';
+  if(window.gissCodigoAtividade)gissCodigoAtividade.value=cfg.codigo_atividade||'';
   gissNbs.value=cfg.codigo_nbs||'';
+  if(window.gissIndicadorOperacao)gissIndicadorOperacao.value=cfg.indicador_operacao||'';
+  if(window.gissSituacaoTributaria)gissSituacaoTributaria.value=cfg.situacao_tributaria||'';
+  if(window.gissClassificacaoTributaria)gissClassificacaoTributaria.value=cfg.classificacao_tributaria||'';
+  if(window.gissExigibilidade)gissExigibilidade.value=cfg.exigibilidade_issqn||'';
+  if(window.gissRegimeEspecial)gissRegimeEspecial.value=cfg.regime_especial_tributacao||'';
+  if(window.gissSimples)gissSimples.value=String(cfg.simples_nacional!==false);
   gissAliquota.value=cfg.aliquota_iss==null?'':String(cfg.aliquota_iss).replace('.',',');
   gissIssRetido.value=String(!!cfg.iss_retido);
   atualizarEndpointGiss();
