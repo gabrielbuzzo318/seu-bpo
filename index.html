@@ -1848,7 +1848,7 @@ async function emitirNfIndividualTugao(id){
   if(!cfg.cnpj)faltam.push('CNPJ');
   if(!cfg.inscricao_municipal)faltam.push('Inscrição Municipal');
   if(!cfg.item_lista_servico)faltam.push('Item de Serviço');
-  if(!cfg.cnae)faltam.push('CNAE');
+  if(!cfg.codigo_atividade)faltam.push('Código da atividade');
   if(!cfg.codigo_nbs)faltam.push('NBS');
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
   const senha=prompt('Senha do certificado A1 da Tugão:');
@@ -1896,7 +1896,7 @@ async function emitirTodasNfTugao(){
   if(!cfg.cnpj)faltam.push('CNPJ');
   if(!cfg.inscricao_municipal)faltam.push('Inscrição Municipal');
   if(!cfg.item_lista_servico)faltam.push('Item de Serviço');
-  if(!cfg.cnae)faltam.push('CNAE');
+  if(!cfg.codigo_atividade)faltam.push('Código da atividade');
   if(!cfg.codigo_nbs)faltam.push('NBS');
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
   const senha=prompt('Senha do certificado A1 da Tugão:');
@@ -2013,8 +2013,14 @@ async function salvarConfigGissTugao(){
     serie_rps:gissSerieRps.value.trim()||'1',
     proximo_rps:Math.max(1,Number(gissProximoRps.value)||1),
     item_lista_servico:gissItemServico.value.trim()||null,
-    cnae:gissCnae.value.replace(/\D/g,'')||null,
+    codigo_atividade:window.gissCodigoAtividade?.value.trim()||null,
     codigo_nbs:gissNbs.value.trim()||null,
+    indicador_operacao:window.gissIndicadorOperacao?.value.trim()||null,
+    situacao_tributaria:window.gissSituacaoTributaria?.value.trim()||null,
+    classificacao_tributaria:window.gissClassificacaoTributaria?.value.trim()||null,
+    exigibilidade_issqn:window.gissExigibilidade?.value.trim()||null,
+    regime_especial_tributacao:window.gissRegimeEspecial?.value.trim()||null,
+    simples_nacional:window.gissSimples?.value==='true',
     aliquota_iss:aliquota||null,
     iss_retido:gissIssRetido.value==='true',
     atualizado_em:new Date().toISOString()
