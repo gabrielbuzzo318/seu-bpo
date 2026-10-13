@@ -43,6 +43,8 @@ function readBody(req, limit=8*1024*1024){
   });
 }
 
+function escapeXml(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+
 function gissResignSoap(soap, certChain, privateKey){
   const m=String(soap||'').match(/<nfseDadosMsg><!\[CDATA\[([\s\S]*?)\]\]><\/nfseDadosMsg>/);
   if(!m) return soap;
@@ -58,9 +60,37 @@ function gissResignSoap(soap, certChain, privateKey){
     .replace(/<\/g:/g,'</giss:')
     .replace(/Id="Dec_(\d+)"/g,'Id="RPS$1"')
     .replace(/Id="Lote_(\d+)"/g,'Id="LOTE$1"')
-    .replace(/<tipos:CodigoPais>1058<\/tipos:CodigoPais>/g,'<tipos:CodigoPais>0076</tipos:CodigoPais>');
+    .replace(/<tipos:CodigoPais>1058<\/tipos:CodigoPais>/g,'')
+    .replace(/<tipos:ValorDeducoes>[^<]*<\/tipos:ValorDeducoes>/g,'')
+    .replace(/<tipos:ValorPis>[^<]*<\/tipos:ValorPis>/g,'')
+    .replace(/<tipos:ValorCofins>[^<]*<\/tipos:ValorCofins>/g,'')
+    .replace(/<tipos:ValorInss>[^<]*<\/tipos:ValorInss>/g,'')
+    .replace(/<tipos:ValorIr>[^<]*<\/tipos:ValorIr>/g,'')
+    .replace(/<tipos:ValorCsll>[^<]*<\/tipos:ValorCsll>/g,'')
+    .replace(/<tipos:OutrasRetencoes>[^<]*<\/tipos:OutrasRetencoes>/g,'')
+    .replace(/<tipos:ValTotTributos>[^<]*<\/tipos:ValTotTributos>/g,'')
+    .replace(/<tipos:ValorIss>[^<]*<\/tipos:ValorIss>/g,'')
+    .replace(/<tipos:DescontoIncondicionado>[^<]*<\/tipos:DescontoIncondicionado>/g,'')
+    .replace(/<tipos:DescontoCondicionado>[^<]*<\/tipos:DescontoCondicionado>/g,'');
+
+  const addr=xml.match(/\[\[SBPADDR\|([^\]]+)\]\]/);
+  if(addr){
+    const parts=addr[1].split('|').map(v=>{try{return decodeURIComponent(v)}catch{return v}});
+    const [endereco,numero,complemento,bairro,cidade,uf,cep]=parts;
+    xml=xml.replace(/\s*\[\[SBPADDR\|[^\]]+\]\]/,'');
+    const bloco='<tipos:Endereco><tipos:Endereco>'+escapeXml(endereco||'')+'</tipos:Endereco><tipos:Numero>'+escapeXml(numero||'')+'</tipos:Numero>'
+      +(complemento?'<tipos:Complemento>'+escapeXml(complemento)+'</tipos:Complemento>':'')
+      +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>3549805</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(uf||'SP')+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
+    xml=xml.replace(/(<\/tipos:RazaoSocial>)(?![\s\S]*?<tipos:Endereco>)/,'$1'+bloco);
+  }
+
+  if(!xml.includes('<tipos:trib>')){
+    xml=xml.replace(/(<tipos:Aliquota>[^<]+<\/tipos:Aliquota>)/,
+      '$1<tipos:trib><tipos:tribFed><tipos:piscofins><tipos:CST>00</tipos:CST><tipos:vBCPisCofins>0.00</tipos:vBCPisCofins><tipos:pAliqPis>0.00</tipos:pAliqPis><tipos:pAliqCofins>0.00</tipos:pAliqCofins><tipos:vPis>0.00</tipos:vPis><tipos:vCofins>0.00</tipos:vCofins><tipos:tpRetPisCofins>2</tipos:tpRetPisCofins></tipos:piscofins></tipos:tribFed><tipos:totTrib><tipos:pTotTribSN>0.00</tipos:pTotTribSN></tipos:totTrib></tipos:trib><tipos:IBSCBS><tipos:finNFSe>0</tipos:finNFSe><tipos:indFinal>0</tipos:indFinal><tipos:cIndOp>020301</tipos:cIndOp><tipos:tpOper>1</tipos:tpOper><tipos:tpEnteGov>4</tipos:tpEnteGov><tipos:indDest>0</tipos:indDest><tipos:valores><tipos:trib><tipos:gIBSCBS><tipos:CST>200</tipos:CST><tipos:cClassTrib>200046</tipos:cClassTrib></tipos:gIBSCBS></tipos:trib><tipos:cLocalidadeIncid>3549805</tipos:cLocalidadeIncid><tipos:pRedutor>0.00</tipos:pRedutor></tipos:valores></tipos:IBSCBS>');
+  }
 
   const leaf=String(certChain||'').match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/)?.[0]||String(certChain||'');
+  const certBase64=leaf.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s+/g,'');
   const c14n='http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
   const rsa='http://www.w3.org/2000/09/xmldsig#rsa-sha1';
   const sha1='http://www.w3.org/2000/09/xmldsig#sha1';
@@ -74,7 +104,7 @@ function gissResignSoap(soap, certChain, privateKey){
       publicCert:leaf,
       signatureAlgorithm:rsa,
       canonicalizationAlgorithm:c14n,
-      getKeyInfoContent:SignedXml.getKeyInfoContent
+      getKeyInfoContent:()=>'<X509Data><X509Certificate>'+certBase64+'</X509Certificate></X509Data>'
     });
     sig.addReference({
       xpath:"//*[@Id='"+id+"']",
