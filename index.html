@@ -1883,7 +1883,8 @@ function renderFilaNfTugao(){
   const prontas=rows.filter(x=>x.status==='Pronta').length;
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
-  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||prontas===0;
+  const reemitir=rows.filter(x=>x.status==='Erro'&&!consultaPendenteTugao(x)).length;
+  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||(prontas+reemitir)===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.disabled=consultar===0;
 }
@@ -2203,7 +2204,7 @@ async function consultarTodasNfTugao(){
 }
 
 async function emitirTodasNfTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta'||(x.status==='Erro'&&!consultaPendenteTugao(x)));
   if(!rows.length){notify('Não há notas prontas para emitir.');return}
   const competencia=window.nfCompetenciaLote?.value||'';
   const aliquotaIss=numeroValor(window.nfIssLote?.value||'');
