@@ -2220,8 +2220,43 @@ async function emitirTodasNfTugao(){
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
   const senha=senhaCertTugao();
   if(senha===null)return;
-  const notasParaEmitir=rows.map(x=>({...x,competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)}));
-  if(!confirm('Emitir '+rows.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'))return;
+  const notasParaEmitir=[];
+  const incompletos=[];
+  for(const x of rows){
+    const chaveTomador=docChaveCliente(x.documento);
+    const cadastroTomador=(store.clientes||[]).find(c=>chaveTomador&&docChaveCliente(c.documento)===chaveTomador);
+    if(!cadastroTomador){incompletos.push(x.cliente+' (sem cadastro)');continue}
+    const faltamTomador=[];
+    if(!String(cadastroTomador.endereco||'').trim())faltamTomador.push('endereço');
+    if(!String(cadastroTomador.numero||'').trim())faltamTomador.push('número');
+    if(!String(cadastroTomador.bairro||'').trim())faltamTomador.push('bairro');
+    if(!String(cadastroTomador.cidade||'').trim())faltamTomador.push('cidade');
+    if(!String(cadastroTomador.uf||'').trim())faltamTomador.push('UF');
+    if(String(cadastroTomador.cep||'').replace(/\D/g,'').length!==8)faltamTomador.push('CEP');
+    if(faltamTomador.length){incompletos.push(x.cliente+' ('+faltamTomador.join(', ')+')');continue}
+    const addrMarker='[[SBPADDR|'+[
+      cadastroTomador.endereco||'',
+      cadastroTomador.numero||'',
+      cadastroTomador.complemento||'',
+      cadastroTomador.bairro||'',
+      cadastroTomador.cidade||'',
+      cadastroTomador.uf||'',
+      cadastroTomador.cep||''
+    ].map(v=>encodeURIComponent(String(v))).join('|')+']]';
+    notasParaEmitir.push({...x,
+      cliente:cadastroTomador.nome||x.cliente,
+      documento:cadastroTomador.documento||x.documento,
+      email:cadastroTomador.email||cadastroTomador.contato||x.email||'',
+      descricao:String(x.descricao||'')+' '+addrMarker,
+      competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)
+    });
+  }
+  if(!notasParaEmitir.length){
+    notify('Nenhuma nota pronta tem cadastro completo para emissão.');
+    return;
+  }
+  if(incompletos.length)notify(incompletos.length+' cliente(s) ficaram de fora por cadastro incompleto.');
+  if(!confirm('Emitir '+notasParaEmitir.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'+(incompletos.length?'\n\n'+incompletos.length+' cliente(s) com cadastro incompleto ficarão de fora.':'')))return;
   nfEmitirTodasBtn.disabled=true;nfEmitirTodasBtn.textContent='Emitindo...';
   try{
     const {data:{session}}=await sb.auth.getSession();
