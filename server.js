@@ -127,6 +127,41 @@ function gissResignSoap(soap, certChain, privateKey){
   return String(soap).replace(m[1],xml);
 }
 
+function gissSignConsultaSoap(soap, certChain, privateKey){
+  const m=String(soap||'').match(/<nfseDadosMsg><!\[CDATA\[([\s\S]*?)\]\]><\/nfseDadosMsg>/);
+  if(!m) return soap;
+  let xml=m[1];
+  if(!/ConsultarLoteRpsEnvio/.test(xml) || /<(?:ds:)?Signature\b/.test(xml)) return soap;
+
+  const leaf=String(certChain||'').match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/)?.[0]||String(certChain||'');
+  const certBase64=leaf.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s+/g,'');
+  const c14n='http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
+  const rsa='http://www.w3.org/2000/09/xmldsig#rsa-sha1';
+  const sha1='http://www.w3.org/2000/09/xmldsig#sha1';
+
+  const sig=new SignedXml({
+    privateKey:String(privateKey),
+    publicCert:leaf,
+    signatureAlgorithm:rsa,
+    canonicalizationAlgorithm:c14n,
+    getKeyInfoContent:()=>'<ds:X509Data><ds:X509Certificate>'+certBase64+'</ds:X509Certificate></ds:X509Data>'
+  });
+  sig.addReference({
+    xpath:'/*',
+    transforms:['http://www.w3.org/2000/09/xmldsig#enveloped-signature',c14n],
+    digestAlgorithm:sha1,
+    isEmptyUri:true
+  });
+  sig.computeSignature(xml,{
+    prefix:'ds',
+    location:{reference:'/*',action:'append'},
+    existingPrefixes:{ds:'http://www.w3.org/2000/09/xmldsig#'}
+  });
+  xml=sig.getSignedXml();
+  console.log('GISS CONSULTA SIGN',JSON.stringify({sigCount:(xml.match(/<ds:Signature\b/g)||[]).length}));
+  return String(soap).replace(m[1],xml);
+}
+
 function mtlsRequest({url, method='POST', headers={}, body='', certChain, privateKey}){
   return new Promise((resolve,reject)=>{
     const target = new URL(url);
@@ -172,6 +207,7 @@ async function handleProxy(req,res){
     if(!b.url || !b.certChain || !b.privateKey) return sendJson(res,400,{error:'Dados mTLS incompletos'});
     let soapBody=String(b.body || '');
     soapBody=gissResignSoap(soapBody,String(b.certChain||''),String(b.privateKey||''));
+    soapBody=gissSignConsultaSoap(soapBody,String(b.certChain||''),String(b.privateKey||''));
     const refs=[...soapBody.matchAll(/<(?:\w+:)?Reference\b[^>]*URI=["']([^"']*)["']/g)].map(m=>m[1]);
     const sigCount=(soapBody.match(/<(?:\w+:)?Signature\b/g)||[]).length;
     const infIds=[...soapBody.matchAll(/<[^>]*InfDeclaracaoPrestacaoServico\b[^>]*Id=["']([^"']+)["']/g)].map(m=>m[1]);
@@ -182,7 +218,8 @@ async function handleProxy(req,res){
       method:String(b.method || 'POST'),
       headers:{
         ...(b.headers && typeof b.headers==='object' ? b.headers : {}),
-        ...(soapBody.includes('RecepcionarLoteRpsRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/RecepcionarLoteRps"'}:{})
+        ...(soapBody.includes('RecepcionarLoteRpsRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/RecepcionarLoteRps"'}:{}),
+        ...(soapBody.includes('ConsultarLoteRpsRequest')?{'SOAPAction':'"http://nfse.abrasf.org.br/ConsultarLoteRps"'}:{})
       },
       body:soapBody,
       certChain:String(b.certChain),
