@@ -2296,13 +2296,24 @@ async function sincronizarNfEmitidasTugao(){
   try{
     const empresaId='3072c434-6aeb-44f3-80aa-ebfca6e5b25a';
     const {data,error}=await sb.from('seubpo_nfse_emissoes')
-      .select('request_id,tomador_nome,numero_nfse,status,atualizado_em')
+      .select('request_id,tomador_documento,tomador_nome,competencia,valor,numero_nfse,status,atualizado_em')
       .eq('empresa_id',empresaId)
       .eq('status','EMITIDA');
     if(error)throw error;
     let mudou=false;
     for(const e of data||[]){
-      const x=(store.nfImportacaoTugao||[]).find(r=>String(r.id)===String(e.request_id));
+      const compDb=String(e.competencia||'').slice(0,7);
+      const docDb=docChaveCliente(e.tomador_documento);
+      const valDb=Number(e.valor||0);
+      const x=(store.nfImportacaoTugao||[]).find(r=>{
+        if(String(r.id)===String(e.request_id))return true;
+        const mesmoDoc=docDb&&docChaveCliente(r.documento)===docDb;
+        const mesmoNome=nomeChaveTugao(r.cliente)===nomeChaveTugao(e.tomador_nome);
+        const compLocal=String(r.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
+        const mesmoComp=!compDb||!compLocal||compDb===compLocal;
+        const mesmoValor=Math.abs((numeroValor(r.valor)||0)-valDb)<0.01;
+        return (mesmoDoc||mesmoNome)&&mesmoComp&&mesmoValor;
+      });
       if(!x)continue;
       x.status='Emitida';
       x.numero=e.numero_nfse||x.numero||'';
