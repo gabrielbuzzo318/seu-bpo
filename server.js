@@ -89,7 +89,15 @@ function gissResignSoap(soap, certChain, privateKey){
       'CEDRAL|SP':'3511300','CURITIBA|PR':'4106902','TAIUVA|SP':'3553203','FRUTAL|MG':'3127107',
       'TORIXOREU|MT':'5108204','SAO CARLOS|SP':'3548906','SANTA FE DO SUL|SP':'3546603'
     };
-    const codigoMunicipio=ibge[cidadeKey+'|'+ufKey]||'3549805';
+    const cepKey=String(cep||'').replace(/\D/g,'');
+    const ibgeCep={
+      '13482376':'3526902','15170000':'3553401','73252200':'5300108','01311927':'3550308',
+      '15135280':'3530300','71505790':'5300108','58037065':'2507507','15105000':'3540804',
+      '15500006':'3557105','15894899':'3555604','15890310':'3555604','15135364':'3530300',
+      '02357120':'3550308','38230000':'3127008','01510001':'3550308','14021617':'3543402',
+      '15115000':'3504602','03607040':'3550308','15775000':'3546603','04533050':'3550308'
+    };
+    const codigoMunicipio=ibgeCep[cepKey]||ibge[cidadeKey+'|'+ufKey]||'3549805';
     const bloco='<tipos:Endereco><tipos:Endereco>'+escapeXml(endereco||'')+'</tipos:Endereco><tipos:Numero>'+escapeXml(numero||'')+'</tipos:Numero>'
       +(complemento?'<tipos:Complemento>'+escapeXml(complemento)+'</tipos:Complemento>':'')
       +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>'+codigoMunicipio+'</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(ufKey)+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
