@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const { SignedXml } = require('xml-crypto');
+const forge = require('node-forge');
 
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
@@ -231,6 +232,135 @@ async function handleProxy(req,res){
   }
 }
 
+
+const SUPABASE_URL='https://dnigyxgvavgrggmzteju.supabase.co';
+const SUPABASE_ANON='sb_publishable_9SlH8bNy9pRZAJlByTCtCA_xIoty9rE';
+
+function xmlTagText(xml,name){
+  const m=String(xml||'').match(new RegExp('<(?:\\w+:)?'+name+'\\b[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?'+name+'>','i'));
+  return (m?.[1]||'').trim();
+}
+function xmlDecodeText(v){
+  return String(v||'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+}
+function parsePfxBytes(buf,password){
+  const bin=Buffer.from(buf).toString('binary');
+  const p12=forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(bin),false,password);
+  const kb=p12.getBags({bagType:forge.pki.oids.pkcs8ShroudedKeyBag})[forge.pki.oids.pkcs8ShroudedKeyBag]
+    ||p12.getBags({bagType:forge.pki.oids.keyBag})[forge.pki.oids.keyBag]||[];
+  const cb=p12.getBags({bagType:forge.pki.oids.certBag})[forge.pki.oids.certBag]||[];
+  if(!kb[0]?.key||!cb.length) throw new Error('Certificado A1 inválido.');
+  const certs=cb.filter(x=>x.cert).map(x=>forge.pki.certificateToPem(x.cert));
+  return {privateKey:forge.pki.privateKeyToPem(kb[0].key),certChain:certs.join('\n')};
+}
+async function supaFetch(pathname,token,opts={}){
+  const headers={
+    apikey:SUPABASE_ANON,
+    Authorization:'Bearer '+token,
+    ...(opts.headers||{})
+  };
+  return fetch(SUPABASE_URL+pathname,{...opts,headers});
+}
+function cdataWrap(v){return '<![CDATA['+String(v).replace(/]]>/g,']]]]><![CDATA[>')+']]>';}
+
+async function handleGissConsultar(req,res){
+  if(req.method!=='POST') return sendJson(res,405,{error:'Método inválido'});
+  try{
+    const auth=String(req.headers.authorization||'');
+    const token=auth.replace(/^Bearer\s+/i,'');
+    if(!token) return sendJson(res,401,{error:'Sessão inválida'});
+    const b=JSON.parse(await readBody(req)||'{}');
+    const empresaId=String(b.empresa_id||'');
+    const requestId=String(b.request_id||'');
+    const password=String(b.password||'');
+    if(!empresaId||!requestId||!password) return sendJson(res,400,{error:'Dados incompletos para consultar a GISS.'});
+
+    const qs=(table,filter,select)=>'/rest/v1/'+table+'?'+filter+'&select='+encodeURIComponent(select);
+    const er=await supaFetch(qs('seubpo_nfse_emissoes','empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),'request_id,status,protocolo,rps_numero'),token);
+    if(!er.ok) throw new Error('Não foi possível ler a emissão.');
+    const emiss=(await er.json())[0];
+    if(!emiss?.protocolo) return sendJson(res,400,{error:'Essa emissão ainda não possui protocolo da GISS.'});
+
+    const cr=await supaFetch(qs('seubpo_nfse_config','empresa_id=eq.'+encodeURIComponent(empresaId),'cnpj,inscricao_municipal,ambiente,endpoint_producao,endpoint_homologacao'),token);
+    if(!cr.ok) throw new Error('Não foi possível ler a configuração da GISS.');
+    const cfg=(await cr.json())[0];
+    if(!cfg) throw new Error('Configuração da GISS não encontrada.');
+
+    const certMetaR=await supaFetch(qs('seubpo_certificados','empresa_id=eq.'+encodeURIComponent(empresaId),'storage_path'),token);
+    if(!certMetaR.ok) throw new Error('Não foi possível localizar o certificado.');
+    const certMeta=(await certMetaR.json())[0];
+    if(!certMeta?.storage_path) throw new Error('Certificado A1 não cadastrado.');
+
+    const objectPath=String(certMeta.storage_path).split('/').map(encodeURIComponent).join('/');
+    const certR=await supaFetch('/storage/v1/object/authenticated/seubpo-certificados/'+objectPath,token);
+    if(!certR.ok) throw new Error('Não foi possível ler o certificado A1.');
+    let cert;
+    try{cert=parsePfxBytes(await certR.arrayBuffer(),password)}
+    catch{ return sendJson(res,400,{error:'Senha do certificado incorreta ou A1 inválido.'}); }
+
+    const tipos='http://www.giss.com.br/tipos-v2_04.xsd';
+    const consultaNs='http://www.giss.com.br/consultar-lote-rps-envio-v2_04.xsd';
+    const cabNs='http://www.giss.com.br/cabecalho-v2_04.xsd';
+    const soapNs='http://schemas.xmlsoap.org/soap/envelope/';
+    const svc='http://nfse.abrasf.org.br';
+    const data='<q:ConsultarLoteRpsEnvio xmlns:q="'+consultaNs+'" xmlns:tipos="'+tipos+'"><q:Prestador><tipos:CpfCnpj><tipos:Cnpj>'+String(cfg.cnpj||'').replace(/\D/g,'')+'</tipos:Cnpj></tipos:CpfCnpj><tipos:InscricaoMunicipal>'+escapeXml(cfg.inscricao_municipal||'')+'</tipos:InscricaoMunicipal></q:Prestador><q:Protocolo>'+escapeXml(emiss.protocolo)+'</q:Protocolo></q:ConsultarLoteRpsEnvio>';
+    const header='<cabecalho xmlns="'+cabNs+'" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>';
+    let soap='<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="'+soapNs+'" xmlns:nfse="'+svc+'"><soapenv:Header/><soapenv:Body><nfse:ConsultarLoteRpsRequest><nfseCabecMsg>'+cdataWrap(header)+'</nfseCabecMsg><nfseDadosMsg>'+cdataWrap(data)+'</nfseDadosMsg></nfse:ConsultarLoteRpsRequest></soapenv:Body></soapenv:Envelope>';
+    soap=gissSignConsultaSoap(soap,cert.certChain,cert.privateKey);
+
+    const endpoint=String(cfg.ambiente==='homologacao'?cfg.endpoint_homologacao:cfg.endpoint_producao).replace(/\?wsdl.*$/i,'');
+    const out=await mtlsRequest({
+      url:endpoint,
+      method:'POST',
+      headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'"http://nfse.abrasf.org.br/ConsultarLoteRps"'},
+      body:soap,
+      certChain:cert.certChain,
+      privateKey:cert.privateKey
+    });
+    if(out.status<200||out.status>=300) throw new Error('GISS HTTP '+out.status);
+
+    const inner=xmlDecodeText(xmlTagText(out.body,'outputXML')||xmlTagText(out.body,'return')||out.body);
+    const situacao=xmlTagText(inner,'Situacao');
+    const comp=[...inner.matchAll(/<(?:\w+:)?CompNfse\b[^>]*>([\s\S]*?)<\/(?:\w+:)?CompNfse>/gi)];
+    let nota=null;
+    for(const m of comp){
+      const bloco=m[1];
+      const ident=bloco.match(/<(?:\w+:)?IdentificacaoRps\b[^>]*>([\s\S]*?)<\/(?:\w+:)?IdentificacaoRps>/i)?.[1]||'';
+      const rps=Number(xmlTagText(ident,'Numero')||0);
+      if(!nota||rps===Number(emiss.rps_numero)){
+        nota={rps,numero_nfse:xmlTagText(bloco,'Numero'),codigo_verificacao:xmlTagText(bloco,'CodigoVerificacao')};
+        if(rps===Number(emiss.rps_numero)) break;
+      }
+    }
+    const msg=xmlTagText(inner,'Mensagem');
+    const cod=xmlTagText(inner,'Codigo');
+
+    let patch;
+    let result;
+    if(nota?.numero_nfse){
+      patch={status:'EMITIDA',numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||null,xml_retorno:inner,erro_codigo:null,erro_mensagem:null,atualizado_em:new Date().toISOString()};
+      result={ok:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||''};
+    }else if(situacao==='2'){
+      patch={status:'PROCESSANDO',xml_retorno:inner,erro_codigo:null,erro_mensagem:'Remessa ainda não foi processada',atualizado_em:new Date().toISOString()};
+      result={ok:false,processando:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,erro:'Remessa ainda não foi processada'};
+    }else{
+      patch={status:'ERRO',xml_retorno:inner,erro_codigo:cod||null,erro_mensagem:msg||('Situação '+situacao),atualizado_em:new Date().toISOString()};
+      result={ok:false,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,codigo:cod||'',erro:msg||('Situação '+situacao)};
+    }
+
+    const up=await supaFetch('/rest/v1/seubpo_nfse_emissoes?empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),token,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify(patch)
+    });
+    if(!up.ok) console.warn('Falha ao persistir consulta GISS',up.status);
+
+    return sendJson(res,200,result);
+  }catch(e){
+    return sendJson(res,502,{error:e instanceof Error?e.message:'Falha ao consultar a GISS.'});
+  }
+}
+
 function serveStatic(req,res){
   let pathname;
   try{ pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname); }
@@ -262,6 +392,7 @@ function serveStatic(req,res){
 
 const server=http.createServer(async(req,res)=>{
   if(req.url && req.url.startsWith('/api/giss-proxy')) return handleProxy(req,res);
+  if(req.url && req.url.startsWith('/api/giss-consultar')) return handleGissConsultar(req,res);
   return serveStatic(req,res);
 });
 
