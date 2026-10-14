@@ -78,9 +78,21 @@ function gissResignSoap(soap, certChain, privateKey){
     const parts=addr[1].split('|').map(v=>{try{return decodeURIComponent(v)}catch{return v}});
     const [endereco,numero,complemento,bairro,cidade,uf,cep]=parts;
     xml=xml.replace(/\s*\[\[SBPADDR\|[^\]]+\]\]/,'');
+    const cidadeKey=String(cidade||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+    const ufKey=String(uf||'SP').trim().toUpperCase();
+    const ibge={
+      'SAO JOSE DO RIO PRETO|SP':'3549805','SAO PAULO|SP':'3550308','LIMEIRA|SP':'3526902',
+      'BRASILIA|DF':'5300108','TANABI|SP':'3553401','MIRASSOL|SP':'3530300','JOAO PESSOA|PB':'2507507',
+      'UCHOA|SP':'3555604','CESARIO LANGE|SP':'3511607','CAMPINAS|SP':'3509502','ITAPAGIPE|MG':'3133402',
+      'RIBEIRAO PRETO|SP':'3543402','BADY BASSITT|SP':'3504602','PORTO ALEGRE|RS':'4314902',
+      'FRONTEIRA|MG':'3127008','CUIABA|MT':'5103403','VOTUPORANGA|SP':'3557105','COTIA|SP':'3513009',
+      'CEDRAL|SP':'3511300','CURITIBA|PR':'4106902','TAIUVA|SP':'3553203','FRUTAL|MG':'3127107',
+      'TORIXOREU|MT':'5108204','SAO CARLOS|SP':'3548906','SANTA FE DO SUL|SP':'3546603'
+    };
+    const codigoMunicipio=ibge[cidadeKey+'|'+ufKey]||'3549805';
     const bloco='<tipos:Endereco><tipos:Endereco>'+escapeXml(endereco||'')+'</tipos:Endereco><tipos:Numero>'+escapeXml(numero||'')+'</tipos:Numero>'
       +(complemento?'<tipos:Complemento>'+escapeXml(complemento)+'</tipos:Complemento>':'')
-      +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>3549805</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(uf||'SP')+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
+      +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>'+codigoMunicipio+'</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(ufKey)+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
     xml=xml.replace(/(<\/tipos:RazaoSocial>)(?![\s\S]*?<tipos:Endereco>)/,'$1'+bloco);
   }
 
