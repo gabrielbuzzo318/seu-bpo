@@ -1903,6 +1903,50 @@ function removerNfImportada(id){
   store.nfImportacaoTugao=(store.nfImportacaoTugao||[]).filter(x=>Number(x.id)!==Number(id));
   persist();renderFilaNfTugao();
 }
+async function consultarNfTugao(id){
+  const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
+  if(!x)return;
+  const senha=prompt('Senha do certificado A1 da Tugão:');
+  if(senha===null)return;
+  if(!senha){notify('Informe a senha do certificado.');return}
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada.');
+    const resp=await fetch('/api/giss-consultar',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({
+        empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',
+        request_id:String(x.id),
+        password:senha
+      })
+    });
+    const out=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw new Error(out.error||'Falha ao consultar a GISS.');
+    if(out.ok){
+      x.status='Emitida';
+      x.numero=out.numero_nfse||'';
+      x.erro='';
+      persist();renderFilaNfTugao();
+      notify('NFS-e '+x.numero+' emitida com sucesso.');
+      return;
+    }
+    if(out.processando){
+      x.status='Erro';
+      x.erro='Remessa ainda não foi processada. Protocolo '+(out.protocolo||'');
+      persist();renderFilaNfTugao();
+      notify(x.erro);
+      return;
+    }
+    x.status='Erro';
+    x.erro=out.erro||'A GISS processou o lote com erro.';
+    persist();renderFilaNfTugao();notify(x.erro);
+  }catch(e){
+    x.status='Erro';
+    x.erro=e.message||'Falha ao consultar a GISS.';
+    persist();renderFilaNfTugao();notify(x.erro);
+  }
+}
 async function emitirNfIndividualTugao(id){
   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
   if(!x)return;
