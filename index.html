@@ -1729,6 +1729,18 @@ function abrirFecharFaturaCartao(){
   modalBg.classList.add('show');
 }
 let tugaoCertMeta=null;
+let tugaoCertPasswordCache='';
+function senhaCertTugao(){
+  if(tugaoCertPasswordCache)return tugaoCertPasswordCache;
+  const senha=prompt('Senha do certificado A1 da Tugão:');
+  if(senha===null)return null;
+  if(!senha){notify('Informe a senha do certificado.');return null}
+  tugaoCertPasswordCache=senha;
+  return senha;
+}
+function consultaPendenteTugao(x){
+  return x?.status==='Erro'&&/processad|processamento|protocolo|consulta.{0,20}andamento|em andamento/i.test(String(x.erro||''));
+}
 function isTugaoSelected(){return selectedCompanyName().toUpperCase()==='TUGÃO IMÓVEIS'}
 function normalizaCabecalhoNf(v){
   return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -1847,7 +1859,7 @@ function renderFilaNfTugao(){
   const rows=store.nfImportacaoTugao||[];
   const competenciaLote=window.nfCompetenciaLote?.value||'';
   const issLote=window.nfIssLote?.value||'';
-  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':x.status==='Erro'?'bad':'warn')+'">'+esc(x.status==='Emitindo'?'Enviando...':x.status)+'</span>'+(x.status==='Emitida'&&x.numero?'<div class="sub" style="margin-top:5px;font-weight:700">NFS-e nº '+esc(x.numero)+'</div>':'')+(x.erro?'<div class="sub" style="margin-top:5px;max-width:260px;color:var(--red)">'+esc(x.erro)+'</div>':'')+'</td><td><div class="actions">'+((x.status==='Pronta'||x.status==='Erro')?'<button class="iconbtn" onclick="'+((x.status==='Erro'&&/processad|processamento|protocolo/i.test(x.erro||''))?'consultarNfTugao':'emitirNfIndividualTugao')+'('+x.id+')">'+((x.status==='Erro'&&/processad|processamento|protocolo/i.test(x.erro||''))?'Consultar':'Tentar novamente')+'</button>':'')+'<button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
+  nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':x.status==='Erro'?'bad':'warn')+'">'+esc(x.status==='Emitindo'?'Enviando...':x.status)+'</span>'+(x.status==='Emitida'&&x.numero?'<div class="sub" style="margin-top:5px;font-weight:700">NFS-e nº '+esc(x.numero)+'</div>':'')+(x.erro?'<div class="sub" style="margin-top:5px;max-width:260px;color:var(--red)">'+esc(x.erro)+'</div>':'')+'</td><td><div class="actions">'+((x.status==='Pronta'||x.status==='Erro')?'<button class="iconbtn" onclick="'+(consultaPendenteTugao(x)?'consultarNfTugao':'emitirNfIndividualTugao')+'('+x.id+')">'+(consultaPendenteTugao(x)?'Consultar':'Tentar novamente')+'</button>':'')+'<button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
   const prontas=rows.filter(x=>x.status==='Pronta').length;
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
@@ -1963,9 +1975,8 @@ function removerNfImportada(id){
 async function consultarNfTugao(id){
   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
   if(!x)return;
-  const senha=prompt('Senha do certificado A1 da Tugão:');
+  const senha=senhaCertTugao();
   if(senha===null)return;
-  if(!senha){notify('Informe a senha do certificado.');return}
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(!session)throw new Error('Sessão expirada.');
@@ -1979,7 +1990,10 @@ async function consultarNfTugao(id){
       })
     });
     const out=await resp.json().catch(()=>({}));
-    if(!resp.ok)throw new Error(out.error||'Falha ao consultar a GISS.');
+    if(!resp.ok){
+      if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
+      throw new Error(out.error||'Falha ao consultar a GISS.');
+    }
     if(out.ok){
       x.status='Emitida';
       x.numero=out.numero_nfse||'';
@@ -2021,9 +2035,8 @@ async function emitirNfIndividualTugao(id){
   if(!cfg.codigo_atividade)faltam.push('Código da atividade');
   if(!cfg.codigo_nbs)faltam.push('NBS');
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
-  const senha=prompt('Senha do certificado A1 da Tugão:');
+  const senha=senhaCertTugao();
   if(senha===null)return;
-  if(!senha){notify('Informe a senha do certificado.');return}
   if(!confirm('Emitir esta NFS-e para '+x.cliente+' · '+money(x.valor)+' · competência '+competencia.split('-').reverse().join('/')+' · ISS '+formatValor(aliquotaIss)+'%?'))return;
   const chaveTomador=docChaveCliente(x.documento);
   const cadastroTomador=(store.clientes||[]).find(c=>chaveTomador&&docChaveCliente(c.documento)===chaveTomador);
@@ -2069,7 +2082,10 @@ async function emitirNfIndividualTugao(id){
       body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,competencia,aliquota_iss:aliquotaIss,notas:[nota]})
     });
     const out=await resp.json().catch(()=>({}));
-    if(!resp.ok)throw new Error(out.error||'Falha na emissão.');
+    if(!resp.ok){
+      if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
+      throw new Error(out.error||'Falha na emissão.');
+    }
     const ret=(out.resultados||[])[0]||{};
     if(!ret.ok)throw new Error(ret.erro||'A GISS não confirmou a emissão.');
     x.status='Emitida';
@@ -2101,9 +2117,8 @@ async function emitirTodasNfTugao(){
   if(!cfg.codigo_atividade)faltam.push('Código da atividade');
   if(!cfg.codigo_nbs)faltam.push('NBS');
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
-  const senha=prompt('Senha do certificado A1 da Tugão:');
+  const senha=senhaCertTugao();
   if(senha===null)return;
-  if(!senha){notify('Informe a senha do certificado.');return}
   const notasParaEmitir=rows.map(x=>({...x,competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)}));
   if(!confirm('Emitir '+rows.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'))return;
   nfEmitirTodasBtn.disabled=true;nfEmitirTodasBtn.textContent='Emitindo...';
@@ -2116,7 +2131,10 @@ async function emitirTodasNfTugao(){
       body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,competencia,aliquota_iss:aliquotaIss,notas:notasParaEmitir})
     });
     const out=await resp.json().catch(()=>({}));
-    if(!resp.ok)throw new Error(out.error||'O motor de emissão GISS ainda não está liberado.');
+    if(!resp.ok){
+      if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
+      throw new Error(out.error||'O motor de emissão GISS ainda não está liberado.');
+    }
     for(const ret of out.resultados||[]){
       const x=store.nfImportacaoTugao.find(r=>Number(r.id)===Number(ret.id));
       if(!x)continue;
