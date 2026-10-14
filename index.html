@@ -1069,6 +1069,23 @@ async function iniciarBackupCloud(userId){
   const {data,error}=await sb.from('seubpo_backup_usuario').select('dados').eq('user_id',userId).maybeSingle();
   if(error){console.error('Falha ao consultar backup do Seu BPO:',error);return}
   const remoto=data?.dados;
+  if(Array.isArray(remoto?.clientes)&&Array.isArray(store.clientes)){
+    const campos=['endereco','numero','complemento','bairro','cidade','uf','cep','email','contato'];
+    let mesclouClientes=false;
+    for(const rc of remoto.clientes){
+      const rd=String(rc?.documento||'').replace(/\D/g,'');
+      if(!rd)continue;
+      const lc=store.clientes.find(x=>String(x?.documento||'').replace(/\D/g,'')===rd);
+      if(!lc)continue;
+      for(const campo of campos){
+        if(!String(lc[campo]||'').trim()&&String(rc[campo]||'').trim()){
+          lc[campo]=rc[campo];
+          mesclouClientes=true;
+        }
+      }
+    }
+    if(mesclouClientes)localStorage.setItem(DBKEY,JSON.stringify(store));
+  }
   const localFluxo=Array.isArray(store.fluxo)?store.fluxo.length:0;
   const remotoFluxo=Array.isArray(remoto?.fluxo)?remoto.fluxo.length:0;
   // Recuperacao conservadora: apenas quando a lista local estiver vazia.
