@@ -264,6 +264,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
         <button id="nfRelatorioBtn" class="btn">Importar relatório</button>
+        <button id="nfConsultarTodasBtn" class="btn" disabled>Consultar todas</button>
         <button id="nfEmitirTodasBtn" class="btn primary" disabled>Emitir todas</button>
       </div>
     </div>
@@ -1883,6 +1884,8 @@ function renderFilaNfTugao(){
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||prontas===0;
+  const consultar=rows.filter(consultaPendenteTugao).length;
+  if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.disabled=consultar===0;
 }
 async function lerPdfRelatorioNf(file){
   const data=await file.arrayBuffer();
@@ -2139,6 +2142,66 @@ async function emitirNfIndividualTugao(id){
     persist();renderFilaNfTugao();notify(x.erro);
   }
 }
+async function consultarTodasNfTugao(){
+  const rows=(store.nfImportacaoTugao||[]).filter(consultaPendenteTugao);
+  if(!rows.length){notify('Não há NFS-e pendentes para consultar.');return}
+  const senha=senhaCertTugao();
+  if(senha===null)return;
+  if(!confirm('Consultar '+rows.length+' NFS-e pendente(s) na GISS?'))return;
+  if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=true;nfConsultarTodasBtn.textContent='Consultando...'}
+  let emitidas=0,processando=0,erros=0;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada.');
+    for(const x of rows){
+      try{
+        const resp=await fetch('/api/giss-consultar',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+          body:JSON.stringify({
+            empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',
+            request_id:String(x.id),
+            password:senha
+          })
+        });
+        const out=await resp.json().catch(()=>({}));
+        if(!resp.ok){
+          if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
+          throw new Error(out.error||'Falha ao consultar a GISS.');
+        }
+        if(out.ok){
+          x.status='Emitida';
+          x.numero=out.numero_nfse||'';
+          x.erro='';
+          emitidas++;
+          if(!store.nf.some(n=>String(n.numero)===String(x.numero)&&String(n.pessoa)===String(x.cliente))){
+            store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),competencia:x.competencia||window.nfCompetenciaLote?.value||'',tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),status:'Emitida',empresa:'Tugão Imóveis'});
+          }
+        }else if(out.processando){
+          x.status='Erro';
+          x.erro='Remessa ainda não foi processada. Protocolo '+(out.protocolo||'');
+          processando++;
+        }else{
+          x.status='Erro';
+          x.erro=out.erro||'A GISS processou o lote com erro.';
+          erros++;
+        }
+        persist();renderFilaNfTugao();
+        await new Promise(r=>setTimeout(r,700));
+      }catch(e){
+        x.status='Erro';
+        x.erro=e.message||'Falha ao consultar a GISS.';
+        erros++;
+        persist();renderFilaNfTugao();
+      }
+    }
+    notify('Consulta concluída: '+emitidas+' emitida(s), '+processando+' em processamento, '+erros+' com erro.');
+  }finally{
+    if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultar todas';
+    renderFilaNfTugao();
+  }
+}
+
 async function emitirTodasNfTugao(){
   const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
   if(!rows.length){notify('Não há notas prontas para emitir.');return}
@@ -2641,6 +2704,7 @@ if(window.gissTestarBtn)gissTestarBtn.onclick=testarConexaoGissTugao;
 if(window.gissAmbiente)gissAmbiente.onchange=atualizarEndpointGiss;
 if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
 if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
+if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.onclick=consultarTodasNfTugao;
 if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
 if(window.nfCompetenciaLote)nfCompetenciaLote.onchange=renderFilaNfTugao;
 if(window.nfIssLote)nfIssLote.oninput=renderFilaNfTugao;
