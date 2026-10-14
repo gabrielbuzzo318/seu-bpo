@@ -1739,7 +1739,9 @@ function senhaCertTugao(){
   return senha;
 }
 function consultaPendenteTugao(x){
-  return x?.status==='Erro'&&/processad|processamento|protocolo|consulta.{0,20}andamento|em andamento/i.test(String(x.erro||''));
+  const status=String(x?.status||'').toLowerCase();
+  const erro=String(x?.erro||'').toLowerCase();
+  return status==='erro'&&(erro.includes('consulta')||erro.includes('processad')||erro.includes('processamento')||erro.includes('protocolo')||erro.includes('em andamento'));
 }
 function isTugaoSelected(){return selectedCompanyName().toUpperCase()==='TUGÃO IMÓVEIS'}
 function normalizaCabecalhoNf(v){
