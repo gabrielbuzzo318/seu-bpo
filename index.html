@@ -2292,6 +2292,49 @@ async function emitirTodasNfTugao(){
     nfEmitirTodasBtn.textContent='Emitir todas';renderFilaNfTugao();
   }
 }
+async function sincronizarNfEmitidasTugao(){
+  try{
+    const empresaId='3072c434-6aeb-44f3-80aa-ebfca6e5b25a';
+    const {data,error}=await sb.from('seubpo_nfse_emissoes')
+      .select('request_id,tomador_nome,numero_nfse,status,atualizado_em')
+      .eq('empresa_id',empresaId)
+      .eq('status','EMITIDA');
+    if(error)throw error;
+    let mudou=false;
+    for(const e of data||[]){
+      const x=(store.nfImportacaoTugao||[]).find(r=>String(r.id)===String(e.request_id));
+      if(!x)continue;
+      x.status='Emitida';
+      x.numero=e.numero_nfse||x.numero||'';
+      x.erro='';
+      const ja=(store.nf||[]).some(n=>String(n.numero||'')===String(x.numero||'')&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente));
+      if(!ja&&x.numero){
+        store.nf.push({
+          id:Date.now()+Number(x.id)%10000,
+          data:String(e.atualizado_em||new Date().toISOString()).slice(0,10),
+          competencia:x.competencia||window.nfCompetenciaLote?.value||'',
+          tipo:'Emitida',
+          numero:x.numero,
+          pessoa:x.cliente,
+          valor:x.valor,
+          aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),
+          status:'Emitida',
+          empresa:'Tugão Imóveis'
+        });
+      }
+      mudou=true;
+    }
+    if(mudou){
+      localStorage.setItem(DBKEY,JSON.stringify(store));
+      renderFilaNfTugao();
+      renderNfEmitidas();
+      backupCloud();
+    }
+  }catch(e){
+    console.error('Falha ao sincronizar NFS-e emitidas da Tugão:',e);
+  }
+}
+
 async function carregarCertificadoTugao(){
   if(!window.tugaoCertCard)return;
   tugaoCertCard.style.display=isTugaoSelected()?'':'none';
@@ -2314,6 +2357,7 @@ async function carregarCertificadoTugao(){
     tugaoCertBtn.textContent='Cadastrar certificado A1';
   }
   await carregarConfigGissTugao();
+  await sincronizarNfEmitidasTugao();
 }
 let tugaoGissConfig=null;
 function gissEndpointAtual(){
