@@ -283,8 +283,11 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   </div>
 
   <div class="card">
-    <div class="section-title" style="margin-bottom:10px">NFS-e emitidas</div>
-    <table><thead><tr><th>Emissão</th><th>Competência</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="nfBody"></tbody></table>
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <div class="section-title">NFS-e emitidas</div>
+      <input id="nfEmitidasBusca" placeholder="Pesquisar cliente, CPF/CNPJ, nº NF..." style="max-width:360px">
+    </div>
+    <table><thead><tr><th>Emissão</th><th>Competência</th><th>Tipo</th><th>Nº NF</th><th>Cliente / Fornecedor</th><th>Valor</th><th>Status</th></tr></thead><tbody id="nfBody"></tbody></table>
   </div>
 </section>
 <section id="empresas" class="screen"><div class="page-title"><div><h1>Empresas</h1><div class="sub">Gestão da carteira do BPO</div></div><button class="btn primary" data-add="empresas">+ Nova empresa</button></div><div class="card"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="empresasBody"></tbody></table></div></section>
@@ -1876,7 +1879,7 @@ function aplicarRegrasEspeciaisNfTugao(itens){
 }
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
-  const rows=store.nfImportacaoTugao||[];
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status!=='Emitida');
   const competenciaLote=window.nfCompetenciaLote?.value||'';
   const issLote=window.nfIssLote?.value||'';
   nfImportBody.innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.cliente||'—')+'</b></td><td>'+esc(x.documento||'—')+'</td><td>'+esc(x.descricao||'—')+'</td><td>'+money(x.valor)+'</td><td>'+esc(x.competencia||competenciaLote||'—')+'</td><td>'+esc((x.aliquota_iss??issLote)?String(x.aliquota_iss??issLote).replace('.',',')+'%':'—')+'</td><td><span class="status '+(x.status==='Pronta'?'ok':x.status==='Emitida'?'ok':x.status==='Erro'?'bad':'warn')+'">'+esc(x.status==='Emitindo'?'Enviando...':x.status)+'</span>'+(x.status==='Emitida'&&x.numero?'<div class="sub" style="margin-top:5px;font-weight:700">NFS-e nº '+esc(x.numero)+'</div>':'')+(x.erro?'<div class="sub" style="margin-top:5px;max-width:260px;color:var(--red)">'+esc(x.erro)+'</div>':'')+'</td><td><div class="actions">'+((x.status==='Pronta'||x.status==='Erro')?'<button class="iconbtn" onclick="'+(consultaPendenteTugao(x)?'consultarNfTugao':'emitirNfIndividualTugao')+'('+x.id+')">'+(consultaPendenteTugao(x)?'Consultar':'Tentar novamente')+'</button>':'')+'<button class="iconbtn" onclick="editarNfImportada('+x.id+')">Editar</button><button class="iconbtn danger" onclick="removerNfImportada('+x.id+')">Excluir</button></div></td></tr>').join('');
@@ -2463,10 +2466,25 @@ function renderAll(){
  renderCartoes();
  document.querySelectorAll('.fiuza-only').forEach(el=>el.style.display=isFiuzaSelected()?'':'none');
  renderFilaNfTugao();
- nfBody.innerHTML=store.nf.map(x=>'<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.competencia||'—')+'</td><td>'+esc(x.tipo)+'</td><td>'+esc(x.numero)+'</td><td>'+esc(x.pessoa)+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td><td>'+acts('nf',x.id)+'</td></tr>').join('');
+ renderNfEmitidas();
  refreshCompanySelect();
  renderDashboard();
  carregarCertificadoTugao();
+}
+function renderNfEmitidas(){
+  if(!window.nfBody)return;
+  const busca=String(window.nfEmitidasBusca?.value||'').trim().toLowerCase();
+  const docs=new Map((store.clientes||[]).map(c=>[nomeChaveTugao(c.nome),String(c.documento||'')]));
+  const rows=(store.nf||[]).filter(x=>{
+    if(!busca)return true;
+    const doc=docs.get(nomeChaveTugao(x.pessoa))||'';
+    return [x.data,x.competencia,x.tipo,x.numero,x.pessoa,x.valor,x.status,doc]
+      .some(v=>String(v??'').toLowerCase().includes(busca));
+  });
+  nfBody.innerHTML=rows.map(x=>{
+    const doc=docs.get(nomeChaveTugao(x.pessoa))||'';
+    return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.competencia||'—')+'</td><td>'+esc(x.tipo)+'</td><td><b>'+esc(x.numero||'—')+'</b></td><td><b>'+esc(x.pessoa||'—')+'</b>'+(doc?'<div class="sub">'+esc(doc)+'</div>':'')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td></tr>';
+  }).join('');
 }
 function refreshCompanySelect(){
   let cur=company.value;
@@ -2742,6 +2760,7 @@ if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
 if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
 if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.onclick=consultarTodasNfTugao;
 if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
+if(window.nfEmitidasBusca)nfEmitidasBusca.oninput=renderNfEmitidas;
 if(window.nfCompetenciaLote)nfCompetenciaLote.onchange=renderFilaNfTugao;
 if(window.nfIssLote)nfIssLote.oninput=renderFilaNfTugao;
 if(window.cartaoNovoBtn)cartaoNovoBtn.onclick=()=>abrirNovaCompraCartao();
