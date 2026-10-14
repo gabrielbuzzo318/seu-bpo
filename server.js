@@ -59,7 +59,7 @@ function gissResignSoap(soap, certChain, privateKey){
     .replace(/<\/g:/g,'</giss:')
     .replace(/Id="Dec_(\d+)"/g,'Id="RPS$1"')
     .replace(/Id="Lote_(\d+)"/g,'Id="LOTE$1"')
-    .replace(/<tipos:CodigoPais>1058<\/tipos:CodigoPais>/g,'')
+    .replace(/<tipos:CodigoPais>1058<\/tipos:CodigoPais>/g,'<tipos:CodigoPais>0076</tipos:CodigoPais>')
     .replace(/<tipos:ValorDeducoes>[^<]*<\/tipos:ValorDeducoes>/g,'')
     .replace(/<tipos:ValorPis>[^<]*<\/tipos:ValorPis>/g,'')
     .replace(/<tipos:ValorCofins>[^<]*<\/tipos:ValorCofins>/g,'')
