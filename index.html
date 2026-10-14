@@ -1082,7 +1082,64 @@ async function iniciarBackupCloud(userId){
   // Se ja havia um backup remoto com dados, nao substitui-lo por um navegador vazio.
   if(!remoto || !(remotoFluxo>0&&localFluxo===0))backupCloud();
 }
-function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll();backupCloud()}
+const FIUZA_CLOUD_ID='3b96eb78-b42c-4d8e-a836-98b1fa905e60';
+const FIUZA_SHARED=['fluxo','pagar','receber','fiuzaClientes','cartoesFiuza','cartoesFaturas'];
+let fiuzaVersion=null,fiuzaReady=false,fiuzaBaseline='',fiuzaPending=Promise.resolve(),fiuzaConflict=false;
+function fiuzaSnapshot(){
+ const out={};
+ for(const key of FIUZA_SHARED){
+  const all=store[key]||[];
+  out[key]=['fluxo','pagar','receber'].includes(key)?all.filter(x=>String(x.empresa||'').trim().toUpperCase()==='FIUZA'||(key==='receber'&&x.tipo_recebimento==='fiuza')):all;
+ }
+ return out;
+}
+function fiuzaMerge(d){
+ for(const key of FIUZA_SHARED){
+  if(!Array.isArray(d[key]))continue;
+  if(['fluxo','pagar','receber'].includes(key)){
+   const rest=(store[key]||[]).filter(x=>String(x.empresa||'').trim().toUpperCase()!=='FIUZA'&&!(key==='receber'&&x.tipo_recebimento==='fiuza'));
+   store[key]=rest.concat(d[key]);
+  }else store[key]=d[key];
+ }
+ localStorage.setItem(DBKEY,JSON.stringify(store));renderAll();
+}
+async function fiuzaInit(user){
+ fiuzaReady=false;
+ const result=await sb.from('seubpo_estado_empresa').select('dados,versao').eq('empresa_id',FIUZA_CLOUD_ID).maybeSingle();
+ if(result.error){console.error(result.error);return}
+ let remote=result.data;
+ if(!remote&&['Administrador','Gestor'].includes(user.perfil)){
+  const backup=fiuzaSnapshot();
+  if(backup.fluxo.length){
+   const created=await sb.rpc('seubpo_iniciar_estado_empresa',{p_empresa:FIUZA_CLOUD_ID,p_dados:backup});
+   if(created.error){console.error(created.error);return}
+   const fetched=await sb.from('seubpo_estado_empresa').select('dados,versao').eq('empresa_id',FIUZA_CLOUD_ID).maybeSingle();
+   if(fetched.error){console.error(fetched.error);return}
+   remote=fetched.data;
+  }
+ }
+ if(!remote){console.warn('FIUZA aguardando inicializacao do administrador');return}
+ fiuzaVersion=Number(remote.versao);fiuzaMerge(remote.dados);fiuzaBaseline=JSON.stringify(fiuzaSnapshot());fiuzaReady=true;fiuzaConflict=false;
+}
+function fiuzaSave(){
+ if(!fiuzaReady||fiuzaConflict)return;
+ const data=structuredClone(fiuzaSnapshot()),signature=JSON.stringify(data);
+ if(signature===fiuzaBaseline)return;
+ fiuzaBaseline=signature;
+ fiuzaPending=fiuzaPending.then(async()=>{
+  const res=await sb.rpc('seubpo_salvar_estado_empresa',{p_empresa:FIUZA_CLOUD_ID,p_dados:data,p_versao:fiuzaVersion});
+  if(res.error){fiuzaConflict=true;alert('Conflito de sincronizacao FIUZA. Seus dados locais foram preservados. Recarregue a pagina antes de continuar.');throw res.error}
+  fiuzaVersion=Number(res.data);
+ }).catch(e=>console.error('FIUZA sync:',e));
+}
+function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll();backupCloud();fiuzaSave()}
+setInterval(async()=>{
+ if(!fiuzaReady||fiuzaConflict)return;
+ await fiuzaPending;
+ if(JSON.stringify(fiuzaSnapshot())!==fiuzaBaseline)return;
+ const r=await sb.from('seubpo_estado_empresa').select('dados,versao').eq('empresa_id',FIUZA_CLOUD_ID).maybeSingle();
+ if(!r.error&&r.data&&Number(r.data.versao)!==fiuzaVersion){fiuzaVersion=Number(r.data.versao);fiuzaMerge(r.data.dados);fiuzaBaseline=JSON.stringify(fiuzaSnapshot())}
+},12000);
 function money(v){if(!v)return'';let n=Number(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?v:n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function acts(type,id,extra=''){return '<div class="actions"><button class="iconbtn" onclick="editItem(\''+type+'\','+id+')">Editar</button>'+extra+'<button class="iconbtn danger" onclick="delItem(\''+type+'\','+id+')">Excluir</button></div>'}
@@ -3425,6 +3482,7 @@ async function applyAccess(user){
   currentUser=user;
   await iniciarBackupCloud(user.id);
   try{await loadCloudCompanies()}catch(e){console.warn('Falha ao carregar empresas do Seu BPO:',e)}
+  await fiuzaInit(user);
   loginScreen.style.display='none';
   appShell.classList.remove('hidden-app');
   userName.textContent=user.nome;
@@ -3452,6 +3510,7 @@ async function applyAccess(user){
 function showLogin(msg=''){
   cloudBackupReady=false;
   cloudBackupUserId=null;
+  fiuzaReady=false;
   currentUser=null;
   appShell.classList.add('hidden-app');
   loginScreen.style.display='grid';
