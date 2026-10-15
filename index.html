@@ -2640,6 +2640,34 @@ const schemas={
 };
 const names={empresas:'Empresa',usuarios:'Usuário',clientes:'Cliente',fiuzaClientes:'Cliente FIUZA',fornecedores:'Fornecedor',plano:'Conta',pagar:'Pagamento',receber:'Recebimento',reembolsos:'Reembolso',boletos:'Boleto',nf:'Nota Fiscal'};
 let modalState={type:null,id:null};
+async function buscarCepCliente(cep){
+  const digits=String(cep||'').replace(/\D/g,'');
+  if(digits.length!==8)return;
+  const cepEl=modalForm.querySelector('[data-field="cep"]');
+  try{
+    if(cepEl)cepEl.disabled=true;
+    const resp=await fetch('https://viacep.com.br/ws/'+digits+'/json/');
+    if(!resp.ok)throw new Error('Não foi possível consultar o CEP.');
+    const data=await resp.json();
+    if(data.erro)throw new Error('CEP não encontrado.');
+    const set=(field,val)=>{
+      const el=modalForm.querySelector('[data-field="'+field+'"]');
+      if(el&&val!=null)el.value=val;
+    };
+    set('cep',data.cep||digits);
+    set('endereco',data.logradouro||'');
+    set('bairro',data.bairro||'');
+    set('cidade',data.localidade||'');
+    set('uf',data.uf||'');
+    const numero=modalForm.querySelector('[data-field="numero"]');
+    if(numero&&!numero.value)numero.focus();
+  }catch(e){
+    notify(e.message||'Erro ao consultar CEP.');
+  }finally{
+    if(cepEl)cepEl.disabled=false;
+  }
+}
+
 function openModal(type,id=null){
  modalState={type,id}; let item=id?store[type].find(x=>x.id===id):{};
  modalTitle.textContent=(id?'Editar ':'Novo ')+names[type];
@@ -2663,6 +2691,23 @@ function openModal(type,id=null){
        (item?.contrato_path?'<div style="margin-top:8px"><button type="button" class="btn" onclick="openContratoCliente(\'fiuzaClientes\','+item.id+')">Abrir contrato anexado</button> <span class="sub">'+esc(item.contrato_nome||'Contrato anexado')+'</span></div>':'')+
        '</div>'
      );
+   }
+ }
+ if(type==='clientes'){
+   const cepEl=modalForm.querySelector('[data-field="cep"]');
+   if(cepEl){
+     cepEl.setAttribute('inputmode','numeric');
+     cepEl.setAttribute('maxlength','9');
+     cepEl.setAttribute('placeholder','00000-000');
+     cepEl.addEventListener('input',()=>{
+       const d=cepEl.value.replace(/\D/g,'').slice(0,8);
+       cepEl.value=d.length>5?d.slice(0,5)+'-'+d.slice(5):d;
+       if(d.length===8)buscarCepCliente(d);
+     });
+     cepEl.addEventListener('blur',()=>{
+       const d=cepEl.value.replace(/\D/g,'');
+       if(d.length===8)buscarCepCliente(d);
+     });
    }
  }
  modalBg.classList.add('show');
