@@ -87,7 +87,8 @@ function gissResignSoap(soap, certChain, privateKey){
       'RIBEIRAO PRETO|SP':'3543402','BADY BASSITT|SP':'3504602','PORTO ALEGRE|RS':'4314902',
       'FRONTEIRA|MG':'3127008','CUIABA|MT':'5103403','VOTUPORANGA|SP':'3557105','COTIA|SP':'3513009',
       'CEDRAL|SP':'3511300','CURITIBA|PR':'4106902','TAIUVA|SP':'3553203','FRUTAL|MG':'3127107',
-      'TORIXOREU|MT':'5108204','SAO CARLOS|SP':'3548906','SANTA FE DO SUL|SP':'3546603'
+      'TORIXOREU|MT':'5108204','SAO CARLOS|SP':'3548906','SANTA FE DO SUL|SP':'3546603',
+      'AMERICANA|SP':'3501608','JOSE BONIFACIO|SP':'3525706'
     };
     const cepKey=String(cep||'').replace(/\D/g,'');
     const ibgeCep={
@@ -100,7 +101,7 @@ function gissResignSoap(soap, certChain, privateKey){
       '78040600':'5103403','38240000':'3133402','06710140':'3513009',
       '15135854':'3530300','04505010':'3550308','15898004':'3511300','80240280':'4106902',
       '15135290':'3530300','14720000':'3553203','38200072':'3127107','13560320':'3548906',
-      '02216030':'3550308'
+      '02216030':'3550308','13468110':'3501608','15204094':'3525706'
     };
     const ufCep={
       '13482376':'SP','15170000':'SP','73252200':'DF','01311927':'SP',
@@ -112,7 +113,7 @@ function gissResignSoap(soap, certChain, privateKey){
       '78040600':'MT','38240000':'MG','06710140':'SP',
       '15135854':'SP','04505010':'SP','15898004':'SP','80240280':'PR',
       '15135290':'SP','14720000':'SP','38200072':'MG','13560320':'SP',
-      '02216030':'SP'
+      '02216030':'SP','13468110':'SP','15204094':'SP'
     };
     const codigoMunicipio=ibgeCep[cepKey]||ibge[cidadeKey+'|'+ufKey]||'3549805';
     const ufMunicipio=ufCep[cepKey]||ufKey;
