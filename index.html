@@ -1067,12 +1067,40 @@ function backupCloud(){
     if(error)console.error('Falha ao salvar backup do Seu BPO:',error);
   });
 }
+function corrigirClientesTugaoMunicipioLocal(){
+  const fixes={
+    '62125893800':['MIRASSOL','SP'],
+    '89019121049':['SAO PAULO','SP'],
+    '41531184863':['CEDRAL','SP'],
+    '30384318851':['CURITIBA','PR'],
+    '19015430802':['MIRASSOL','SP'],
+    '12181793840':['TAIUVA','SP'],
+    '36079855615':['FRUTAL','MG'],
+    '17362231865':['VOTUPORANGA','SP'],
+    '21807512819':['SAO CARLOS','SP'],
+    '89128419715':['COTIA','SP'],
+    '13510575881':['SAO PAULO','SP']
+  };
+  let mudou=false;
+  for(const cli of (store.clientes||[])){
+    const doc=String(cli.documento||'').replace(/\D/g,'');
+    const fix=fixes[doc];
+    if(!fix)continue;
+    if(cli.cidade!==fix[0]||cli.uf!==fix[1]){
+      cli.cidade=fix[0];
+      cli.uf=fix[1];
+      mudou=true;
+    }
+  }
+  if(mudou)localStorage.setItem(DBKEY,JSON.stringify(store));
+}
 async function iniciarBackupCloud(userId){
   cloudBackupReady=false;
   cloudBackupUserId=userId;
   const {data,error}=await sb.from('seubpo_backup_usuario').select('dados').eq('user_id',userId).maybeSingle();
   if(error){console.error('Falha ao consultar backup do Seu BPO:',error);return}
   const remoto=data?.dados;
+  corrigirClientesTugaoMunicipioLocal();
   if(Array.isArray(remoto?.clientes)&&Array.isArray(store.clientes)){
     const campos=['endereco','numero','complemento','bairro','cidade','uf','cep','email','contato'];
     let mesclouClientes=false;
