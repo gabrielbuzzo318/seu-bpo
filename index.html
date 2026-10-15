@@ -135,6 +135,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
   <div class="finance-filter searchwide"><label>Pesquisar</label><input id="pagarBusca" placeholder="Fornecedor, histórico, conta..."></div>
   <div class="finance-filter"><label>Status</label><select id="pagarStatusFiltro"><option value="Todos">Todos os status</option><option value="Em aberto">Em aberto</option><option value="Pago">Pago</option></select></div>
   <div class="finance-filter"><label>Competência</label><select id="pagarMesFiltro"><option value="Todos">Todos os meses</option></select></div>
+  <div class="finance-filter"><label>Período de</label><input id="pagarDataInicio" type="date"></div>
+  <div class="finance-filter"><label>Até</label><input id="pagarDataFim" type="date"></div>
   <div class="finance-filter-actions"><button id="pagarLimparBtn" class="btn">Limpar</button><button id="pagarRelatorioBtn" class="btn primary">Gerar relatório</button></div>
 </div><div class="card"><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Histórico</th><th>Conta</th><th>Valor</th><th>Anexo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pagarBody"></tbody></table></div></section>
 <section id="receber" class="screen"><div class="page-title"><div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap"><div><h1>A Receber</h1><div class="sub">Controle dos recebimentos da empresa selecionada</div></div><div class="finance-totalizer inline-total"><div class="total-box"><div class="total-label">Total a receber</div><div id="receberTotal" class="total-value">R$ 0,00</div><div id="receberTotalSub" class="total-sub">Todos os meses</div></div></div></div><button class="btn primary" data-open-launch="receber">+ Novo lançamento</button></div>
@@ -1249,8 +1251,12 @@ function filtrarFinanceiro(tipo){
   const busca=String(window[prefix+'Busca']?.value||'').trim().toLowerCase();
   const status=window[prefix+'StatusFiltro']?.value||'Todos';
   const mes=window[prefix+'MesFiltro']?.value||'Todos';
+  const dataInicio=tipo==='pagar'?(window.pagarDataInicio?.value||''):'';
+  const dataFim=tipo==='pagar'?(window.pagarDataFim?.value||''):'';
   if(status!=='Todos')arr=arr.filter(x=>x.status===status);
   if(mes!=='Todos')arr=arr.filter(x=>competenciaRegistro(x)===mes);
+  if(dataInicio)arr=arr.filter(x=>String(x.vencimento||'').slice(0,10)>=dataInicio);
+  if(dataFim)arr=arr.filter(x=>String(x.vencimento||'').slice(0,10)<=dataFim);
   if(busca)arr=arr.filter(x=>Object.values(x||{}).some(v=>String(v??'').toLowerCase().includes(busca)));
   return arr;
 }
@@ -1289,7 +1295,13 @@ function renderFinanceiros(){
   if(window.receberTotal)receberTotal.textContent=money(String(receberTotalValor).replace('.',','));
   const pagarMes=window.pagarMesFiltro?.value||'Todos';
   const receberMes=window.receberMesFiltro?.value||'Todos';
-  if(window.pagarTotalSub)pagarTotalSub.textContent=pagarMes==='Todos'?'Todos os meses':nomeMesCompetencia(pagarMes);
+  if(window.pagarTotalSub){
+    const ini=window.pagarDataInicio?.value||'';
+    const fim=window.pagarDataFim?.value||'';
+    pagarTotalSub.textContent=(ini||fim)
+      ?('Período '+(ini?brDate(ini):'início')+' a '+(fim?brDate(fim):'hoje'))
+      :(pagarMes==='Todos'?'Todos os meses':nomeMesCompetencia(pagarMes));
+  }
   if(window.receberTotalSub)receberTotalSub.textContent=receberMes==='Todos'?'Todos os meses':nomeMesCompetencia(receberMes);
   if(window.pagarBody)pagarBody.innerHTML=pagarVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.fornecedor)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+money(x.valor)+'</td><td>'+pagarAnexoHtml(x)+'</td><td><span class="status '+(x.status==='Pago'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('pagar',x.id,x.status==='Pago'?'<button class="iconbtn danger" onclick="estornarPagar('+x.id+')">Estornar</button>':'<button class="iconbtn" onclick="openPagarBaixa('+x.id+')">Baixar</button>')+'</td></tr>').join('');
   if(window.receberBody)receberBody.innerHTML=receberVisiveis.map(x=>'<tr><td>'+esc(brDate(x.vencimento))+'</td><td>'+esc(x.cliente)+'</td><td>'+esc(x.descricao)+'</td><td>'+esc(x.categoria)+'</td><td>'+(x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—')+'</td><td>'+(x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor))+'</td><td><span class="status '+(x.status==='Recebido'?'ok':'warn')+'">'+esc(x.status)+'</span></td><td>'+acts('receber',x.id,x.status==='Recebido'?'':'<button class="iconbtn" onclick="openReceberBaixa('+x.id+')">Receber</button>')+'</td></tr>').join('');
@@ -1304,11 +1316,16 @@ function gerarRelatorioFinanceiro(tipo){
   const status=window[prefix+'StatusFiltro']?.value||'Todos';
   const mes=window[prefix+'MesFiltro']?.value||'Todos';
   const busca=window[prefix+'Busca']?.value?.trim()||'';
+  const dataInicio=tipo==='pagar'?(window.pagarDataInicio?.value||''):'';
+  const dataFim=tipo==='pagar'?(window.pagarDataFim?.value||''):'';
   const titulo=tipo==='pagar'?'Relatório de Contas a Pagar':'Relatório de Contas a Receber';
   doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(titulo,14,15);
   doc.setFont('helvetica','normal');doc.setFontSize(9);
   doc.text('Empresa: '+empresa,14,21);
-  doc.text('Período: '+(mes==='Todos'?'Todos os meses':nomeMesCompetencia(mes))+' | Status: '+status+(busca?' | Busca: '+busca:''),14,26);
+  const periodoTxt=(tipo==='pagar'&&(dataInicio||dataFim))
+    ?((dataInicio?brDate(dataInicio):'início')+' a '+(dataFim?brDate(dataFim):'hoje'))
+    :(mes==='Todos'?'Todos os meses':nomeMesCompetencia(mes));
+  doc.text('Período: '+periodoTxt+' | Status: '+status+(busca?' | Busca: '+busca:''),14,26);
   doc.text('Emitido em: '+new Date().toLocaleString('pt-BR'),14,31);
   if(tipo==='pagar'){
     const total=rows.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
@@ -2868,7 +2885,7 @@ novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
 if(window.clientesBusca) clientesBusca.oninput=renderClientes;
 if(window.clientesRelatorioBtn) clientesRelatorioBtn.onclick=gerarRelatorioClientes;
-['pagarBusca','pagarStatusFiltro','pagarMesFiltro','receberBusca','receberStatusFiltro','receberMesFiltro'].forEach(id=>{
+['pagarBusca','pagarStatusFiltro','pagarMesFiltro','pagarDataInicio','pagarDataFim','receberBusca','receberStatusFiltro','receberMesFiltro'].forEach(id=>{
   const el=document.getElementById(id);
   if(!el)return;
   el.addEventListener(el.tagName==='INPUT'?'input':'change',renderFinanceiros);
@@ -2897,7 +2914,7 @@ if(window.cartaoMesFiltro)cartaoMesFiltro.onchange=renderCartoes;
 if(window.cartaoFiltro)cartaoFiltro.onchange=renderCartoes;
 if(window.cartaoBusca)cartaoBusca.oninput=renderCartoes;
 if(window.cartaoLimparBtn)cartaoLimparBtn.onclick=()=>{cartaoBusca.value='';cartaoFiltro.value='Todos';renderCartoes()};
-if(window.pagarLimparBtn)pagarLimparBtn.onclick=()=>{pagarBusca.value='';pagarStatusFiltro.value='Todos';pagarMesFiltro.value='Todos';renderFinanceiros()};
+if(window.pagarLimparBtn)pagarLimparBtn.onclick=()=>{pagarBusca.value='';pagarStatusFiltro.value='Todos';pagarMesFiltro.value='Todos';if(window.pagarDataInicio)pagarDataInicio.value='';if(window.pagarDataFim)pagarDataFim.value='';renderFinanceiros()};
 if(window.receberLimparBtn)receberLimparBtn.onclick=()=>{receberBusca.value='';receberStatusFiltro.value='Todos';receberMesFiltro.value='Todos';renderFinanceiros()};
 
 function clientesFiltradosAtual(){
