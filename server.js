@@ -97,10 +97,18 @@ function gissResignSoap(soap, certChain, privateKey){
       '02357120':'3550308','38230000':'3127008','01510001':'3550308','14021617':'3543402',
       '15115000':'3504602','03607040':'3550308','15775000':'3546603','04533050':'3550308'
     };
+    const ufCep={
+      '13482376':'SP','15170000':'SP','73252200':'DF','01311927':'SP',
+      '15135280':'SP','71505790':'DF','58037065':'PB','15105000':'SP',
+      '15500006':'SP','15894899':'SP','15890310':'SP','15135364':'SP',
+      '02357120':'SP','38230000':'MG','01510001':'SP','14021617':'SP',
+      '15115000':'SP','03607040':'SP','15775000':'SP','04533050':'SP'
+    };
     const codigoMunicipio=ibgeCep[cepKey]||ibge[cidadeKey+'|'+ufKey]||'3549805';
+    const ufMunicipio=ufCep[cepKey]||ufKey;
     const bloco='<tipos:Endereco><tipos:Endereco>'+escapeXml(endereco||'')+'</tipos:Endereco><tipos:Numero>'+escapeXml(numero||'')+'</tipos:Numero>'
       +(complemento?'<tipos:Complemento>'+escapeXml(complemento)+'</tipos:Complemento>':'')
-      +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>'+codigoMunicipio+'</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(ufKey)+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
+      +'<tipos:Bairro>'+escapeXml(bairro||'')+'</tipos:Bairro><tipos:CodigoMunicipio>'+codigoMunicipio+'</tipos:CodigoMunicipio><tipos:Uf>'+escapeXml(ufMunicipio)+'</tipos:Uf><tipos:Cep>'+String(cep||'').replace(/\D/g,'')+'</tipos:Cep></tipos:Endereco>';
     xml=xml.replace(/(<\/tipos:RazaoSocial>)(?![\s\S]*?<tipos:Endereco>)/,'$1'+bloco);
   }
 
