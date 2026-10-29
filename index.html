@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Seu BPO</title>
+<title>Seu BPO · Validação Ester</title>
 <style>
 :root{--bg:#f6f1ec;--panel:#fffdfb;--text:#334f55;--muted:#857b73;--border:#e6dad0;--nav:#f1e9e2;--nav2:#ece1d8;--accent:#b9965d;--gold:#b9965d;--olive:#9a8655;--rose:#d8b4ad;--teal:#2f6974;--green:#6d7f70;--red:#b86862;--orange:#c39a62}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -84,7 +84,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body>
+<body><div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#334f55;color:white;padding:6px;text-align:center;font:12px sans-serif">Validação da migração · banco da Ester · não emitir novas notas durante os testes</div>
 <div id="loginScreen" class="login-screen">
   <div class="login-shell">
     <section class="login-brand">
@@ -523,8 +523,8 @@ document.getElementById('company').onchange=function(){
   if(!isFiuzaSelected()&&document.getElementById('cartoes')?.classList.contains('active'))goScreen('dashboard',true);
 }
 
-const SUPABASE_URL='https://dnigyxgvavgrggmzteju.supabase.co';
-const SUPABASE_KEY='sb_publishable_9SlH8bNy9pRZAJlByTCtCA_xIoty9rE';
+const SUPABASE_URL='https://fkdlpdwpaadgkeouzobt.supabase.co';
+const SUPABASE_KEY='sb_publishable_QmY54I85Yo_cPFSvONXz1g__HO70qKh';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let cloudCompanies=[];
 const DBKEY='seubpo_demo_v2';
