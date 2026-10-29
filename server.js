@@ -272,8 +272,8 @@ async function handleProxy(req,res){
 }
 
 
-const SUPABASE_URL='https://dnigyxgvavgrggmzteju.supabase.co';
-const SUPABASE_ANON='sb_publishable_9SlH8bNy9pRZAJlByTCtCA_xIoty9rE';
+const SUPABASE_URL='https://fkdlpdwpaadgkeouzobt.supabase.co';
+const SUPABASE_ANON='sb_publishable_QmY54I85Yo_cPFSvONXz1g__HO70qKh';
 
 function xmlTagText(xml,name){
   const m=String(xml||'').match(new RegExp('<(?:\\w+:)?'+name+'\\b[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?'+name+'>','i'));
