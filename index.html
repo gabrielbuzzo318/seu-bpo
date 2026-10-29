@@ -2571,6 +2571,29 @@ function renderAll(){
  renderDashboard();
  carregarCertificadoTugao();
 }
+
+async function consultarNfEmitidaTugao(numero,button){
+ const senha=senhaCertTugao();if(senha===null)return;
+ if(button){button.disabled=true;button.textContent='Consultando...';}
+ try{
+  const emp=cloudCompanies.find(e=>String(e.nome||'').trim().toUpperCase()==='TUGÃO IMÓVEIS');
+  if(!emp)throw new Error('Empresa não localizada.');
+  const {data:emissoes,error}=await sb.from('seubpo_nfse_emissoes').select('request_id,protocolo').eq('empresa_id',emp.id).eq('numero_nfse',String(numero));
+  if(error)throw error;
+  const emiss=(emissoes||[]).find(e=>e.request_id&&e.protocolo);
+  if(!emiss)throw new Error('Esta nota não possui protocolo disponível para consulta.');
+  const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error('Sessão expirada.');
+  const resp=await fetch('/api/giss-consultar',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({empresa_id:emp.id,request_id:emiss.request_id,password:senha})});
+  const out=await resp.json();
+  if(!resp.ok)throw new Error(out.error||'Falha ao consultar a GISS.');
+  const msg=out.ok?'Consulta confirmada na GISS · NFS-e '+out.numero_nfse:(out.erro||'Nota ainda em processamento na GISS.');
+  if(window.gissResultado)gissResultado.textContent=msg;
+  alert(msg);
+ }catch(e){
+  if(/senha do certificado|A1 inválido/i.test(e.message||''))tugaoCertPasswordCache='';
+  alert(e.message||'Falha ao consultar a GISS.');
+ }finally{if(button){button.disabled=false;button.textContent='Consultar GISS';}}
+}
 function renderNfEmitidas(){
   if(!window.nfBody)return;
   const busca=String(window.nfEmitidasBusca?.value||'').trim().toLowerCase();
@@ -2583,7 +2606,7 @@ function renderNfEmitidas(){
   });
   nfBody.innerHTML=rows.map(x=>{
     const doc=docs.get(nomeChaveTugao(x.pessoa))||'';
-    return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.competencia||'—')+'</td><td>'+esc(x.tipo)+'</td><td><b>'+esc(x.numero||'—')+'</b></td><td><b>'+esc(x.pessoa||'—')+'</b>'+(doc?'<div class="sub">'+esc(doc)+'</div>':'')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span></td></tr>';
+    return '<tr><td>'+esc(brDate(x.data))+'</td><td>'+esc(x.competencia||'—')+'</td><td>'+esc(x.tipo)+'</td><td><b>'+esc(x.numero||'—')+'</b></td><td><b>'+esc(x.pessoa||'—')+'</b>'+(doc?'<div class="sub">'+esc(doc)+'</div>':'')+'</td><td>'+money(x.valor)+'</td><td><span class="status '+(x.status==='Cancelada'?'warn':'ok')+'">'+esc(x.status)+'</span>'+(isTugaoSelected()&&x.numero?' <button class="iconbtn" type="button" data-nf-numero="'+esc(x.numero)+'" onclick="consultarNfEmitidaTugao(this.dataset.nfNumero,this)">Consultar GISS</button>':'')+'</td></tr>';
   }).join('');
 }
 function refreshCompanySelect(){
