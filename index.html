@@ -122,7 +122,12 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div class="login-card"><img class="mobile-login-logo" src="atua-financeiro-logo.svg?v=2" alt="Atua Financeiro — uma empresa Atria">
       <h2>Bem-vindo</h2>
       <div class="sub">Entre para acessar o financeiro.</div>
-      <form id="loginForm">
+      <form id="recoveryForm" style="display:none">
+<div class="login-field"><label for="recoveryPassword">Nova senha</label><input id="recoveryPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+<div class="login-field"><label for="recoveryConfirm">Confirme a nova senha</label><input id="recoveryConfirm" type="password" autocomplete="new-password" minlength="8" required></div>
+<button class="login-btn" type="submit">Salvar nova senha</button>
+<div id="recoveryStatus" role="status" class="sub" style="margin-top:14px"></div>
+</form><form id="loginForm">
         <div class="login-field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" placeholder="seu@email.com" required></div>
         <div class="login-field"><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
         <button class="login-btn" type="submit">Entrar</button>
@@ -3849,6 +3854,7 @@ async function loadAccess(authUser){
   return {id:authUser.id,nome:profile.nome,email:authUser.email||'',perfil:profile.perfil,empresa,empresas};
 }
 async function applyAccess(user){
+  if(recoveryMode){showRecoveryForm();return}
   currentUser=user;
   await iniciarBackupCloud(user.id);
   try{await loadCloudCompanies()}catch(e){console.warn('Falha ao carregar empresas do Atua Financeiro:',e)}
@@ -3888,6 +3894,41 @@ function showLogin(msg=''){
   loginError.style.display=msg?'block':'none';
   if(msg)loginError.textContent=msg;
 }
+
+let recoveryMode=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||sessionStorage.getItem('atua_password_recovery')==='1';
+function showRecoveryForm(){
+ recoveryMode=true;sessionStorage.setItem('atua_password_recovery','1');
+ appShell.classList.add('hidden-app');loginScreen.style.display='grid';
+ document.querySelector('.login-card h2').textContent='Criar nova senha';
+ document.querySelector('.login-card > .sub').textContent='Defina uma senha com pelo menos 8 caracteres.';
+ loginForm.style.display='none';document.getElementById('recoveryForm').style.display='block';
+}
+sb.auth.onAuthStateChange((event)=>{
+ if(event==='PASSWORD_RECOVERY')showRecoveryForm();
+});
+document.getElementById('recoveryForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,button=form.querySelector('button'),status=document.getElementById('recoveryStatus');
+ const pw=document.getElementById('recoveryPassword'),confirmPw=document.getElementById('recoveryConfirm');
+ if(pw.value.length<8){status.textContent='Use pelo menos 8 caracteres.';return}
+ if(pw.value!==confirmPw.value){status.textContent='As senhas não coincidem.';return}
+ button.disabled=true;status.textContent='Salvando...';
+ try{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)throw new Error('Link expirado ou inválido. Solicite um novo e-mail de recuperação.');
+  const {error}=await sb.auth.updateUser({password:pw.value});
+  if(error)throw error;
+  pw.value='';confirmPw.value='';recoveryMode=false;sessionStorage.removeItem('atua_password_recovery');
+  await sb.auth.signOut();
+  history.replaceState(null,'',location.pathname);
+  form.style.display='none';loginForm.style.display='';
+  document.querySelector('.login-card h2').textContent='Bem-vindo';
+  document.querySelector('.login-card > .sub').textContent='Senha atualizada. Entre com a nova senha.';
+  showLogin();
+ }catch(err){status.textContent=err.message||'Não foi possível atualizar a senha.'}
+ finally{button.disabled=false}
+});
+
 loginForm.addEventListener('submit',async e=>{
   e.preventDefault();
   loginError.style.display='none';
@@ -3922,6 +3963,7 @@ renderAll();
 carregarImportCartoesFiuza().then(n=>{if(n)console.info('Cartões FIUZA importados:',n)}).catch(e=>console.error('Falha ao importar cartões FIUZA:',e));
 (async()=>{
   const {data:{session}}=await sb.auth.getSession();
+  if(recoveryMode){showRecoveryForm();return}
   if(!session){showLogin();return}
   try{const access=await loadAccess(session.user);await applyAccess(access)}
   catch(e){await sb.auth.signOut();showLogin(e.message||'Sem acesso ao Atua Financeiro.')}
