@@ -2245,7 +2245,7 @@ async function consultarNfTugao(id){
     persist();renderFilaNfTugao();notify(x.erro);
   }catch(e){
     x.status='Erro';
-    x.erro=e.message||'Falha ao consultar a GISS.';
+    x.erro='Consulta obrigatória: '+(e.message||'Falha ao consultar a GISS.')+'. Não reenviar antes de confirmar a situação.';
     persist();renderFilaNfTugao();notify(x.erro);
   }
 }
@@ -2334,8 +2334,8 @@ async function emitirNfIndividualTugao(id){
   }
 }
 async function consultarTodasNfTugao(){
-  // Mesmo endpoint de consulta individual, mas apenas para RPS que efetivamente
-  // foram enviados e possuem protocolo. Consulta não emite novas notas.
+  // Mesmo endpoint individual; quando faltar protocolo, o servidor consulta o número do RPS.
+  // Nenhum destes caminhos cria uma nova NFS-e.
   const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status!=='Emitida');
   if(!rows.length){notify('Não há notas na fila para conferir.');return;}
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=true;nfConsultarTodasBtn.textContent='Conferindo...';}
@@ -2344,7 +2344,7 @@ async function consultarTodasNfTugao(){
     const registros=[];
     for(let offset=0;;offset+=1000){
       const {data,error}=await sb.from('seubpo_nfse_emissoes')
-        .select('request_id,tomador_documento,competencia,valor,status,numero_nfse,erro_mensagem,protocolo')
+        .select('request_id,tomador_documento,competencia,valor,status,numero_nfse,erro_mensagem,protocolo,rps_numero')
         .eq('empresa_id',empresaId).order('criado_em',{ascending:false}).range(offset,offset+999);
       if(error)throw error;
       registros.push(...(data||[]));
@@ -2377,14 +2377,14 @@ async function consultarTodasNfTugao(){
         !/remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(registro.erro_mensagem||''))){
         x.status='Revisar';x.erro='GISS rejeitou o RPS: '+(registro.erro_mensagem||'erro não especificado')+'. Revalidar antes de nova emissão.';
         rejeitadas++;
-      }else if(registro.protocolo&&
+      }else if((registro.protocolo||registro.rps_numero)&&
         (['PROCESSANDO','ENVIANDO','PENDENTE'].includes(registro.status)
           ||/remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(registro.erro_mensagem||'')))
         &&String(registro.request_id)===String(x.id)){
-        x.status='Erro';x.erro='Consulta obrigatória: remessa '+registro.status+'. Protocolo '+registro.protocolo;
+        x.status='Erro';x.erro='Consulta obrigatória: remessa '+registro.status+(registro.protocolo?'. Protocolo '+registro.protocolo:'. RPS '+registro.rps_numero+' sem protocolo')+'. Não reenviar.';
         aConsultar.push(x);
       }else{
-        x.status='Revisar';x.erro='Emissão sem confirmação conclusiva. Conferência manual necessária.';
+        x.status='Revisar';x.erro='Registro não associado a uma remessa confirmada. Nenhuma nova emissão será realizada nesta consulta.';
         incertas++;
       }
     }
@@ -2392,7 +2392,7 @@ async function consultarTodasNfTugao(){
     if(aConsultar.length){
       const senha=senhaCertTugao();
       if(senha===null)return;
-      // A chamada usa exatamente o mesmo endpoint da ação individual.
+      // Com ou sem protocolo, a consulta usa o endpoint individual; a resposta não autoriza reemissão.
       for(let i=0;i<aConsultar.length;i++){
         if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultando '+(i+1)+'/'+aConsultar.length;
         await consultarNfTugao(aConsultar[i].id);
