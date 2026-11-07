@@ -2057,15 +2057,16 @@ async function lerPdfRelatorioNf(file){
   }),{administracao:0,encargos:0,intermediacao:0});
   const esperado={administracao:null,encargos:null,intermediacao:null};
   const valorResumoSicadi=linha=>{
-    const trecho=String(linha).match(/(-?[\\d.]+,\\d{2})\\s*$/)?.[1];
+    const trecho=String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1];
     if(!trecho)return null;
-    const valor=Number(trecho.replace(/\\./g,'').replace(',','.'));
+    const valor=Number(trecho.replace(/\./g,'').replace(',','.'));
     return Number.isFinite(valor)?Math.round(Math.abs(valor)*100):null;
   };
   for(const linha of linhas){
-    if(/^Taxa de administra[cç][aã]o sobre encargos\\s+\\d+\\s+/i.test(linha))esperado.encargos=valorResumoSicadi(linha);
-    else if(/^Taxa de administra[cç][aã]o\\s+\\d+\\s+/i.test(linha))esperado.administracao=valorResumoSicadi(linha);
-    else if(/^Taxa de intermedia[cç][aã]o\\s+\\d+\\s+/i.test(linha))esperado.intermediacao=valorResumoSicadi(linha);
+    const limpa=String(linha).replace(/\s+/g,' ').trim();
+    if(/^Taxa de administra[cç][aã]o sobre encargos\s+\d+\s+/i.test(limpa))esperado.encargos=valorResumoSicadi(limpa);
+    else if(/^Taxa de administra[cç][aã]o\s+\d+\s+/i.test(limpa))esperado.administracao=valorResumoSicadi(limpa);
+    else if(/^Taxa de intermedia[cç][aã]o\s+\d+\s+/i.test(limpa))esperado.intermediacao=valorResumoSicadi(limpa);
   }
   const diferente=Object.keys(esperado).filter(k=>esperado[k]!=null&&esperado[k]!==totais[k]);
   if(diferente.length)throw new Error('Conferência do PDF não bate com o resumo SICADI ('+diferente.join(', ')+'). Nenhuma nota foi importada.');
