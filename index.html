@@ -2055,12 +2055,17 @@ async function lerPdfRelatorioNf(file){
     encargos:a.encargos+Math.round(x.encargos*100),
     intermediacao:a.intermediacao+Math.round(x.intermediacao*100)
   }),{administracao:0,encargos:0,intermediacao:0});
-  const resumo=linhas.join('\n');
   const esperado={administracao:null,encargos:null,intermediacao:null};
+  const valorResumoSicadi=linha=>{
+    const trecho=String(linha).match(/(-?[\\d.]+,\\d{2})\\s*$/)?.[1];
+    if(!trecho)return null;
+    const valor=Number(trecho.replace(/\\./g,'').replace(',','.'));
+    return Number.isFinite(valor)?Math.round(Math.abs(valor)*100):null;
+  };
   for(const linha of linhas){
-    if(/^Taxa de administra[cç][aã]o sobre encargos\s+\d+\s+/.test(linha))esperado.encargos=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
-    else if(/^Taxa de administra[cç][aã]o\s+\d+\s+/.test(linha))esperado.administracao=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
-    else if(/^Taxa de intermedia[cç][aã]o\s+\d+\s+/.test(linha))esperado.intermediacao=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
+    if(/^Taxa de administra[cç][aã]o sobre encargos\\s+\\d+\\s+/i.test(linha))esperado.encargos=valorResumoSicadi(linha);
+    else if(/^Taxa de administra[cç][aã]o\\s+\\d+\\s+/i.test(linha))esperado.administracao=valorResumoSicadi(linha);
+    else if(/^Taxa de intermedia[cç][aã]o\\s+\\d+\\s+/i.test(linha))esperado.intermediacao=valorResumoSicadi(linha);
   }
   const diferente=Object.keys(esperado).filter(k=>esperado[k]!=null&&esperado[k]!==totais[k]);
   if(diferente.length)throw new Error('Conferência do PDF não bate com o resumo SICADI ('+diferente.join(', ')+'). Nenhuma nota foi importada.');
