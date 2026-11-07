@@ -290,6 +290,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
         <button id="nfRelatorioBtn" class="btn">Importar relatório</button>
+         <button id="nfLimparFilaBtn" class="btn danger" type="button">Limpar importação anterior</button>
         <button id="nfConsultarTodasBtn" class="btn" disabled>Consultar todas</button>
         <button id="nfEmitirTodasBtn" class="btn primary" disabled>Emitir todas</button>
       </div>
@@ -2178,6 +2179,17 @@ async function importarRelatorioNfTugao(file){
     notify(e.message||'Erro ao importar relatório.');
   }
 }
+function limparFilaImportacaoTugao(){
+  if(!isTugaoSelected())return notify('Selecione a empresa Tugão Imóveis.');
+  const itens=Array.isArray(store.nfImportacaoTugao)?store.nfImportacaoTugao:[];
+  const pendentes=itens.filter(x=>x.status!=='Emitida');
+  if(!pendentes.length)return notify('Não há registros pendentes da importação para limpar.');
+  if(!confirm('Limpar '+pendentes.length+' registro(s) não emitido(s) da fila de importação da Tugão? Notas emitidas e cadastros serão preservados.'))return;
+  store.nfImportacaoTugao=itens.filter(x=>x.status==='Emitida');
+  persist();
+  renderFilaNfTugao();
+  notify('Fila anterior limpa. Agora importe novamente o relatório PDF.');
+}
 function editarNfImportada(id){
   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));if(!x)return;
   modalState={type:'nfImportada',id};
@@ -3058,7 +3070,8 @@ if(window.gissSalvarBtn)gissSalvarBtn.onclick=salvarConfigGissTugao;
 if(window.gissTestarBtn)gissTestarBtn.onclick=testarConexaoGissTugao;
 if(window.gissAmbiente)gissAmbiente.onchange=atualizarEndpointGiss;
 if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
-if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
+if(window.nfLimparFilaBtn)nfLimparFilaBtn.onclick=limparFilaImportacaoTugao;
+ if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
 if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.onclick=consultarTodasNfTugao;
 if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
 if(window.nfEmitidasBusca)nfEmitidasBusca.oninput=renderNfEmitidas;
