@@ -2408,7 +2408,7 @@ async function emitirTodasNfTugao(){
   if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
   const senha=senhaCertTugao();
   if(senha===null)return;
-  const notasParaEmitir=[];
+  let notasParaEmitir=[];
   const incompletos=[];
   for(const x of rows){
     const chaveTomador=docChaveCliente(x.documento);
@@ -2439,41 +2439,119 @@ async function emitirTodasNfTugao(){
       competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)
     });
   }
+  // Consulta prévia ao banco: nunca reenviar uma NFS-e já autorizada.
+  // Na dúvida (mesmo CPF/valor/competência), retirar da emissão e pedir revisão.
+  try{
+    const jaAutorizadas=[];
+    for(let offset=0;;offset+=1000){
+      const {data,error}=await sb.from('seubpo_nfse_emissoes')
+        .select('request_id,tomador_documento,tomador_nome,valor,competencia,numero_nfse')
+        .eq('empresa_id','3072c434-6aeb-44f3-80aa-ebfca6e5b25a')
+        .eq('status','EMITIDA').eq('competencia',competencia+'-01')
+        .range(offset,offset+999);
+      if(error)throw error;
+      jaAutorizadas.push(...(data||[]));
+      if(!data||data.length<1000)break;
+    }
+    const bloqueadas=[];
+    notasParaEmitir=notasParaEmitir.filter(n=>{
+      const correspondente=jaAutorizadas.find(e=>{
+        if(String(e.request_id)===String(n.id))return true;
+        return docChaveCliente(e.tomador_documento)===docChaveCliente(n.documento)
+          &&Math.abs(Number(e.valor||0)-(numeroValor(n.valor)||0))<0.005;
+      });
+      if(!correspondente)return true;
+      const original=store.nfImportacaoTugao.find(x=>String(x.id)===String(n.id));
+      if(original){
+        original.status='Revisar';
+        original.erro='Já existe NFS-e autorizada para este CPF/CNPJ e valor na competência (nº '+(correspondente.numero_nfse||'—')+'). Conferir para evitar duplicidade.';
+      }
+      bloqueadas.push(n.cliente);
+      return false;
+    });
+    if(bloqueadas.length){
+      persist();
+      notify(bloqueadas.length+' nota(s) separada(s) para revisão por possível duplicidade.');
+    }
+  }catch(e){
+    notify('Falha na consulta de duplicidade. A emissão foi bloqueada: '+(e.message||e));
+    return;
+  }
   if(!notasParaEmitir.length){
     notify('Nenhuma nota pronta tem cadastro completo para emissão.');
     return;
   }
   if(incompletos.length)notify(incompletos.length+' cliente(s) ficaram de fora por cadastro incompleto.');
   if(!confirm('Emitir '+notasParaEmitir.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'+(incompletos.length?'\n\n'+incompletos.length+' cliente(s) com cadastro incompleto ficarão de fora.':'')))return;
-  nfEmitirTodasBtn.disabled=true;nfEmitirTodasBtn.textContent='Emitindo...';
+  nfEmitirTodasBtn.disabled=true;
+  let emitidas=0,pendentes=0,comErro=0;
+  const tamanhoLote=8;
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(!session)throw new Error('Sessão expirada.');
-    const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
-      body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',password:senha,competencia,aliquota_iss:aliquotaIss,notas:notasParaEmitir})
-    });
-    const out=await resp.json().catch(()=>({}));
-    if(!resp.ok){
-      if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
-      throw new Error(out.error||'O motor de emissão GISS ainda não está liberado.');
+    for(let inicio=0;inicio<notasParaEmitir.length;inicio+=tamanhoLote){
+      const lote=notasParaEmitir.slice(inicio,inicio+tamanhoLote);
+      nfEmitirTodasBtn.textContent='Emitindo '+(inicio+1)+'–'+(inicio+lote.length)+' de '+notasParaEmitir.length;
+      let resp,out;
+      try{
+        resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+          body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',
+            password:senha,competencia,aliquota_iss:aliquotaIss,notas:lote})
+        });
+        out=await resp.json().catch(()=>({}));
+        if(!resp.ok)throw new Error(out.error||'HTTP '+resp.status);
+      }catch(e){
+        // Resultado incerto: pode ter chegado à prefeitura mesmo sem resposta HTTP.
+        // Bloquear reenvio automático e manter o lote disponível para consulta/reconciliação.
+        for(const nota of lote){
+          const x=store.nfImportacaoTugao.find(r=>String(r.id)===String(nota.id));
+          if(x){x.status='Erro';x.erro='Consulta obrigatória: resposta do lote não confirmada ('+(e.message||e)+'). Não reenviar antes de consultar a GISS.';}
+        }
+        persist();renderFilaNfTugao();
+        notify('Emissão interrompida no lote '+(Math.floor(inicio/tamanhoLote)+1)+'. Consulte o resultado antes de retomar. '+(e.message||e));
+        return;
+      }
+      const retornos=new Map((out.resultados||[]).map(x=>[String(x.id),x]));
+      let loteInconclusivo=false;
+      for(const nota of lote){
+        const x=store.nfImportacaoTugao.find(r=>String(r.id)===String(nota.id));
+        if(!x)continue;
+        const ret=retornos.get(String(nota.id));
+        x.competencia=competencia;x.aliquota_iss=aliquotaIss;
+        if(!ret){
+          x.status='Erro';
+          x.erro='Consulta obrigatória: sem resposta individual. Não reenviar.';
+          pendentes++;loteInconclusivo=true;
+        }else if(ret.ok&&ret.numero_nfse){
+          x.status='Emitida';x.numero=ret.numero_nfse;x.erro='';
+          if(!(store.nf||[]).some(n=>String(n.numero)===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+            store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
+              competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
+              aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
+          }
+          emitidas++;
+        }else{
+          x.status='Erro';x.erro=ret.erro||'Consultar situação da nota na GISS.';
+          if(consultaPendenteTugao(x)){pendentes++;loteInconclusivo=true}
+          else comErro++;
+        }
+      }
+      persist();renderFilaNfTugao();
+      nfImportStatus.textContent='Lote '+(Math.floor(inicio/tamanhoLote)+1)+' processado · '+emitidas+' autorizadas · '+pendentes+' em consulta · '+comErro+' com erro.';
+      // Não iniciar o próximo lote se houver confirmação fiscal pendente.
+      if(loteInconclusivo){
+        notify('Emissão pausada: '+pendentes+' nota(s) exigem consulta antes de continuar.');
+        return;
+      }
     }
-    for(const ret of out.resultados||[]){
-      const x=store.nfImportacaoTugao.find(r=>Number(r.id)===Number(ret.id));
-      if(!x)continue;
-      x.status=ret.ok?'Emitida':'Erro';
-      x.numero=ret.numero_nfse||'';
-      x.erro=ret.erro||'';
-      x.competencia=competencia;
-      x.aliquota_iss=aliquotaIss;
-      if(ret.ok)store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
-    }
-    persist();renderFilaNfTugao();notify('Emissão em lote concluída.');
+    notify('Processamento concluído: '+emitidas+' emitidas; '+comErro+' com erro.');
   }catch(e){
-    notify(e.message||'Falha na emissão em lote.');
+    notify('Emissão interrompida: '+(e.message||e));
   }finally{
-    nfEmitirTodasBtn.textContent='Emitir todas';renderFilaNfTugao();
+    nfEmitirTodasBtn.textContent='Emitir todas';
+    renderFilaNfTugao();
   }
 }
 async function sincronizarNfEmitidasTugao(){
