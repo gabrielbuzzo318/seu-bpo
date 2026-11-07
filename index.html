@@ -2333,6 +2333,8 @@ async function emitirNfIndividualTugao(id){
   }
 }
 async function consultarTodasNfTugao(){
+  // Mesmo endpoint de consulta individual, mas apenas para RPS que efetivamente
+  // foram enviados e possuem protocolo. Consulta não emite novas notas.
   const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status!=='Emitida');
   if(!rows.length){notify('Não há notas na fila para conferir.');return;}
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=true;nfConsultarTodasBtn.textContent='Conferindo...';}
@@ -2341,71 +2343,61 @@ async function consultarTodasNfTugao(){
     const registros=[];
     for(let offset=0;;offset+=1000){
       const {data,error}=await sb.from('seubpo_nfse_emissoes')
-        .select('request_id,tomador_documento,tomador_nome,competencia,valor,status,numero_nfse,erro_mensagem,protocolo')
-        .eq('empresa_id',empresaId)
-        .order('criado_em',{ascending:false}).range(offset,offset+999);
+        .select('request_id,tomador_documento,competencia,valor,status,numero_nfse,erro_mensagem,protocolo')
+        .eq('empresa_id',empresaId).order('criado_em',{ascending:false}).range(offset,offset+999);
       if(error)throw error;
       registros.push(...(data||[]));
       if(!data||data.length<1000)break;
     }
-    const porId=new Map(registros.filter(x=>x.request_id).map(x=>[String(x.request_id),x]));
-    let emitidas=0,erros=0,processando=0,semEnvio=0;
-    const pendentes=[];
+    const porId=new Map(registros.filter(r=>r.request_id).map(r=>[String(r.request_id),r]));
+    let emitidas=0,rejeitadas=0,semEnvio=0,incertas=0;
+    const aConsultar=[];
     for(const x of rows){
       const comp=String(x.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
       const doc=docChaveCliente(x.documento);
-      const valor=numeroValor(x.valor)||0;
-      const coincidencias=registros.filter(r=>
-        doc&&docChaveCliente(r.tomador_documento)===doc
-        &&Math.abs(Number(r.valor||0)-valor)<0.005
-        &&(!comp||String(r.competencia||'').slice(0,7)===comp));
-      // Identificação por request_id é preferencial; se existem múltiplas coincidências,
-      // não vincular automaticamente uma nota possivelmente diferente.
-      const r=porId.get(String(x.id))||(coincidencias.length===1?coincidencias[0]:null);
-      if(!r){
-        if(coincidencias.length>1){x.status='Revisar';x.erro='Mais de uma tentativa no banco para este CPF/CNPJ e valor; conferir manualmente.';erros++;}
+      const matches=registros.filter(r=>doc&&docChaveCliente(r.tomador_documento)===doc
+        &&Math.abs(Number(r.valor||0)-(numeroValor(x.valor)||0))<0.005
+        &&String(r.competencia||'').slice(0,7)===comp);
+      const registro=porId.get(String(x.id))||(matches.length===1?matches[0]:null);
+      if(!registro){
+        if(matches.length>1){x.status='Revisar';x.erro='Várias tentativas para mesmo CPF/valor/competência. Conferência manual necessária.';incertas++;}
         else semEnvio++;
         continue;
       }
-      if(r.status==='EMITIDA'&&r.numero_nfse){
-        x.status='Emitida';x.numero=r.numero_nfse;x.erro='';
-        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(r.numero_nfse)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+      if(registro.status==='EMITIDA'&&registro.numero_nfse){
+        x.status='Emitida';x.numero=registro.numero_nfse;x.erro='';
+        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente)))
           store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
-            competencia:comp,tipo:'Emitida',numero:r.numero_nfse,pessoa:x.cliente,valor:x.valor,
+            competencia:comp,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
             aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),
             status:'Emitida',empresa:'Tugão Imóveis'});
-        }
         emitidas++;
-      }else if(['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)){
-        x.status='Erro';x.erro='Consulta obrigatória: remessa '+r.status.toLowerCase()+(r.protocolo?', protocolo '+r.protocolo:'')+'. Não reenviar.';
-        pendentes.push(x);processando++;
-      }else if(r.status==='ERRO'){
-        x.status='Revisar';
-        x.erro='Erro registrado pela GISS: '+(r.erro_mensagem||'sem mensagem')+'. Não reenviar até corrigir e conferir o RPS.';
-        erros++;
+      }else if(registro.status==='ERRO'){
+        x.status='Revisar';x.erro='GISS rejeitou o RPS: '+(registro.erro_mensagem||'erro não especificado')+'. Revalidar antes de nova emissão.';
+        rejeitadas++;
+      }else if(registro.protocolo&&['PROCESSANDO','ENVIANDO','PENDENTE'].includes(registro.status)
+        &&String(registro.request_id)===String(x.id)){
+        x.status='Erro';x.erro='Consulta obrigatória: remessa '+registro.status+'. Protocolo '+registro.protocolo;
+        aConsultar.push(x);
       }else{
-        x.status='Revisar';x.erro='Situação não confirmada no banco: '+r.status+'. Conferir antes de emitir.';
-        erros++;
+        x.status='Revisar';x.erro='Emissão sem confirmação conclusiva. Conferência manual necessária.';
+        incertas++;
       }
     }
     persist();renderFilaNfTugao();
-    if(pendentes.length){
-      // Consulta remota apenas para RPS já cadastrados no banco como em processamento.
+    if(aConsultar.length){
       const senha=senhaCertTugao();
-      if(senha!==null){
-        for(const x of pendentes){
-          await consultarNfTugao(x.id);
-        }
+      if(senha===null)return;
+      // A chamada usa exatamente o mesmo endpoint da ação individual.
+      for(let i=0;i<aConsultar.length;i++){
+        if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultando '+(i+1)+'/'+aConsultar.length;
+        await consultarNfTugao(aConsultar[i].id);
       }
     }
-    notify('Conferência: '+emitidas+' autorizada(s), '+erros+' com erro/para revisão, '
-      +processando+' em processamento, '+semEnvio+' sem envio identificado.');
-  }catch(e){
-    notify('Falha ao conferir as notas: '+(e.message||e));
-  }finally{
-    if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultar todas';
-    renderFilaNfTugao();
-  }
+    notify('Conferência concluída: '+emitidas+' autorizadas, '+rejeitadas+' rejeitadas, '
+      +aConsultar.length+' consultadas na GISS, '+semEnvio+' sem envio, '+incertas+' para revisão. Consultar não emite NFS-e.');
+  }catch(e){notify('Falha na conferência: '+(e.message||e))}
+  finally{if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultar todas';renderFilaNfTugao();}
 }
 
 async function revalidarRpsRejeitadosTugao(){
@@ -2509,6 +2501,13 @@ async function emitirTodasNfTugao(){
       cliente:cadastroTomador.nome||x.cliente,
       documento:cadastroTomador.documento||x.documento,
       email:cadastroTomador.email||cadastroTomador.contato||x.email||'',
+      endereco:cadastroTomador.endereco||'',
+      numero_endereco:cadastroTomador.numero||'',
+      complemento:cadastroTomador.complemento||'',
+      bairro:cadastroTomador.bairro||'',
+      cidade:cadastroTomador.cidade||'',
+      uf:cadastroTomador.uf||'',
+      cep:cadastroTomador.cep||'',
       descricao:String(x.descricao||'')+' '+addrMarker,
       competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)
     });
