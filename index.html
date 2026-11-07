@@ -1957,7 +1957,7 @@ function renderFilaNfTugao(){
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=tugaoEmissaoEmMassa||prontas===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
-  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado|não foi possível confirmar a rejeição|nao foi possivel confirmar a rejeicao/i.test(String(r.erro||'')));
+  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'||(r.status==='Erro'&&!consultaPendenteTugao(r)));
 }
 function parsearLinhasPdfSicadiTugao(linhas){
   let locador=null, contrato='', locatario='', recibo='';
@@ -2412,8 +2412,8 @@ async function consultarTodasNfTugao(){
 }
 
 async function revalidarRpsRejeitadosTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'&&
-    /rps não assinado|rps nao assinado|não foi possível confirmar a rejeição|nao foi possivel confirmar a rejeicao/i.test(String(x.erro||'')));
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'||
+    (x.status==='Erro'&&!consultaPendenteTugao(x)));
   if(!rows.length)return notify('Não há RPS rejeitados por assinatura para revalidar.');
   if(!confirm('Conferir '+rows.length+' RPS rejeitados antes de liberar uma nova tentativa individual? A consulta não emite NFS-e.'))return;
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=true;
@@ -2528,14 +2528,16 @@ async function emitirTodasNfTugao(){
         ignoradas++;continue;
       }
       const incerta=relacionados.some(r=>['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)
+        ||!!r.protocolo&&!r.numero_nfse
         ||/remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(r.erro_mensagem||'')));
       if(incerta){
         x.status='Erro';x.erro='Consulta obrigatória: remessa ainda em processamento na GISS. Não reenviar.';
         ignoradas++;continue;
       }
       const rejeicaoAssinatura=regId?.status==='ERRO'
-        &&/rps não assinado|rps nao assinado/i.test(String(regId.erro_mensagem||''));
-      const podeRepetir=x.status==='Pronta'||(x.status==='Revisar'&&rejeicaoAssinatura);
+        &&/rps não assinado|rps nao assinado/i.test(String(regId.erro_mensagem||''))
+        &&!regId?.protocolo;
+      const podeRepetir=x.status==='Pronta'||(['Revisar','Erro'].includes(x.status)&&rejeicaoAssinatura);
       // Erros de outras naturezas e correspondências ambíguas exigem intervenção.
       if(!podeRepetir){ignoradas++;continue;}
       if(!regId&&relacionados.length){x.status='Revisar';x.erro='Há tentativa anterior para mesmo CPF e valor. Conferir antes de emitir.';ignoradas++;continue;}
