@@ -2412,15 +2412,15 @@ async function consultarTodasNfTugao(){
 }
 
 async function revalidarRpsRejeitadosTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>['Revisar','Erro'].includes(x.status));
-  if(!rows.length)return notify('Não há RPS rejeitados por assinatura para revalidar.');
-  if(!confirm('Conferir '+rows.length+' RPS rejeitados antes de liberar uma nova tentativa individual? A consulta não emite NFS-e.'))return;
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>['Revisar','Erro','Pronta'].includes(x.status));
+  if(!rows.length)return notify('Não há registros pendentes de conciliação.');
+  if(!confirm('Conferir '+rows.length+' notas da fila com as NFS-e registradas no banco? A conferência não emite notas.'))return;
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=true;
   try{
     const all=[];
     for(let offset=0;;offset+=1000){
       const {data,error}=await sb.from('seubpo_nfse_emissoes')
-        .select('request_id,status,erro_mensagem,competencia,tomador_documento,valor,numero_nfse')
+        .select('request_id,status,erro_codigo,erro_mensagem,competencia,tomador_documento,valor,numero_nfse,protocolo')
         .eq('empresa_id','3072c434-6aeb-44f3-80aa-ebfca6e5b25a')
         .range(offset,offset+999);
       if(error)throw error;
@@ -2428,41 +2428,67 @@ async function revalidarRpsRejeitadosTugao(){
       if(!data||data.length<1000)break;
     }
     const porId=new Map(all.filter(r=>r.request_id).map(r=>[String(r.request_id),r]));
-    const chave=r=>[
-      String(r.competencia||'').slice(0,7),docChaveCliente(r.tomador_documento),
-      Math.round(Number(r.valor||0)*100)
+    const chave=(comp,doc,valor)=>[
+      String(comp||'').slice(0,7),docChaveCliente(doc),Math.round((numeroValor(valor)||0)*100)
     ].join('|');
     const porDados=new Map();
     for(const r of all){
-      const k=chave(r);if(!porDados.has(k))porDados.set(k,[]);
+      const k=chave(r.competencia,r.tomador_documento,r.valor);
+      if(!porDados.has(k))porDados.set(k,[]);
       porDados.get(k).push(r);
     }
-    let liberadas=0,bloqueadas=0;
+    let conciliadas=0,liberadas=0,bloqueadas=0,semEnvio=0;
     for(const x of rows){
       const comp=String(x.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
-      const dados=porDados.get([comp,docChaveCliente(x.documento),Math.round((numeroValor(x.valor)||0)*100)].join('|'))||[];
+      const dados=porDados.get(chave(comp,x.documento,x.valor))||[];
       const porIdentificador=porId.get(String(x.id));
-      // Nunca liberar se há autorização, situação inconclusiva ou mais de um registro.
-      const autorizada=dados.some(r=>r.status==='EMITIDA');
-      const incerta=dados.some(r=>!['ERRO','EMITIDA'].includes(String(r.status||'')));
+      // O request_id preservado é a identidade primária. Documento/valor
+      // só resolve automaticamente quando há UM único registro correspondente.
       const registro=porIdentificador||(dados.length===1?dados[0]:null);
-      if(registro?.status==='ERRO' &&
-         /rps não assinado|rps nao assinado/i.test(String(registro.erro_mensagem||'')) &&
-         !autorizada&&!incerta&&
-         (porIdentificador||dados.length===1)){
-        x.status='Pronta';x.erro='';liberadas++;
-      }else{
-        x.status='Revisar';
-        x.erro=autorizada?'Há NFS-e já autorizada para CPF, valor e competência. Conferir número antes de qualquer tentativa.'
-          :incerta?'Há remessa com resultado incerto; consulte a prefeitura antes de reenviar.'
-          :dados.length>1?'Mais de uma tentativa com o mesmo CPF/valor/competência; conferir manualmente para evitar duplicidade.'
-          :'Rejeição não vinculada com segurança à nota da fila. Não reenviar.';
-        bloqueadas++;
+      const autorizadas=dados.filter(r=>r.status==='EMITIDA'&&r.numero_nfse);
+      const autorizadaId=porIdentificador?.status==='EMITIDA'&&porIdentificador.numero_nfse?porIdentificador:null;
+      const autorizada=autorizadaId||(autorizadas.length===1&&dados.length===1?autorizadas[0]:null);
+      const incerta=dados.some(r=>['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)
+        ||!!r.protocolo&&r.status!=='EMITIDA'
+        ||/remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(r.erro_mensagem||'')));
+      if(autorizada&&!incerta){
+        x.status='Emitida';x.numero=autorizada.numero_nfse;x.erro='';
+        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+          store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
+            competencia:comp,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
+            aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),
+            status:'Emitida',empresa:'Tugão Imóveis'});
+        }
+        conciliadas++;continue;
       }
+      if(autorizadas.length||autorizadaId){
+        x.status='Revisar';
+        x.erro='Possível nota autorizada com outro RPS ou tentativa pendente. Confira a NFS-e antes de qualquer envio.';
+        bloqueadas++;continue;
+      }
+      if(incerta){
+        x.status='Erro';x.erro='Consulta obrigatória: existe tentativa com protocolo ou sem resultado conclusivo. Não reenviar.';
+        bloqueadas++;continue;
+      }
+      const rejeitado=registro?.status==='ERRO'&&!registro.protocolo
+        &&(registro.erro_codigo==='E174'||/rps não assinado|rps nao assinado/i.test(String(registro.erro_mensagem||'')));
+      if(rejeitado&&(!porIdentificador?dados.length===1:true)){
+        x.status='Pronta';x.erro='';liberadas++;continue;
+      }
+      if(!registro){
+        x.status='Revisar';
+        x.erro='Nenhuma tentativa encontrada para este CPF/CNPJ, valor e competência. Verificar os dados da importação.';
+        semEnvio++;continue;
+      }
+      x.status='Revisar';
+      x.erro='A tentativa encontrada tem situação '+String(registro.status||'indefinida')+
+        (registro.protocolo?' e protocolo registrado':'')+'. Não reenviar sem confirmar na GISS.';
+      bloqueadas++;
     }
     persist();renderFilaNfTugao();
-    notify('Conferência concluída: '+liberadas+' nota(s) liberada(s) para teste individual; '+bloqueadas+' mantida(s) em revisão. Nenhuma NFS-e foi emitida.');
-  }catch(e){notify('Conferência interrompida: '+(e.message||e))}
+    notify('Conciliação: '+conciliadas+' já emitidas, '+liberadas+' rejeições liberadas, '
+      +bloqueadas+' bloqueadas e '+semEnvio+' sem tentativa identificada. Nenhuma NFS-e foi enviada.');
+  }catch(e){notify('Falha na conciliação: '+(e.message||e))}
   finally{renderFilaNfTugao();}
 }
 
