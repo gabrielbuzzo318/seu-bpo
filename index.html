@@ -2462,211 +2462,188 @@ async function revalidarRpsRejeitadosTugao(){
 
 async function emitirTodasNfTugao(){
   if(tugaoEmissaoEmMassa){notify('Já existe uma emissão em massa em andamento.');return;}
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
-  if(!rows.length){notify('Não há notas prontas para emitir.');return}
   const competencia=window.nfCompetenciaLote?.value||'';
   const aliquotaIss=numeroValor(window.nfIssLote?.value||'');
-  if(!competencia){notify('Informe a competência das NFS-e antes de emitir.');return}
-  if(!(aliquotaIss>0)){notify('Informe a alíquota de ISS antes de emitir.');return}
-  if(!tugaoCertMeta){notify('Cadastre primeiro o certificado A1 da Tugão.');return}
+  if(!competencia){notify('Informe a competência antes de emitir.');return;}
+  if(!(aliquotaIss>0)){notify('Informe a alíquota do ISS antes de emitir.');return;}
+  if(!tugaoCertMeta){notify('Cadastre o certificado A1 da Tugão.');return;}
   const cfg=tugaoGissConfig||{};
-  const faltam=[];
-  if(!cfg.cnpj)faltam.push('CNPJ');
-  if(!cfg.inscricao_municipal)faltam.push('Inscrição Municipal');
-  if(!cfg.item_lista_servico)faltam.push('Item de Serviço');
-  if(!cfg.codigo_atividade)faltam.push('Código da atividade');
-  if(!cfg.codigo_nbs)faltam.push('NBS');
-  if(faltam.length){notify('Falta configurar: '+faltam.join(', ')+'.');return}
+  const faltam=['cnpj','inscricao_municipal','item_lista_servico','codigo_atividade','codigo_nbs'].filter(k=>!cfg[k]);
+  if(faltam.length){notify('Configuração incompleta: '+faltam.join(', '));return;}
   const senha=senhaCertTugao();
   if(senha===null)return;
-  let notasParaEmitir=[];
-  const incompletos=[];
-  for(const x of rows){
-    const chaveTomador=docChaveCliente(x.documento);
-    const cadastroTomador=(store.clientes||[]).find(c=>chaveTomador&&docChaveCliente(c.documento)===chaveTomador);
-    if(!cadastroTomador){incompletos.push(x.cliente+' (sem cadastro)');continue}
-    const faltamTomador=[];
-    if(!String(cadastroTomador.endereco||'').trim())faltamTomador.push('endereço');
-    if(!String(cadastroTomador.numero||'').trim())faltamTomador.push('número');
-    if(!String(cadastroTomador.bairro||'').trim())faltamTomador.push('bairro');
-    if(!String(cadastroTomador.cidade||'').trim())faltamTomador.push('cidade');
-    if(!String(cadastroTomador.uf||'').trim())faltamTomador.push('UF');
-    if(String(cadastroTomador.cep||'').replace(/\D/g,'').length!==8)faltamTomador.push('CEP');
-    if(faltamTomador.length){incompletos.push(x.cliente+' ('+faltamTomador.join(', ')+')');continue}
-    const addrMarker='[[SBPADDR|'+[
-      cadastroTomador.endereco||'',
-      cadastroTomador.numero||'',
-      cadastroTomador.complemento||'',
-      cadastroTomador.bairro||'',
-      cadastroTomador.cidade||'',
-      cadastroTomador.uf||'',
-      cadastroTomador.cep||''
-    ].map(v=>encodeURIComponent(String(v))).join('|')+']]';
-    notasParaEmitir.push({...x,
-      cliente:cadastroTomador.nome||x.cliente,
-      documento:cadastroTomador.documento||x.documento,
-      email:cadastroTomador.email||cadastroTomador.contato||x.email||'',
-      endereco:cadastroTomador.endereco||'',
-      numero_endereco:cadastroTomador.numero||'',
-      complemento:cadastroTomador.complemento||'',
-      bairro:cadastroTomador.bairro||'',
-      cidade:cadastroTomador.cidade||'',
-      uf:cadastroTomador.uf||'',
-      cep:cadastroTomador.cep||'',
-      descricao:String(x.descricao||'')+' '+addrMarker,
-      competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)
-    });
-  }
-  // Consulta prévia ao banco: nunca reenviar uma NFS-e já autorizada.
-  // Na dúvida (mesmo CPF/valor/competência), retirar da emissão e pedir revisão.
+  // Uma ação do usuário percorre automaticamente os RPS, mas cada envio é
+  // exatamente uma nota, como o fluxo individual comprovado na GISS.
+  // Apenas a rejeição inequívoca RPS não assinado permite nova tentativa.
+  tugaoEmissaoEmMassa=true;
+  const btn=window.nfEmitirTodasBtn;
+  const situacao=(mensagem)=>{
+    if(window.nfImportStatus)nfImportStatus.textContent=mensagem;
+    if(btn){btn.disabled=true;btn.textContent='Emitindo automaticamente...';}
+  };
+  let emitidas=0,ignoradas=0,erros=0,pendentes=0;
   try{
-    const jaAutorizadas=[];
-    const remessasIncertas=[];
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada.');
+    situacao('Conferindo emissões anteriores na GISS...');
+    const registros=[];
     for(let offset=0;;offset+=1000){
       const {data,error}=await sb.from('seubpo_nfse_emissoes')
-        .select('request_id,tomador_documento,valor,competencia,status,erro_mensagem')
+        .select('request_id,status,erro_mensagem,numero_nfse,protocolo,tomador_documento,competencia,valor')
         .eq('empresa_id','3072c434-6aeb-44f3-80aa-ebfca6e5b25a')
         .eq('competencia',competencia+'-01')
         .range(offset,offset+999);
       if(error)throw error;
-      remessasIncertas.push(...(data||[]).filter(r=>
-        ['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)||
-        /remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(r.erro_mensagem||''))));
+      registros.push(...(data||[]));
       if(!data||data.length<1000)break;
     }
-    for(let offset=0;offset<100000;offset+=1000){
-      const {data,error}=await sb.from('seubpo_nfse_emissoes')
-        .select('request_id,tomador_documento,tomador_nome,valor,competencia,numero_nfse')
-        .eq('empresa_id','3072c434-6aeb-44f3-80aa-ebfca6e5b25a')
-        .eq('status','EMITIDA').eq('competencia',competencia+'-01')
-        .range(offset,offset+999);
-      if(error)throw error;
-      jaAutorizadas.push(...(data||[]));
-      if(!data||data.length<1000)break;
+    const porId=new Map(registros.filter(r=>r.request_id).map(r=>[String(r.request_id),r]));
+    const chave=(doc,valor)=>docChaveCliente(doc)+'|'+Math.round((Number(valor)||0)*100);
+    const porDados=new Map();
+    for(const r of registros){
+      const k=chave(r.tomador_documento,r.valor);
+      if(!porDados.has(k))porDados.set(k,[]);
+      porDados.get(k).push(r);
     }
-    const bloqueadas=[];
-    notasParaEmitir=notasParaEmitir.filter(n=>{
-      const pendente=remessasIncertas.find(e=>String(e.request_id)===String(n.id)
-        ||(docChaveCliente(e.tomador_documento)===docChaveCliente(n.documento)
-          &&Math.abs(Number(e.valor||0)-(numeroValor(n.valor)||0))<0.005));
-      if(pendente){
-        const original=store.nfImportacaoTugao.find(x=>String(x.id)===String(n.id));
-        if(original){original.status='Erro';original.erro='Consulta obrigatória: remessa com protocolo ainda em processamento. Não reenviar.';}
-        bloqueadas.push(n.cliente);
-        return false;
+    const elegiveis=[],incompletos=[];
+    for(const x of store.nfImportacaoTugao||[]){
+      if(x.status==='Emitida'||x.status==='Emitindo')continue;
+      const regId=porId.get(String(x.id));
+      const relacionados=porDados.get(chave(x.documento,numeroValor(x.valor)))||[];
+      const autorizada=relacionados.find(r=>r.status==='EMITIDA'&&r.numero_nfse);
+      if(autorizada){
+        x.status='Emitida';x.numero=autorizada.numero_nfse;x.erro='';
+        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+          store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
+            competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
+            aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
+        }
+        ignoradas++;continue;
       }
-      const correspondente=jaAutorizadas.find(e=>{
-        if(String(e.request_id)===String(n.id))return true;
-        return docChaveCliente(e.tomador_documento)===docChaveCliente(n.documento)
-          &&Math.abs(Number(e.valor||0)-(numeroValor(n.valor)||0))<0.005;
+      const incerta=relacionados.some(r=>['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)
+        ||/remessa ainda não foi processada|remessa ainda nao foi processada/i.test(String(r.erro_mensagem||'')));
+      if(incerta){
+        x.status='Erro';x.erro='Consulta obrigatória: remessa ainda em processamento na GISS. Não reenviar.';
+        ignoradas++;continue;
+      }
+      const rejeicaoAssinatura=regId?.status==='ERRO'
+        &&/rps não assinado|rps nao assinado/i.test(String(regId.erro_mensagem||''));
+      const podeRepetir=x.status==='Pronta'||(x.status==='Revisar'&&rejeicaoAssinatura);
+      // Erros de outras naturezas e correspondências ambíguas exigem intervenção.
+      if(!podeRepetir){ignoradas++;continue;}
+      if(!regId&&relacionados.length){x.status='Revisar';x.erro='Há tentativa anterior para mesmo CPF e valor. Conferir antes de emitir.';ignoradas++;continue;}
+      if(regId&&!rejeicaoAssinatura&&regId.status==='ERRO'){
+        x.status='Revisar';x.erro='Erro anterior da GISS: '+String(regId.erro_mensagem||'sem detalhe');ignoradas++;continue;
+      }
+      const cadastro=(store.clientes||[]).find(t=>docChaveCliente(t.documento)===docChaveCliente(x.documento));
+      if(!cadastro){incompletos.push(x.cliente+' (sem cadastro)');continue;}
+      const faltas=['endereco','numero','bairro','cidade','uf'].filter(k=>!String(cadastro[k]||'').trim());
+      if(String(cadastro.cep||'').replace(/\D/g,'').length!==8)faltas.push('CEP');
+      if(faltas.length){incompletos.push(x.cliente+' ('+faltas.join(', ')+')');continue;}
+      const endereco=['endereco','numero','complemento','bairro','cidade','uf','cep']
+        .map(k=>encodeURIComponent(String(cadastro[k]||''))).join('|');
+      elegiveis.push({...x,cliente:cadastro.nome||x.cliente,documento:cadastro.documento||x.documento,
+        email:cadastro.email||cadastro.contato||x.email||'',
+        endereco:cadastro.endereco||'',numero_endereco:cadastro.numero||'',complemento:cadastro.complemento||'',
+        bairro:cadastro.bairro||'',cidade:cadastro.cidade||'',uf:cadastro.uf||'',cep:cadastro.cep||'',
+        descricao:String(x.descricao||'')+' [[SBPADDR|'+endereco+']]',
+        competencia,aliquota_iss:aliquotaIss,data_emissao:new Date().toISOString().slice(0,10)});
+    }
+    persist();renderFilaNfTugao();
+    if(!elegiveis.length){
+      notify('Nenhuma NFS-e liberada: '+ignoradas+' já emitidas, pendentes ou em revisão; '+incompletos.length+' cadastros incompletos.');
+      return;
+    }
+    if(!confirm('Emitir automaticamente '+elegiveis.length+' NFS-e, uma por vez, para '+competencia.split('-').reverse().join('/')+'?'
+      +'\nISS: '+formatValor(aliquotaIss)+'% · '+ignoradas+' protegidas/puladas · '+incompletos.length+' com cadastro incompleto.'
+      +'\nA janela deve permanecer aberta. Não será necessário clicar em cada nota.'))return;
+    let falhasConsecutivas=0;
+    const processarResultado=(x,ret)=>{
+      if(ret?.ok&&ret.numero_nfse){
+        x.status='Emitida';x.numero=ret.numero_nfse;x.erro='';
+        x.competencia=competencia;x.aliquota_iss=aliquotaIss;
+        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+          store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
+            competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
+            aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
+        }
+        emitidas++;falhasConsecutivas=0;return 'emitida';
+      }
+      const msg=String(ret?.erro||'Sem confirmação da NFS-e');
+      x.status='Erro';x.erro=msg;
+      if(/processad|protocolo|consulta|em andamento/i.test(msg)){pendentes++;return 'pendente';}
+      erros++;falhasConsecutivas++;return 'rejeitada';
+    };
+    const consultar=async(x)=>{
+      const resp=await fetch('/api/giss-consultar',{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',request_id:String(x.id),password:senha})
       });
-      if(!correspondente)return true;
-      const original=store.nfImportacaoTugao.find(x=>String(x.id)===String(n.id));
-      if(original){
-        original.status='Revisar';
-        original.erro='Já existe NFS-e autorizada para este CPF/CNPJ e valor na competência (nº '+(correspondente.numero_nfse||'—')+'). Conferir para evitar duplicidade.';
-      }
-      bloqueadas.push(n.cliente);
-      return false;
-    });
-    if(bloqueadas.length){
-      persist();
-      notify(bloqueadas.length+' nota(s) separada(s) para revisão por possível duplicidade.');
-    }
-  }catch(e){
-    notify('Falha na consulta de duplicidade. A emissão foi bloqueada: '+(e.message||e));
-    return;
-  }
-  if(!notasParaEmitir.length){
-    notify('Nenhuma nota pronta tem cadastro completo para emissão.');
-    return;
-  }
-  if(incompletos.length)notify(incompletos.length+' cliente(s) ficaram de fora por cadastro incompleto.');
-  if(!confirm('Emitir '+notasParaEmitir.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'+(incompletos.length?'\n\n'+incompletos.length+' cliente(s) com cadastro incompleto ficarão de fora.':'')))return;
-  tugaoEmissaoEmMassa=true;
-  nfEmitirTodasBtn.disabled=true;
-  let emitidas=0,pendentes=0,comErro=0;
-  // A GISS autorizou 1 RPS por envio e rejeitou lotes com vários RPS como 'RPS não assinado'.
-  // Processar individualmente até validar a correção do XML de assinaturas múltiplas.
-  const tamanhoLote=1;
-  try{
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session)throw new Error('Sessão expirada.');
-    for(let inicio=0;inicio<notasParaEmitir.length;inicio+=tamanhoLote){
-      const notaAtual=notasParaEmitir[inicio];
-      const linhaAtual=(store.nfImportacaoTugao||[]).find(r=>String(r.id)===String(notaAtual.id));
-      if(!linhaAtual||linhaAtual.status!=='Pronta'){
-        notify('Emissão interrompida: uma nota deixou de estar pronta. Consulte antes de continuar.');
-        return;
-      }
-      linhaAtual.status='Emitindo';
-      renderFilaNfTugao();
-      const lote=notasParaEmitir.slice(inicio,inicio+tamanhoLote);
-      nfEmitirTodasBtn.textContent='Emitindo '+(inicio+1)+'–'+(inicio+lote.length)+' de '+notasParaEmitir.length;
-      let resp,out;
+      const resposta=await resp.json().catch(()=>({}));
+      if(!resp.ok)throw new Error(resposta.error||'Consulta GISS: HTTP '+resp.status);
+      return resposta;
+    };
+    for(let i=0;i<elegiveis.length;i++){
+      const nota=elegiveis[i];
+      const x=(store.nfImportacaoTugao||[]).find(r=>String(r.id)===String(nota.id));
+      if(!x||x.status==='Emitida')continue;
+      situacao('Emissão automática '+(i+1)+'/'+elegiveis.length+' · '+emitidas+' autorizadas · '+pendentes+' pendentes · '+erros+' rejeitadas.');
+      x.status='Emitindo';persist();renderFilaNfTugao();
+      let ret;
       try{
-        resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
+        const resp=await fetch(SUPABASE_URL+'/functions/v1/seubpo-giss-emitir-lote',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
           body:JSON.stringify({empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',
-            password:senha,competencia,aliquota_iss:aliquotaIss,notas:lote})
+            password:senha,competencia,aliquota_iss:aliquotaIss,notas:[nota]})
         });
-        out=await resp.json().catch(()=>({}));
+        const out=await resp.json().catch(()=>({}));
         if(!resp.ok)throw new Error(out.error||'HTTP '+resp.status);
+        ret=(out.resultados||[]).find(r=>String(r.id)===String(nota.id));
+        if(!ret)throw new Error('Resposta sem identificação da NFS-e.');
       }catch(e){
-        // Resultado incerto: pode ter chegado à prefeitura mesmo sem resposta HTTP.
-        // Bloquear reenvio automático e manter o lote disponível para consulta/reconciliação.
-        for(const nota of lote){
-          const x=store.nfImportacaoTugao.find(r=>String(r.id)===String(nota.id));
-          if(x){x.status='Erro';x.erro='Consulta obrigatória: resposta do lote não confirmada ('+(e.message||e)+'). Não reenviar antes de consultar a GISS.';}
+        x.status='Erro';x.erro='Consulta obrigatória: retorno HTTP incerto ('+(e.message||e)+'). Não reenviar.';
+        persist();renderFilaNfTugao();
+        notify('Emissão pausada: falha de comunicação na nota '+(i+1)+'. Consulte antes de retomar.');
+        return;
+      }
+      let estado=processarResultado(x,ret);
+      persist();renderFilaNfTugao();
+      if(estado==='pendente'){
+        // Consulta automática do MESMO RPS; nunca reenvia a emissão.
+        for(let tent=0;tent<6;tent++){
+          await new Promise(resolve=>setTimeout(resolve,1500));
+          try{
+            const q=await consultar(x);
+            if(q.ok&&q.numero_nfse){pendentes--;estado=processarResultado(x,q);break;}
+            if(q.processando)continue;
+            x.status='Revisar';x.erro='GISS: '+(q.erro||'remessa não autorizada');pendentes--;erros++;
+            estado='rejeitada';falhasConsecutivas++;break;
+          }catch(e){x.status='Erro';x.erro='Consulta obrigatória: '+(e.message||e);break;}
         }
         persist();renderFilaNfTugao();
-        notify('Emissão interrompida no lote '+(Math.floor(inicio/tamanhoLote)+1)+'. Consulte o resultado antes de retomar. '+(e.message||e));
-        return;
-      }
-      const retornos=new Map((out.resultados||[]).map(x=>[String(x.id),x]));
-      let loteInconclusivo=false;
-      let loteRejeitado=false;
-      for(const nota of lote){
-        const x=store.nfImportacaoTugao.find(r=>String(r.id)===String(nota.id));
-        if(!x)continue;
-        const ret=retornos.get(String(nota.id));
-        x.competencia=competencia;x.aliquota_iss=aliquotaIss;
-        if(!ret){
-          x.status='Erro';
-          x.erro='Consulta obrigatória: sem resposta individual. Não reenviar.';
-          pendentes++;loteInconclusivo=true;
-        }else if(ret.ok&&ret.numero_nfse){
-          x.status='Emitida';x.numero=ret.numero_nfse;x.erro='';
-          if(!(store.nf||[]).some(n=>String(n.numero)===String(x.numero)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
-            store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
-              competencia,tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,
-              aliquota_iss:aliquotaIss,status:'Emitida',empresa:'Tugão Imóveis'});
-          }
-          emitidas++;
-        }else{
-          x.status='Erro';x.erro=ret.erro||'Consultar situação da nota na GISS.';
-          if(consultaPendenteTugao(x)){pendentes++;loteInconclusivo=true}
-          else{comErro++;loteRejeitado=true;}
+        if(estado==='pendente'){
+          notify('Emissão pausada: a GISS ainda não confirmou uma remessa. Use Consultar todas antes de retomar.');
+          return;
         }
       }
-      persist();renderFilaNfTugao();
-      nfImportStatus.textContent='Lote '+(Math.floor(inicio/tamanhoLote)+1)+' processado · '+emitidas+' autorizadas · '+pendentes+' em consulta · '+comErro+' com erro.';
-      // Não iniciar o próximo lote se houver confirmação fiscal pendente.
-      if(loteInconclusivo||loteRejeitado){
-        notify('Emissão pausada após '+emitidas+' NFS-e autorizada(s): '+(loteInconclusivo?'resultado pendente de consulta':'RPS rejeitado')+'. Não reenviar sem conferência.');
+      // Impede centenas de rejeições se houver falha geral na configuração.
+      if(falhasConsecutivas>=2){
+        notify('Emissão interrompida após duas rejeições seguidas. '+emitidas+' NFS-e autorizadas.');
         return;
       }
+      situacao('Emissão automática '+(i+1)+'/'+elegiveis.length+' · '+emitidas+' autorizadas · '+pendentes+' pendentes · '+erros+' rejeitadas.');
     }
-    notify('Processamento concluído: '+emitidas+' emitidas; '+comErro+' com erro.');
+    notify('Emissão automática concluída: '+emitidas+' NFS-e emitidas, '+erros+' rejeitadas, '+ignoradas+' já emitidas/em revisão e '+incompletos.length+' cadastros incompletos.');
   }catch(e){
-    notify('Emissão interrompida: '+(e.message||e));
+    notify('Emissão automática interrompida: '+(e.message||e));
   }finally{
     tugaoEmissaoEmMassa=false;
-    nfEmitirTodasBtn.textContent='Emitir todas';
+    if(btn)btn.textContent='Emitir todas';
     renderFilaNfTugao();
   }
 }
+
 async function sincronizarNfEmitidasTugao(){
   try{
     const empresaId='3072c434-6aeb-44f3-80aa-ebfca6e5b25a';
