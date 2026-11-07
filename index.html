@@ -1954,7 +1954,7 @@ function renderFilaNfTugao(){
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
   const reemitir=rows.filter(x=>x.status==='Erro'&&!consultaPendenteTugao(x)).length;
-  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||(prontas+reemitir)===0;
+  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||(prontas+reemitir)===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado/i.test(String(r.erro||'')));
