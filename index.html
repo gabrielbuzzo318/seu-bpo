@@ -2501,7 +2501,9 @@ async function emitirTodasNfTugao(){
   if(!confirm('Emitir '+notasParaEmitir.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'+(incompletos.length?'\n\n'+incompletos.length+' cliente(s) com cadastro incompleto ficarão de fora.':'')))return;
   nfEmitirTodasBtn.disabled=true;
   let emitidas=0,pendentes=0,comErro=0;
-  const tamanhoLote=8;
+  // A GISS autorizou 1 RPS por envio e rejeitou lotes com vários RPS como 'RPS não assinado'.
+  // Processar individualmente até validar a correção do XML de assinaturas múltiplas.
+  const tamanhoLote=1;
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(!session)throw new Error('Sessão expirada.');
