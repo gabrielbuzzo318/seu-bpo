@@ -1957,7 +1957,7 @@ function renderFilaNfTugao(){
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=tugaoEmissaoEmMassa||prontas===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
-  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'||(r.status==='Erro'&&!consultaPendenteTugao(r)));
+  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>['Revisar','Erro'].includes(r.status));
 }
 function parsearLinhasPdfSicadiTugao(linhas){
   let locador=null, contrato='', locatario='', recibo='';
@@ -2246,8 +2246,8 @@ async function consultarNfTugao(id){
       notify(x.erro);
       return;
     }
-    x.status='Erro';
-    x.erro=out.erro||'A GISS processou o lote com erro.';
+    x.status=out.rejeitado?'Revisar':'Erro';
+    x.erro=out.rejeitado?'GISS rejeitou o RPS (E174). Revalidar para liberar nova tentativa.':(out.erro||'A GISS processou o lote com erro.');
     persist();renderFilaNfTugao();notify(x.erro);
   }catch(e){
     x.status='Erro';
@@ -2412,8 +2412,7 @@ async function consultarTodasNfTugao(){
 }
 
 async function revalidarRpsRejeitadosTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'||
-    (x.status==='Erro'&&!consultaPendenteTugao(x)));
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>['Revisar','Erro'].includes(x.status));
   if(!rows.length)return notify('Não há RPS rejeitados por assinatura para revalidar.');
   if(!confirm('Conferir '+rows.length+' RPS rejeitados antes de liberar uma nova tentativa individual? A consulta não emite NFS-e.'))return;
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=true;
