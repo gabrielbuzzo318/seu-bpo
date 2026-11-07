@@ -1912,48 +1912,36 @@ function combinarDescricoesTugao(itens){
 }
 function aplicarRegrasEspeciaisNfTugao(itens){
   let rows=(itens||[]).filter(x=>!nomeChaveTugao(x.cliente||x.locador||x.locatario).includes('NILZA'));
-
-  const marco=rows.find(x=>nomeChaveTugao(x.cliente||x.locador||x.locatario)==='MARCO ANTONIO GODOI BUQUI');
   const regras=[
-    {
-      membros:['MARCO ANTONIO GODOI BUQUI','ROSICLER LIBERATO AMARAL BUQUI'],
-      tomador:'MARCO ANTONIO GODOI BUQUI',
-      grupo:'marco_rosicler'
-    },
-    {
-      membros:['CONCEICAO CUALHETE','GENESIO CUALHETE'],
-      tomador:'CONCEICAO CUALHETE',
-      grupo:'conceicao_genesio'
-    }
+    {membros:['MARCO ANTONIO GODOI BUQUI','ROSICLER LIBERATO AMARAL BUQUI'],
+      tomador:'MARCO ANTONIO GODOI BUQUI',nome:'Marco Antonio Godoi Buqui',grupo:'marco_rosicler'},
+    {membros:['CONCEICAO CUALHETE','CONCEICAO LOPES CUALHETE','GENESIO CUALHETE'],
+      tomador:'CONCEICAO LOPES CUALHETE',nome:'Conceição Lopes Cualhete',
+      documento:'072.981.428-95',grupo:'conceicao_genesio'}
   ];
-
-  const usados=new Set();
-  const agregados=[];
+  const usados=new Set(),agregados=[];
   for(const regra of regras){
     const grupo=rows.filter(x=>regra.membros.includes(nomeChaveTugao(x.cliente||x.locador||x.locatario)));
     if(!grupo.length)continue;
     grupo.forEach(x=>usados.add(x.id));
-    const base=regra.tomador==='MARCO ANTONIO GODOI BUQUI'
-      ? (marco||grupo[0])
-      : (grupo.find(x=>nomeChaveTugao(x.cliente||x.locador||x.locatario)===regra.tomador)||grupo[0]);
+    const titular=grupo.find(x=>nomeChaveTugao(x.cliente||x.locador||x.locatario)===regra.tomador)
+      ||grupo.find(x=>regra.grupo==='conceicao_genesio'&&nomeChaveTugao(x.cliente||x.locador||x.locatario)==='CONCEICAO CUALHETE');
+    const base=titular||grupo[0];
+    const documento=regra.documento||titular?.documento||'';
     const total=grupo.reduce((s,x)=>s+(numeroValor(x.valor)||0),0);
     agregados.push({
-      ...base,
-      id:Date.now()+100000+agregados.length,
-      cliente:regra.tomador==='MARCO ANTONIO GODOI BUQUI'?'Marco Antonio Godoi Buqui':'Conceição Cualhete',
-      documento:(base.documento||''),
-      valor:formatValor(total),
-      descricao:combinarDescricoesTugao(grupo),
+      ...base,id:Date.now()+100000+agregados.length,
+      cliente:regra.nome,locador:regra.nome,documento,
+      valor:formatValor(total),descricao:combinarDescricoesTugao(grupo),
       contrato:grupo.map(x=>x.contrato).filter(Boolean).join(' / '),
       locatario:grupo.map(x=>x.locatario).filter(Boolean).join(' / '),
       taxa_administracao:grupo.reduce((s,x)=>s+(Number(x.taxa_administracao)||0),0),
       taxa_intermediacao:grupo.reduce((s,x)=>s+(Number(x.taxa_intermediacao)||0),0),
       regra_especial:regra.grupo,
-      status:(marco?.documento||base.documento) && total>0 ? 'Pronta' : 'Revisar'
+      status:documento&&total>0?'Pronta':'Revisar'
     });
   }
-  rows=rows.filter(x=>!usados.has(x.id));
-  return rows.concat(agregados);
+  return rows.filter(x=>!usados.has(x.id)).concat(agregados);
 }
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
