@@ -285,7 +285,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
     <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
       <div>
         <div class="section-title">Importar relatório para emissão</div>
-        <div class="sub">Para a Tugão: locador = coluna A, CPF/CNPJ do locador = B, contrato = C, locatário = D, administração = E, intermediação = G e valor da NFS-e = H. Regras especiais de agrupamento são aplicadas automaticamente.</div>
+        <div class="sub">Excel: locador A, CPF/CNPJ B, contrato C, locatário D, administração E, intermediação G e valor H. PDF SICADI: taxas extraídas por locador, contrato e recibo, com conferência automática dos totais. As notas ficam para conferência antes da emissão.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="nfRelatorioFile" type="file" accept=".xlsx,.xls,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/pdf" style="display:none">
@@ -1968,18 +1968,103 @@ function renderFilaNfTugao(){
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.disabled=consultar===0;
 }
+function parsearLinhasPdfSicadiTugao(linhas){
+  let locador=null, contrato='', locatario='', recibo='';
+  const registros=new Map();
+  const moedaFinal=texto=>{
+    const m=String(texto).match(/(-?\s*[\d.]+,\d{2})\s*$/);
+    return m?Number(m[1].replace(/\s/g,'').replace(/\./g,'').replace(',','.')):null;
+  };
+  for(const original of linhas){
+    const linha=String(original||'').replace(/\s+/g,' ').trim();
+    if(!linha)continue;
+    let m=linha.match(/^Locador:\s*(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+(.+)$/i);
+    if(m){
+      // A mesma identificação é repetida no topo da página quando um recibo continua.
+      if(!locador||locador.documento!==m[1]){contrato='';locatario='';recibo='';}
+      locador={documento:m[1],nome:m[2].trim()};
+      continue;
+    }
+    m=linha.match(/^Contrato\s+(\d+)\s+Locat[aá]rio:\s*(.+)$/i);
+    if(m){contrato=m[1];locatario=m[2].trim();recibo='';continue;}
+    m=linha.match(/^Recibo:\s*(\d+)\b/i);
+    if(m){recibo=m[1];continue;}
+    if(/^RESUMO (DA OPERA[CÇ][AÃ]O|POR BANCO|POR HIST[OÓ]RICO)/i.test(linha)){
+      locador=null;contrato='';recibo='';continue;
+    }
+    if(!locador||!contrato||!recibo||!/^\d{2}\/\d{2}\/\d{4}\s+/.test(linha))continue;
+    let campo='';
+    if(/\bTaxa de administra[cç][aã]o sobre encargos\b/i.test(linha))campo='encargos';
+    else if(/\bTaxa de administra[cç][aã]o\b/i.test(linha))campo='administracao';
+    else if(/\bTaxa de intermedia[cç][aã]o\b/i.test(linha))campo='intermediacao';
+    if(!campo)continue;
+    const v=moedaFinal(linha);
+    if(v==null||!Number.isFinite(v)||v===0)continue;
+    const chave=[locador.documento,contrato,recibo].join('|');
+    if(!registros.has(chave))registros.set(chave,{
+      locador:locador.nome,documento:locador.documento,contrato,locatario,recibo,
+      administracao:0,encargos:0,intermediacao:0
+    });
+    registros.get(chave)[campo]+=Math.round(Math.abs(v)*100);
+  }
+  return [...registros.values()].map(x=>({
+    ...x,administracao:x.administracao/100,encargos:x.encargos/100,intermediacao:x.intermediacao/100
+  }));
+}
+function linhaPdfSicadiParaNfTugao(x,i){
+  const administracao=x.administracao+x.encargos;
+  const inter=x.intermediacao;
+  const tipo=administracao>0&&inter>0
+    ? 'Taxa de Administração de Locação de Imóvel e Intermediação de Imóvel.'
+    : administracao>0?'Taxa de Administração de Locação de Imóvel.':'Taxa de Intermediação de Imóvel.';
+  const descricao=tipo+'\nContrato nº '+x.contrato+', locatário '+x.locatario;
+  const total=Math.round((administracao+inter)*100)/100;
+  return {id:Date.now()+i,cliente:x.locador,locador:x.locador,documento:x.documento,
+    contrato:x.contrato,locatario:x.locatario,recibo:x.recibo,descricao,email:'',
+    valor:formatValor(total),taxa_administracao:administracao,taxa_intermediacao:inter,
+    taxa_encargos:x.encargos,status:x.documento&&total>0?'Pronta':'Revisar',
+    origem_relatorio:true,layout_tugao:true,origem_pdf_sicadi:true};
+}
 async function lerPdfRelatorioNf(file){
-  const data=await file.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data}).promise;
+  if(!window.pdfjsLib)throw new Error('Leitor de PDF indisponível.');
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
   const linhas=[];
   for(let p=1;p<=pdf.numPages;p++){
     const page=await pdf.getPage(p);
     const tc=await page.getTextContent();
-    const txt=tc.items.map(i=>i.str).join(' ');
-    txt.split(/\s{2,}|\n/).map(s=>s.trim()).filter(Boolean).forEach(s=>linhas.push(s));
+    const faixas=[];
+    for(const item of tc.items){
+      const texto=String(item.str||'').trim();
+      if(!texto)continue;
+      const y=item.transform?.[5]||0;
+      let faixa=faixas.find(f=>Math.abs(f.y-y)<2);
+      if(!faixa){faixa={y,items:[]};faixas.push(faixa);}
+      faixa.items.push({x:item.transform?.[4]||0,texto});
+    }
+    faixas.sort((a,b)=>b.y-a.y);
+    for(const faixa of faixas){
+      faixa.items.sort((a,b)=>a.x-b.x);
+      linhas.push(faixa.items.map(x=>x.texto).join(' '));
+    }
   }
-  // PDF sem estrutura tabular confiável: guarda cada linha candidata para revisão.
-  return linhas.map((l,i)=>({Cliente:l,Valor:''}));
+  const registros=parsearLinhasPdfSicadiTugao(linhas);
+  if(!registros.length)throw new Error('PDF sem taxas reconhecidas. Gere o relatório de Transferências Realizadas do SICADI Web.');
+  const totais=registros.reduce((a,x)=>({
+    administracao:a.administracao+Math.round(x.administracao*100),
+    encargos:a.encargos+Math.round(x.encargos*100),
+    intermediacao:a.intermediacao+Math.round(x.intermediacao*100)
+  }),{administracao:0,encargos:0,intermediacao:0});
+  const resumo=linhas.join('\n');
+  const esperado={administracao:null,encargos:null,intermediacao:null};
+  for(const linha of linhas){
+    if(/^Taxa de administra[cç][aã]o sobre encargos\s+\d+\s+/.test(linha))esperado.encargos=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
+    else if(/^Taxa de administra[cç][aã]o\s+\d+\s+/.test(linha))esperado.administracao=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
+    else if(/^Taxa de intermedia[cç][aã]o\s+\d+\s+/.test(linha))esperado.intermediacao=Math.abs(Math.round((Number(String(linha).match(/(-?[\d.]+,\d{2})\s*$/)?.[1]||'0').replace(/\./g,'').replace(',','.'))*100));
+  }
+  const diferente=Object.keys(esperado).filter(k=>esperado[k]!=null&&esperado[k]!==totais[k]);
+  if(diferente.length)throw new Error('Conferência do PDF não bate com o resumo SICADI ('+diferente.join(', ')+'). Nenhuma nota foi importada.');
+  if(Object.values(esperado).every(v=>v===null))throw new Error('Resumo por histórico não identificado. Nenhuma nota foi importada por segurança.');
+  return registros.map(linhaPdfSicadiParaNfTugao);
 }
 function docChaveCliente(v){return String(v||'').replace(/\D/g,'')}
 function aplicarDadosTomadoresTugaoPlanilha(){
@@ -2040,6 +2125,7 @@ async function importarRelatorioNfTugao(file){
     let rows=[];
     const nome=file.name.toLowerCase();
     let layoutTugao=false;
+    let layoutPdfSicadi=false;
     if(nome.endsWith('.xlsx')||nome.endsWith('.xls')){
       if(!window.XLSX)throw new Error('Leitor de Excel indisponível.');
       const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
@@ -2053,8 +2139,23 @@ async function importarRelatorioNfTugao(file){
       layoutTugao=true;
     }else if(nome.endsWith('.pdf')){
       rows=await lerPdfRelatorioNf(file);
+      layoutPdfSicadi=true;
     }else throw new Error('Formato não suportado.');
-    if(layoutTugao){
+    if(layoutPdfSicadi){
+      if((store.nfImportacaoTugao||[]).some(x=>x.status!=='Emitida')&&!confirm('A fila já possui notas não emitidas. Substituir a fila pela nova importação PDF?'))return;
+      const emitidasAnteriores=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Emitida');
+      const importadas=aplicarRegrasEspeciaisNfTugao(rows);
+      for(const nota of importadas){
+        // Um mesmo recibo já emitido nunca volta automaticamente à fila.
+        const jaEmitida=emitidasAnteriores.some(x=>x.recibo&&nota.recibo
+          &&docChaveCliente(x.documento)===docChaveCliente(nota.documento)
+          &&String(x.recibo)===String(nota.recibo)
+          &&String(x.contrato||'')===String(nota.contrato||''));
+        if(jaEmitida){nota.status='Revisar';nota.erro='Recibo já consta como emitido anteriormente. Conferir antes de prosseguir.';}
+      }
+      store.nfImportacaoTugao=emitidasAnteriores.concat(importadas);
+      sincronizarLocadoresTugaoClientes(importadas);
+    }else if(layoutTugao){
       const limpas=rows.filter(r=>Array.isArray(r)&&r.some(v=>String(v??'').trim()!==''));
       const candidatos=limpas.filter(r=>{
         const b=String(r?.[1]??'').trim();
