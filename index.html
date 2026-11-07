@@ -1944,6 +1944,7 @@ function aplicarRegrasEspeciaisNfTugao(itens){
   }
   return rows.filter(x=>!usados.has(x.id)).concat(agregados);
 }
+let tugaoEmissaoEmMassa=false;
 function renderFilaNfTugao(){
   if(!window.nfImportBody)return;
   const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status!=='Emitida');
@@ -1953,8 +1954,7 @@ function renderFilaNfTugao(){
   const prontas=rows.filter(x=>x.status==='Pronta').length;
   const revisar=rows.filter(x=>x.status==='Revisar').length;
   if(window.nfImportStatus)nfImportStatus.textContent=rows.length?(rows.length+' registro(s) importado(s) · '+prontas+' prontos · '+revisar+' para revisar'):'Nenhum relatório importado.';
-  const reemitir=rows.filter(x=>x.status==='Erro'&&!consultaPendenteTugao(x)).length;
-  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||(prontas+reemitir)===0;
+  if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=tugaoEmissaoEmMassa||prontas===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado|não foi possível confirmar a rejeição|nao foi possivel confirmar a rejeicao/i.test(String(r.erro||'')));
@@ -2250,6 +2250,7 @@ async function consultarNfTugao(id){
   }
 }
 async function emitirNfIndividualTugao(id){
+  if(tugaoEmissaoEmMassa){notify('A emissão em massa está em andamento.');return;}
   const x=(store.nfImportacaoTugao||[]).find(r=>Number(r.id)===Number(id));
   if(!x)return;
   if(!['Pronta','Erro'].includes(x.status)){notify('Essa nota ainda precisa ser revisada ou já foi emitida.');return}
@@ -2460,7 +2461,8 @@ async function revalidarRpsRejeitadosTugao(){
 }
 
 async function emitirTodasNfTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta'||(x.status==='Erro'&&!consultaPendenteTugao(x)));
+  if(tugaoEmissaoEmMassa){notify('Já existe uma emissão em massa em andamento.');return;}
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Pronta');
   if(!rows.length){notify('Não há notas prontas para emitir.');return}
   const competencia=window.nfCompetenciaLote?.value||'';
   const aliquotaIss=numeroValor(window.nfIssLote?.value||'');
@@ -2581,6 +2583,7 @@ async function emitirTodasNfTugao(){
   }
   if(incompletos.length)notify(incompletos.length+' cliente(s) ficaram de fora por cadastro incompleto.');
   if(!confirm('Emitir '+notasParaEmitir.length+' NFS-e de competência '+competencia.split('-').reverse().join('/')+' com ISS de '+formatValor(aliquotaIss)+'% em '+(cfg.ambiente==='homologacao'?'HOMOLOGAÇÃO':'PRODUÇÃO')+'?'+(incompletos.length?'\n\n'+incompletos.length+' cliente(s) com cadastro incompleto ficarão de fora.':'')))return;
+  tugaoEmissaoEmMassa=true;
   nfEmitirTodasBtn.disabled=true;
   let emitidas=0,pendentes=0,comErro=0;
   // A GISS autorizou 1 RPS por envio e rejeitou lotes com vários RPS como 'RPS não assinado'.
@@ -2590,6 +2593,14 @@ async function emitirTodasNfTugao(){
     const {data:{session}}=await sb.auth.getSession();
     if(!session)throw new Error('Sessão expirada.');
     for(let inicio=0;inicio<notasParaEmitir.length;inicio+=tamanhoLote){
+      const notaAtual=notasParaEmitir[inicio];
+      const linhaAtual=(store.nfImportacaoTugao||[]).find(r=>String(r.id)===String(notaAtual.id));
+      if(!linhaAtual||linhaAtual.status!=='Pronta'){
+        notify('Emissão interrompida: uma nota deixou de estar pronta. Consulte antes de continuar.');
+        return;
+      }
+      linhaAtual.status='Emitindo';
+      renderFilaNfTugao();
       const lote=notasParaEmitir.slice(inicio,inicio+tamanhoLote);
       nfEmitirTodasBtn.textContent='Emitindo '+(inicio+1)+'–'+(inicio+lote.length)+' de '+notasParaEmitir.length;
       let resp,out;
@@ -2615,6 +2626,7 @@ async function emitirTodasNfTugao(){
       }
       const retornos=new Map((out.resultados||[]).map(x=>[String(x.id),x]));
       let loteInconclusivo=false;
+      let loteRejeitado=false;
       for(const nota of lote){
         const x=store.nfImportacaoTugao.find(r=>String(r.id)===String(nota.id));
         if(!x)continue;
@@ -2635,14 +2647,14 @@ async function emitirTodasNfTugao(){
         }else{
           x.status='Erro';x.erro=ret.erro||'Consultar situação da nota na GISS.';
           if(consultaPendenteTugao(x)){pendentes++;loteInconclusivo=true}
-          else comErro++;
+          else{comErro++;loteRejeitado=true;}
         }
       }
       persist();renderFilaNfTugao();
       nfImportStatus.textContent='Lote '+(Math.floor(inicio/tamanhoLote)+1)+' processado · '+emitidas+' autorizadas · '+pendentes+' em consulta · '+comErro+' com erro.';
       // Não iniciar o próximo lote se houver confirmação fiscal pendente.
-      if(loteInconclusivo){
-        notify('Emissão pausada: '+pendentes+' nota(s) exigem consulta antes de continuar.');
+      if(loteInconclusivo||loteRejeitado){
+        notify('Emissão pausada após '+emitidas+' NFS-e autorizada(s): '+(loteInconclusivo?'resultado pendente de consulta':'RPS rejeitado')+'. Não reenviar sem conferência.');
         return;
       }
     }
@@ -2650,6 +2662,7 @@ async function emitirTodasNfTugao(){
   }catch(e){
     notify('Emissão interrompida: '+(e.message||e));
   }finally{
+    tugaoEmissaoEmMassa=false;
     nfEmitirTodasBtn.textContent='Emitir todas';
     renderFilaNfTugao();
   }
