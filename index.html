@@ -1957,7 +1957,7 @@ function renderFilaNfTugao(){
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||(prontas+reemitir)===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
-  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado/i.test(String(r.erro||'')));
+  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado|não foi possível confirmar a rejeição|nao foi possivel confirmar a rejeicao/i.test(String(r.erro||'')));
 }
 function parsearLinhasPdfSicadiTugao(linhas){
   let locador=null, contrato='', locatario='', recibo='';
@@ -2409,10 +2409,10 @@ async function consultarTodasNfTugao(){
 }
 
 async function revalidarRpsRejeitadosTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'
-    &&/rps não assinado|rps nao assinado/i.test(String(x.erro||'')));
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'&&
+    /rps não assinado|rps nao assinado|não foi possível confirmar a rejeição|nao foi possivel confirmar a rejeicao/i.test(String(x.erro||'')));
   if(!rows.length)return notify('Não há RPS rejeitados por assinatura para revalidar.');
-  if(!confirm('Conferir '+rows.length+' RPS rejeitados no banco antes de liberar nova tentativa? Nenhuma NFS-e será emitida nesta etapa.'))return;
+  if(!confirm('Conferir '+rows.length+' RPS rejeitados antes de liberar uma nova tentativa individual? A consulta não emite NFS-e.'))return;
   if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=true;
   try{
     const all=[];
@@ -2425,31 +2425,43 @@ async function revalidarRpsRejeitadosTugao(){
       all.push(...(data||[]));
       if(!data||data.length<1000)break;
     }
-    const byId=new Map(all.map(r=>[String(r.request_id||''),r]));
+    const porId=new Map(all.filter(r=>r.request_id).map(r=>[String(r.request_id),r]));
+    const chave=r=>[
+      String(r.competencia||'').slice(0,7),docChaveCliente(r.tomador_documento),
+      Math.round(Number(r.valor||0)*100)
+    ].join('|');
+    const porDados=new Map();
+    for(const r of all){
+      const k=chave(r);if(!porDados.has(k))porDados.set(k,[]);
+      porDados.get(k).push(r);
+    }
     let liberadas=0,bloqueadas=0;
     for(const x of rows){
-      const registro=byId.get(String(x.id));
       const comp=String(x.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
-      const mesmo=all.filter(r=>
-        String(r.competencia||'').slice(0,7)===comp
-        &&docChaveCliente(r.tomador_documento)===docChaveCliente(x.documento)
-        &&Math.abs(Number(r.valor||0)-(numeroValor(x.valor)||0))<0.005);
-      const jaEmitida=mesmo.some(r=>r.status==='EMITIDA');
-      if(registro?.status==='ERRO'
-         &&/rps não assinado|rps nao assinado/i.test(String(registro.erro_mensagem||''))
-         &&!jaEmitida){
+      const dados=porDados.get([comp,docChaveCliente(x.documento),Math.round((numeroValor(x.valor)||0)*100)].join('|'))||[];
+      const porIdentificador=porId.get(String(x.id));
+      // Nunca liberar se há autorização, situação inconclusiva ou mais de um registro.
+      const autorizada=dados.some(r=>r.status==='EMITIDA');
+      const incerta=dados.some(r=>!['ERRO','EMITIDA'].includes(String(r.status||'')));
+      const registro=porIdentificador||(dados.length===1?dados[0]:null);
+      if(registro?.status==='ERRO' &&
+         /rps não assinado|rps nao assinado/i.test(String(registro.erro_mensagem||'')) &&
+         !autorizada&&!incerta&&
+         (porIdentificador||dados.length===1)){
         x.status='Pronta';x.erro='';liberadas++;
       }else{
         x.status='Revisar';
-        x.erro=jaEmitida?'Possível NFS-e autorizada para o mesmo CPF/valor/competência. Conferir antes de reenviar.'
-          :'Não foi possível confirmar a rejeição do RPS no banco. Não reenviar.';
+        x.erro=autorizada?'Há NFS-e já autorizada para CPF, valor e competência. Conferir número antes de qualquer tentativa.'
+          :incerta?'Há remessa com resultado incerto; consulte a prefeitura antes de reenviar.'
+          :dados.length>1?'Mais de uma tentativa com o mesmo CPF/valor/competência; conferir manualmente para evitar duplicidade.'
+          :'Rejeição não vinculada com segurança à nota da fila. Não reenviar.';
         bloqueadas++;
       }
     }
     persist();renderFilaNfTugao();
-    notify('Revalidação: '+liberadas+' RPS rejeitados liberados; '+bloqueadas+' mantidos em revisão. Nenhuma NFS-e foi emitida.');
-  }catch(e){notify('Revalidação interrompida: '+(e.message||e))}
-  finally{renderFilaNfTugao()}
+    notify('Conferência concluída: '+liberadas+' nota(s) liberada(s) para teste individual; '+bloqueadas+' mantida(s) em revisão. Nenhuma NFS-e foi emitida.');
+  }catch(e){notify('Conferência interrompida: '+(e.message||e))}
+  finally{renderFilaNfTugao();}
 }
 
 async function emitirTodasNfTugao(){
