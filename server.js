@@ -315,7 +315,7 @@ async function handleGissConsultar(req,res){
     if(!empresaId||!requestId||!password) return sendJson(res,400,{error:'Dados incompletos para consultar a GISS.'});
 
     const qs=(table,filter,select)=>'/rest/v1/'+table+'?'+filter+'&select='+encodeURIComponent(select);
-    const er=await supaFetch(qs('seubpo_nfse_emissoes','empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),'request_id,status,protocolo,rps_numero,rps_serie'),token);
+    const er=await supaFetch(qs('seubpo_nfse_emissoes','empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),'request_id,status,protocolo,rps_numero,rps_serie,erro_codigo,erro_mensagem'),token);
     if(!er.ok) throw new Error('Não foi possível ler a emissão.');
     const emiss=(await er.json())[0];
     if(!emiss?.protocolo&&!emiss?.rps_numero) return sendJson(res,400,{error:'Esta emissão não possui protocolo nem número de RPS para consulta.'});
@@ -386,11 +386,16 @@ async function handleGissConsultar(req,res){
       patch={status:'EMITIDA',numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||null,xml_retorno:inner,erro_codigo:null,erro_mensagem:null,atualizado_em:new Date().toISOString()};
       result={ok:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||''};
     }else if(porRps){
-      // A ausência de NF na consulta por RPS não prova rejeição.
-      // Proteger de reenvios e preservar qualquer erro anterior.
-      patch={status:'ENVIANDO',xml_retorno:inner,atualizado_em:new Date().toISOString()};
-      result={ok:false,processando:true,consulta_por_rps:true,rps:emiss.rps_numero,
-        erro:'RPS ainda não confirmado na consulta por número. Não reenviar até a conciliação na GISS.'};
+      // E89/V999 na consulta por RPS NÃO revoga uma rejeição E174 já registrada.
+      // Preservar o diagnóstico original em vez de voltar a ENVIANDO.
+      const rejeicaoConfirmada=emiss.status==='ERRO'&&emiss.erro_codigo==='E174'
+        &&/RPS não assinado|RPS nao assinado/i.test(String(emiss.erro_mensagem||''));
+      patch=rejeicaoConfirmada
+        ?{status:'ERRO',xml_retorno:inner,atualizado_em:new Date().toISOString()}
+        :{status:'ENVIANDO',xml_retorno:inner,atualizado_em:new Date().toISOString()};
+      result={ok:false,processando:!rejeicaoConfirmada,consulta_por_rps:true,rps:emiss.rps_numero,
+        rejeitado:rejeicaoConfirmada,
+        erro:rejeicaoConfirmada?'RPS não assinado (E174). Rejeição anterior preservada.':'RPS ainda não confirmado na consulta por número. Não reenviar até a conciliação na GISS.'};
     }else if(situacao==='2'){
       patch={status:'PROCESSANDO',xml_retorno:inner,erro_codigo:null,erro_mensagem:'Remessa ainda não foi processada',atualizado_em:new Date().toISOString()};
       result={ok:false,processando:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,erro:'Remessa ainda não foi processada'};
