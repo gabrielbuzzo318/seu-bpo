@@ -292,6 +292,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
         <button id="nfRelatorioBtn" class="btn">Importar relatório</button>
          <button id="nfLimparFilaBtn" class="btn danger" type="button">Limpar importação anterior</button>
         <button id="nfConsultarTodasBtn" class="btn" disabled>Consultar todas</button>
+        <button id="nfLiberarRpsBtn" class="btn" type="button" disabled>Revalidar RPS rejeitados</button>
         <button id="nfEmitirTodasBtn" class="btn primary" disabled>Emitir todas</button>
       </div>
     </div>
@@ -1956,6 +1957,7 @@ function renderFilaNfTugao(){
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||(prontas+reemitir)===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
   if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
+  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=!rows.some(r=>r.status==='Revisar'&&/rps não assinado|rps nao assinado/i.test(String(r.erro||'')));
 }
 function parsearLinhasPdfSicadiTugao(linhas){
   let locador=null, contrato='', locatario='', recibo='';
@@ -2404,6 +2406,50 @@ async function consultarTodasNfTugao(){
     if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultar todas';
     renderFilaNfTugao();
   }
+}
+
+async function revalidarRpsRejeitadosTugao(){
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Revisar'
+    &&/rps não assinado|rps nao assinado/i.test(String(x.erro||'')));
+  if(!rows.length)return notify('Não há RPS rejeitados por assinatura para revalidar.');
+  if(!confirm('Conferir '+rows.length+' RPS rejeitados no banco antes de liberar nova tentativa? Nenhuma NFS-e será emitida nesta etapa.'))return;
+  if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.disabled=true;
+  try{
+    const all=[];
+    for(let offset=0;;offset+=1000){
+      const {data,error}=await sb.from('seubpo_nfse_emissoes')
+        .select('request_id,status,erro_mensagem,competencia,tomador_documento,valor,numero_nfse')
+        .eq('empresa_id','3072c434-6aeb-44f3-80aa-ebfca6e5b25a')
+        .range(offset,offset+999);
+      if(error)throw error;
+      all.push(...(data||[]));
+      if(!data||data.length<1000)break;
+    }
+    const byId=new Map(all.map(r=>[String(r.request_id||''),r]));
+    let liberadas=0,bloqueadas=0;
+    for(const x of rows){
+      const registro=byId.get(String(x.id));
+      const comp=String(x.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
+      const mesmo=all.filter(r=>
+        String(r.competencia||'').slice(0,7)===comp
+        &&docChaveCliente(r.tomador_documento)===docChaveCliente(x.documento)
+        &&Math.abs(Number(r.valor||0)-(numeroValor(x.valor)||0))<0.005);
+      const jaEmitida=mesmo.some(r=>r.status==='EMITIDA');
+      if(registro?.status==='ERRO'
+         &&/rps não assinado|rps nao assinado/i.test(String(registro.erro_mensagem||''))
+         &&!jaEmitida){
+        x.status='Pronta';x.erro='';liberadas++;
+      }else{
+        x.status='Revisar';
+        x.erro=jaEmitida?'Possível NFS-e autorizada para o mesmo CPF/valor/competência. Conferir antes de reenviar.'
+          :'Não foi possível confirmar a rejeição do RPS no banco. Não reenviar.';
+        bloqueadas++;
+      }
+    }
+    persist();renderFilaNfTugao();
+    notify('Revalidação: '+liberadas+' RPS rejeitados liberados; '+bloqueadas+' mantidos em revisão. Nenhuma NFS-e foi emitida.');
+  }catch(e){notify('Revalidação interrompida: '+(e.message||e))}
+  finally{renderFilaNfTugao()}
 }
 
 async function emitirTodasNfTugao(){
@@ -3163,6 +3209,7 @@ if(window.nfRelatorioBtn)nfRelatorioBtn.onclick=()=>nfRelatorioFile.click();
 if(window.nfLimparFilaBtn)nfLimparFilaBtn.onclick=limparFilaImportacaoTugao;
  if(window.nfRelatorioFile)nfRelatorioFile.onchange=()=>{const f=nfRelatorioFile.files?.[0];if(f)importarRelatorioNfTugao(f);nfRelatorioFile.value=''};
 if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.onclick=consultarTodasNfTugao;
+ if(window.nfLiberarRpsBtn)nfLiberarRpsBtn.onclick=revalidarRpsRejeitadosTugao;
 if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.onclick=emitirTodasNfTugao;
 if(window.nfEmitidasBusca)nfEmitidasBusca.oninput=renderNfEmitidas;
 if(window.nfCompetenciaLote)nfCompetenciaLote.onchange=renderFilaNfTugao;
