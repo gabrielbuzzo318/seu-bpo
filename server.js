@@ -370,9 +370,10 @@ async function handleGissConsultar(req,res){
       const ident=bloco.match(/<(?:\w+:)?IdentificacaoRps\b[^>]*>([\s\S]*?)<\/(?:\w+:)?IdentificacaoRps>/i)?.[1]||'';
       const rps=Number(xmlTagText(ident,'Numero')||0);
       // Nunca associar uma NFS-e de RPS diferente ao registro consultado.
-      if(rps===Number(emiss.rps_numero)){
+      if(rps===Number(emiss.rps_numero)||porRps&&comp.length===1&&!ident){
+        // Consulta por RPS retorna no máximo uma nota; não associar outra remessa.
         const inf=xmlTagText(bloco,'InfNfse')||bloco;
-        nota={rps,numero_nfse:xmlTagText(inf,'Numero'),codigo_verificacao:xmlTagText(inf,'CodigoVerificacao')};
+        nota={rps:Number(emiss.rps_numero),numero_nfse:xmlTagText(inf,'Numero'),codigo_verificacao:xmlTagText(inf,'CodigoVerificacao')};
         break;
       }
     }
