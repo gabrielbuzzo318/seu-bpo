@@ -171,7 +171,7 @@ function gissSignConsultaSoap(soap, certChain, privateKey){
   const m=String(soap||'').match(/<nfseDadosMsg><!\[CDATA\[([\s\S]*?)\]\]><\/nfseDadosMsg>/);
   if(!m) return soap;
   let xml=m[1];
-  if(!/ConsultarLoteRpsEnvio/.test(xml) || /<(?:ds:)?Signature\b/.test(xml)) return soap;
+  if(!/Consultar(?:LoteRpsEnvio|NfseRpsEnvio)/.test(xml) || /<(?:ds:)?Signature\b/.test(xml)) return soap;
 
   const leaf=String(certChain||'').match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/)?.[0]||String(certChain||'');
   const certBase64=leaf.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s+/g,'');
@@ -315,10 +315,10 @@ async function handleGissConsultar(req,res){
     if(!empresaId||!requestId||!password) return sendJson(res,400,{error:'Dados incompletos para consultar a GISS.'});
 
     const qs=(table,filter,select)=>'/rest/v1/'+table+'?'+filter+'&select='+encodeURIComponent(select);
-    const er=await supaFetch(qs('seubpo_nfse_emissoes','empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),'request_id,status,protocolo,rps_numero'),token);
+    const er=await supaFetch(qs('seubpo_nfse_emissoes','empresa_id=eq.'+encodeURIComponent(empresaId)+'&request_id=eq.'+encodeURIComponent(requestId),'request_id,status,protocolo,rps_numero,rps_serie'),token);
     if(!er.ok) throw new Error('Não foi possível ler a emissão.');
     const emiss=(await er.json())[0];
-    if(!emiss?.protocolo) return sendJson(res,400,{error:'Essa emissão ainda não possui protocolo da GISS.'});
+    if(!emiss?.protocolo&&!emiss?.rps_numero) return sendJson(res,400,{error:'Esta emissão não possui protocolo nem número de RPS para consulta.'});
 
     const cr=await supaFetch(qs('seubpo_nfse_config','empresa_id=eq.'+encodeURIComponent(empresaId),'cnpj,inscricao_municipal,ambiente,endpoint_producao,endpoint_homologacao'),token);
     if(!cr.ok) throw new Error('Não foi possível ler a configuração da GISS.');
@@ -338,23 +338,26 @@ async function handleGissConsultar(req,res){
     catch{ return sendJson(res,400,{error:'Senha do certificado incorreta ou A1 inválido.'}); }
 
     const tipos='http://www.giss.com.br/tipos-v2_04.xsd';
-    const consultaNs='http://www.giss.com.br/consultar-lote-rps-envio-v2_04.xsd';
+    const porRps=!emiss.protocolo;
+    const consultaNs=porRps
+      ?'http://www.giss.com.br/consultar-nfse-rps-envio-v2_04.xsd'
+      :'http://www.giss.com.br/consultar-lote-rps-envio-v2_04.xsd';
     const cabNs='http://www.giss.com.br/cabecalho-v2_04.xsd';
     const soapNs='http://schemas.xmlsoap.org/soap/envelope/';
     const svc='http://nfse.abrasf.org.br';
-    const data='<q:ConsultarLoteRpsEnvio xmlns:q="'+consultaNs+'" xmlns:tipos="'+tipos+'"><q:Prestador><tipos:CpfCnpj><tipos:Cnpj>'+String(cfg.cnpj||'').replace(/\D/g,'')+'</tipos:Cnpj></tipos:CpfCnpj><tipos:InscricaoMunicipal>'+escapeXml(cfg.inscricao_municipal||'')+'</tipos:InscricaoMunicipal></q:Prestador><q:Protocolo>'+escapeXml(emiss.protocolo)+'</q:Protocolo></q:ConsultarLoteRpsEnvio>';
+    const prestador='<tipos:CpfCnpj><tipos:Cnpj>'+String(cfg.cnpj||'').replace(/\D/g,'')+'</tipos:Cnpj></tipos:CpfCnpj><tipos:InscricaoMunicipal>'+escapeXml(cfg.inscricao_municipal||'')+'</tipos:InscricaoMunicipal>';
+    const data=porRps
+      ?'<q:ConsultarNfseRpsEnvio xmlns:q="'+consultaNs+'" xmlns:tipos="'+tipos+'"><q:IdentificacaoRps><tipos:Numero>'+Number(emiss.rps_numero)+'</tipos:Numero><tipos:Serie>'+escapeXml(emiss.rps_serie||'1')+'</tipos:Serie><tipos:Tipo>1</tipos:Tipo></q:IdentificacaoRps><q:Prestador>'+prestador+'</q:Prestador></q:ConsultarNfseRpsEnvio>'
+      :'<q:ConsultarLoteRpsEnvio xmlns:q="'+consultaNs+'" xmlns:tipos="'+tipos+'"><q:Prestador>'+prestador+'</q:Prestador><q:Protocolo>'+escapeXml(emiss.protocolo)+'</q:Protocolo></q:ConsultarLoteRpsEnvio>';
     const header='<cabecalho xmlns="'+cabNs+'" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>';
-    let soap='<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="'+soapNs+'" xmlns:nfse="'+svc+'"><soapenv:Header/><soapenv:Body><nfse:ConsultarLoteRpsRequest><nfseCabecMsg>'+cdataWrap(header)+'</nfseCabecMsg><nfseDadosMsg>'+cdataWrap(data)+'</nfseDadosMsg></nfse:ConsultarLoteRpsRequest></soapenv:Body></soapenv:Envelope>';
+    const metodo=porRps?'ConsultarNfsePorRps':'ConsultarLoteRps';
+    let soap='<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="'+soapNs+'" xmlns:nfse="'+svc+'"><soapenv:Header/><soapenv:Body><nfse:'+metodo+'Request><nfseCabecMsg>'+cdataWrap(header)+'</nfseCabecMsg><nfseDadosMsg>'+cdataWrap(data)+'</nfseDadosMsg></nfse:'+metodo+'Request></soapenv:Body></soapenv:Envelope>';
     soap=gissSignConsultaSoap(soap,cert.certChain,cert.privateKey);
-
     const endpoint=String(cfg.ambiente==='homologacao'?cfg.endpoint_homologacao:cfg.endpoint_producao).replace(/\?wsdl.*$/i,'');
     const out=await mtlsRequest({
-      url:endpoint,
-      method:'POST',
-      headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'"http://nfse.abrasf.org.br/ConsultarLoteRps"'},
-      body:soap,
-      certChain:cert.certChain,
-      privateKey:cert.privateKey
+      url:endpoint,method:'POST',
+      headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'"http://nfse.abrasf.org.br/'+metodo+'"'},
+      body:soap,certChain:cert.certChain,privateKey:cert.privateKey
     });
     if(out.status<200||out.status>=300) throw new Error('GISS HTTP '+out.status);
 
@@ -366,9 +369,11 @@ async function handleGissConsultar(req,res){
       const bloco=m[1];
       const ident=bloco.match(/<(?:\w+:)?IdentificacaoRps\b[^>]*>([\s\S]*?)<\/(?:\w+:)?IdentificacaoRps>/i)?.[1]||'';
       const rps=Number(xmlTagText(ident,'Numero')||0);
-      if(!nota||rps===Number(emiss.rps_numero)){
-        nota={rps,numero_nfse:xmlTagText(bloco,'Numero'),codigo_verificacao:xmlTagText(bloco,'CodigoVerificacao')};
-        if(rps===Number(emiss.rps_numero)) break;
+      // Nunca associar uma NFS-e de RPS diferente ao registro consultado.
+      if(rps===Number(emiss.rps_numero)){
+        const inf=xmlTagText(bloco,'InfNfse')||bloco;
+        nota={rps,numero_nfse:xmlTagText(inf,'Numero'),codigo_verificacao:xmlTagText(inf,'CodigoVerificacao')};
+        break;
       }
     }
     const msg=xmlTagText(inner,'Mensagem');
@@ -379,6 +384,12 @@ async function handleGissConsultar(req,res){
     if(nota?.numero_nfse){
       patch={status:'EMITIDA',numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||null,xml_retorno:inner,erro_codigo:null,erro_mensagem:null,atualizado_em:new Date().toISOString()};
       result={ok:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,numero_nfse:nota.numero_nfse,codigo_verificacao:nota.codigo_verificacao||''};
+    }else if(porRps){
+      // A ausência de NF na consulta por RPS não prova rejeição.
+      // Proteger de reenvios e preservar qualquer erro anterior.
+      patch={status:'ENVIANDO',xml_retorno:inner,atualizado_em:new Date().toISOString()};
+      result={ok:false,processando:true,consulta_por_rps:true,rps:emiss.rps_numero,
+        erro:'RPS ainda não confirmado na consulta por número. Não reenviar até a conciliação na GISS.'};
     }else if(situacao==='2'){
       patch={status:'PROCESSANDO',xml_retorno:inner,erro_codigo:null,erro_mensagem:'Remessa ainda não foi processada',atualizado_em:new Date().toISOString()};
       result={ok:false,processando:true,situacao,protocolo:emiss.protocolo,rps:emiss.rps_numero,erro:'Remessa ainda não foi processada'};
