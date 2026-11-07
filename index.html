@@ -2143,8 +2143,18 @@ async function importarRelatorioNfTugao(file){
     }else throw new Error('Formato não suportado.');
     if(layoutPdfSicadi){
       if((store.nfImportacaoTugao||[]).some(x=>x.status!=='Emitida')&&!confirm('A fila já possui notas não emitidas. Substituir a fila pela nova importação PDF?'))return;
-      store.nfImportacaoTugao=aplicarRegrasEspeciaisNfTugao(rows);
-      sincronizarLocadoresTugaoClientes(store.nfImportacaoTugao);
+      const emitidasAnteriores=(store.nfImportacaoTugao||[]).filter(x=>x.status==='Emitida');
+      const importadas=aplicarRegrasEspeciaisNfTugao(rows);
+      for(const nota of importadas){
+        // Um mesmo recibo já emitido nunca volta automaticamente à fila.
+        const jaEmitida=emitidasAnteriores.some(x=>x.recibo&&nota.recibo
+          &&docChaveCliente(x.documento)===docChaveCliente(nota.documento)
+          &&String(x.recibo)===String(nota.recibo)
+          &&String(x.contrato||'')===String(nota.contrato||''));
+        if(jaEmitida){nota.status='Revisar';nota.erro='Recibo já consta como emitido anteriormente. Conferir antes de prosseguir.';}
+      }
+      store.nfImportacaoTugao=emitidasAnteriores.concat(importadas);
+      sincronizarLocadoresTugaoClientes(importadas);
     }else if(layoutTugao){
       const limpas=rows.filter(r=>Array.isArray(r)&&r.some(v=>String(v??'').trim()!==''));
       const candidatos=limpas.filter(r=>{
