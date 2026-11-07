@@ -1955,7 +1955,7 @@ function renderFilaNfTugao(){
   const reemitir=rows.filter(x=>x.status==='Erro'&&!consultaPendenteTugao(x)).length;
   if(window.nfEmitirTodasBtn)nfEmitirTodasBtn.disabled=!rows.length||revisar>0||(prontas+reemitir)===0;
   const consultar=rows.filter(consultaPendenteTugao).length;
-  if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.disabled=consultar===0;
+  if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=rows.length===0;nfConsultarTodasBtn.title='Conferir status no banco e consultar apenas as remessas em processamento';}
 }
 function parsearLinhasPdfSicadiTugao(linhas){
   let locador=null, contrato='', locatario='', recibo='';
@@ -2331,59 +2331,75 @@ async function emitirNfIndividualTugao(id){
   }
 }
 async function consultarTodasNfTugao(){
-  const rows=(store.nfImportacaoTugao||[]).filter(consultaPendenteTugao);
-  if(!rows.length){notify('Não há NFS-e pendentes para consultar.');return}
-  const senha=senhaCertTugao();
-  if(senha===null)return;
-  if(!confirm('Consultar '+rows.length+' NFS-e pendente(s) na GISS?'))return;
-  if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=true;nfConsultarTodasBtn.textContent='Consultando...'}
-  let emitidas=0,processando=0,erros=0;
+  const rows=(store.nfImportacaoTugao||[]).filter(x=>x.status!=='Emitida');
+  if(!rows.length){notify('Não há notas na fila para conferir.');return;}
+  if(window.nfConsultarTodasBtn){nfConsultarTodasBtn.disabled=true;nfConsultarTodasBtn.textContent='Conferindo...';}
   try{
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session)throw new Error('Sessão expirada.');
+    const empresaId='3072c434-6aeb-44f3-80aa-ebfca6e5b25a';
+    const registros=[];
+    for(let offset=0;;offset+=1000){
+      const {data,error}=await sb.from('seubpo_nfse_emissoes')
+        .select('request_id,tomador_documento,tomador_nome,competencia,valor,status,numero_nfse,erro_mensagem,protocolo')
+        .eq('empresa_id',empresaId)
+        .order('criado_em',{ascending:false}).range(offset,offset+999);
+      if(error)throw error;
+      registros.push(...(data||[]));
+      if(!data||data.length<1000)break;
+    }
+    const porId=new Map(registros.filter(x=>x.request_id).map(x=>[String(x.request_id),x]));
+    let emitidas=0,erros=0,processando=0,semEnvio=0;
+    const pendentes=[];
     for(const x of rows){
-      try{
-        const resp=await fetch('/api/giss-consultar',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
-          body:JSON.stringify({
-            empresa_id:'3072c434-6aeb-44f3-80aa-ebfca6e5b25a',
-            request_id:String(x.id),
-            password:senha
-          })
-        });
-        const out=await resp.json().catch(()=>({}));
-        if(!resp.ok){
-          if(/senha do certificado|A1 inválido/i.test(out.error||''))tugaoCertPasswordCache='';
-          throw new Error(out.error||'Falha ao consultar a GISS.');
+      const comp=String(x.competencia||window.nfCompetenciaLote?.value||'').slice(0,7);
+      const doc=docChaveCliente(x.documento);
+      const valor=numeroValor(x.valor)||0;
+      const coincidencias=registros.filter(r=>
+        doc&&docChaveCliente(r.tomador_documento)===doc
+        &&Math.abs(Number(r.valor||0)-valor)<0.005
+        &&(!comp||String(r.competencia||'').slice(0,7)===comp));
+      // Identificação por request_id é preferencial; se existem múltiplas coincidências,
+      // não vincular automaticamente uma nota possivelmente diferente.
+      const r=porId.get(String(x.id))||(coincidencias.length===1?coincidencias[0]:null);
+      if(!r){
+        if(coincidencias.length>1){x.status='Revisar';x.erro='Mais de uma tentativa no banco para este CPF/CNPJ e valor; conferir manualmente.';erros++;}
+        else semEnvio++;
+        continue;
+      }
+      if(r.status==='EMITIDA'&&r.numero_nfse){
+        x.status='Emitida';x.numero=r.numero_nfse;x.erro='';
+        if(!(store.nf||[]).some(n=>String(n.numero||'')===String(r.numero_nfse)&&nomeChaveTugao(n.pessoa)===nomeChaveTugao(x.cliente))){
+          store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),
+            competencia:comp,tipo:'Emitida',numero:r.numero_nfse,pessoa:x.cliente,valor:x.valor,
+            aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),
+            status:'Emitida',empresa:'Tugão Imóveis'});
         }
-        if(out.ok){
-          x.status='Emitida';
-          x.numero=out.numero_nfse||'';
-          x.erro='';
-          emitidas++;
-          if(!store.nf.some(n=>String(n.numero)===String(x.numero)&&String(n.pessoa)===String(x.cliente))){
-            store.nf.push({id:Date.now()+Number(x.id)%10000,data:new Date().toISOString().slice(0,10),competencia:x.competencia||window.nfCompetenciaLote?.value||'',tipo:'Emitida',numero:x.numero,pessoa:x.cliente,valor:x.valor,aliquota_iss:x.aliquota_iss??numeroValor(window.nfIssLote?.value||''),status:'Emitida',empresa:'Tugão Imóveis'});
-          }
-        }else if(out.processando){
-          x.status='Erro';
-          x.erro='Remessa ainda não foi processada. Protocolo '+(out.protocolo||'');
-          processando++;
-        }else{
-          x.status='Erro';
-          x.erro=out.erro||'A GISS processou o lote com erro.';
-          erros++;
-        }
-        persist();renderFilaNfTugao();
-        await new Promise(r=>setTimeout(r,700));
-      }catch(e){
-        x.status='Erro';
-        x.erro=e.message||'Falha ao consultar a GISS.';
+        emitidas++;
+      }else if(['PROCESSANDO','ENVIANDO','PENDENTE'].includes(r.status)){
+        x.status='Erro';x.erro='Consulta obrigatória: remessa '+r.status.toLowerCase()+(r.protocolo?', protocolo '+r.protocolo:'')+'. Não reenviar.';
+        pendentes.push(x);processando++;
+      }else if(r.status==='ERRO'){
+        x.status='Revisar';
+        x.erro='Erro registrado pela GISS: '+(r.erro_mensagem||'sem mensagem')+'. Não reenviar até corrigir e conferir o RPS.';
         erros++;
-        persist();renderFilaNfTugao();
+      }else{
+        x.status='Revisar';x.erro='Situação não confirmada no banco: '+r.status+'. Conferir antes de emitir.';
+        erros++;
       }
     }
-    notify('Consulta concluída: '+emitidas+' emitida(s), '+processando+' em processamento, '+erros+' com erro.');
+    persist();renderFilaNfTugao();
+    if(pendentes.length){
+      // Consulta remota apenas para RPS já cadastrados no banco como em processamento.
+      const senha=senhaCertTugao();
+      if(senha!==null){
+        for(const x of pendentes){
+          await consultarNfTugao(x.id);
+        }
+      }
+    }
+    notify('Conferência: '+emitidas+' autorizada(s), '+erros+' com erro/para revisão, '
+      +processando+' em processamento, '+semEnvio+' sem envio identificado.');
+  }catch(e){
+    notify('Falha ao conferir as notas: '+(e.message||e));
   }finally{
     if(window.nfConsultarTodasBtn)nfConsultarTodasBtn.textContent='Consultar todas';
     renderFilaNfTugao();
