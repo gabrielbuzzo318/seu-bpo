@@ -100,6 +100,15 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 9p
 .sidebar{background:linear-gradient(180deg,#f8fbfc,#eff5f6);border-right-color:#e0e9ec;box-shadow:4px 0 24px rgba(28,65,77,.035)}
 .nav button:hover,.nav button.active{background:#e3eff1;color:#164e5c}
 .avatar,.pill{background:#e8f1f3}
+
+/* FIUZA: padrão de exibição em letras maiúsculas. */
+.fiuza-uppercase .app,.fiuza-uppercase #launchBg,.fiuza-uppercase #modalBg{text-transform:uppercase}
+.fiuza-uppercase .app input:not([type="email"]):not([type="password"]),
+.fiuza-uppercase .app textarea,.fiuza-uppercase .app select,
+.fiuza-uppercase #launchBg input:not([type="email"]):not([type="password"]),
+.fiuza-uppercase #launchBg textarea,.fiuza-uppercase #launchBg select,
+.fiuza-uppercase #modalBg input:not([type="email"]):not([type="password"]),
+.fiuza-uppercase #modalBg textarea,.fiuza-uppercase #modalBg select{text-transform:uppercase}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1217,6 +1226,8 @@ function fiuzaSave(){
   fiuzaVersion=Number(res.data);
  }).catch(e=>console.error('FIUZA sync:',e));
 }
+function textoFiuza(v){return String(v??'').toLocaleUpperCase('pt-BR')}
+function padronizarCamposFiuza(obj,campos){if(!obj)return obj;for(const campo of campos)if(typeof obj[campo]==='string')obj[campo]=textoFiuza(obj[campo]);return obj}
 function planoAtual(){return isFiuzaSelected()?(store.planoFiuza||store.plano||[]):(store.plano||[])}
 function persist(){localStorage.setItem(DBKEY,JSON.stringify(store));renderAll();backupCloud();fiuzaSave()}
 setInterval(async()=>{
@@ -1368,7 +1379,7 @@ function gerarRelatorioFinanceiro(tipo){
     doc.autoTable({
       startY:41,
       head:[['Vencimento','Fornecedor','Histórico','Conta','Valor','Anexo','Status']],
-      body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.documento_nome||'',x.status||'']),
+      body:rows.map(x=>[brDate(x.vencimento),x.fornecedor||'',x.descricao||'',x.categoria||'',money(x.valor),x.documento_nome||'',x.status||''].map(v=>isFiuzaSelected()?textoFiuza(v):v)),
       styles:{fontSize:8,cellPadding:1.6}
     });
   }else{
@@ -1377,7 +1388,7 @@ function gerarRelatorioFinanceiro(tipo){
     doc.autoTable({
       startY:41,
       head:[['Vencimento','Cliente','Histórico','Conta','Projetado','Real','Status']],
-      body:rows.map(x=>[brDate(x.vencimento),x.cliente||'',x.descricao||'',x.categoria||'',x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—',x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor),x.status||'']),
+      body:rows.map(x=>[brDate(x.vencimento),x.cliente||'',x.descricao||'',x.categoria||'',x.tipo_recebimento==='fiuza'?money(x.valor_projetado):'—',x.tipo_recebimento==='fiuza'&&!x.valor_real?'—':money(x.valor),x.status||''].map(v=>isFiuzaSelected()?textoFiuza(v):v)),
       styles:{fontSize:8,cellPadding:1.6}
     });
   }
@@ -1622,7 +1633,7 @@ function gerarPdfDre(){
   doc.setFont('helvetica','bold');doc.setTextColor(...teal);doc.setFontSize(17);
   doc.text('DRE GERENCIAL',ml+7,22);
   doc.setTextColor(...ink);doc.setFontSize(11);
-  doc.text(empresa,ml+7,29);
+  doc.text(isFiuzaSelected()?textoFiuza(empresa):empresa,ml+7,29);
   doc.setFont('helvetica','normal');doc.setTextColor(...muted);doc.setFontSize(8.5);
   doc.text('Competência: '+nomeMesCompetencia(mes),ml+7,35);
   doc.text('Comparativo: '+nomeMesCurto(anterior)+' x '+nomeMesCurto(mes),pageW-mr-7,35,{align:'right'});
@@ -1651,7 +1662,7 @@ function gerarPdfDre(){
     else if(r.classList.contains('dre-subtotal'))kind='subtotal';
     else if(r.classList.contains('dre-total'))kind='total';
     else if(r.classList.contains('dre-result-positive')||r.classList.contains('dre-result-negative'))kind='result';
-    return {cells,kind,positive:r.classList.contains('dre-result-positive')};
+    return {cells:isFiuzaSelected()?cells.map(textoFiuza):cells,kind,positive:r.classList.contains('dre-result-positive')};
   });
 
   doc.autoTable({
@@ -2943,12 +2954,13 @@ document.getElementById('planoNovaConta').onclick=()=>abrirPlanoFiuza();
 document.getElementById('planoBusca').oninput=renderPlano;
 document.getElementById('planoNovoGrupo').onclick=()=>{
  if(!isFiuzaSelected()){notify('Selecione FIUZA para criar grupos próprios.');return}
- const v=prompt('Nome do novo grupo:');if(v===null)return;const n=v.trim();if(!n){notify('Informe o nome.');return}
+ const v=prompt('Nome do novo grupo:');if(v===null)return;const n=textoFiuza(v.trim());if(!n){notify('Informe o nome.');return}
  if([...planoAtual().map(x=>x.grupo),...(store.gruposPlanoFiuza||[])].some(x=>String(x).toLowerCase()===n.toLowerCase())){notify('Grupo já existe.');return}
  (store.gruposPlanoFiuza??=[]).push(n);persist();notify('Grupo cadastrado.');
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-grupo],[data-conta]');if(b)abrirPlanoFiuza(b.dataset.conta||null,b.dataset.grupo||'')});
 function renderAll(){
+ document.body.classList.toggle('fiuza-uppercase',isFiuzaSelected());
  empresasBody.innerHTML=store.empresas.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.cnpj)+'</td><td>'+esc(x.responsavel)+'</td><td>'+acts('empresas',x.id)+'</td></tr>').join('');
  usuariosBody.innerHTML=store.usuarios.map(x=>'<tr><td><b>'+esc(x.nome)+'</b></td><td>'+esc(x.email)+'</td><td>'+esc(x.perfil)+'</td><td>'+esc(x.empresa)+'</td><td>'+acts('usuarios',x.id)+'</td></tr>').join('');
  renderClientes();
@@ -3297,6 +3309,13 @@ function closeModal(){
   if(window.modalCancel){modalCancel.style.display='';modalCancel.textContent='Cancelar'}
   if(window.modalForm)modalForm.style.display='';
 }
+document.addEventListener('input',e=>{
+ if(!isFiuzaSelected()||!e.target||!e.target.matches('input,textarea'))return;
+ const el=e.target,campos=new Set(['fornecedor','historico','conta','nome','responsavel','contato','descricao','observacoes_contrato','motivo_inativacao']),ids=new Set(['lfParte','lfHistorico','lfReceberCliente','lfReceberHistorico']);
+ if(!campos.has(el.dataset.field)&&!ids.has(el.id))return;
+ if(['email','password','date','number','url'].includes(el.type))return;
+ const upper=textoFiuza(el.value);if(upper!==el.value){const pos=el.selectionStart;el.value=upper;if(pos!==null)el.setSelectionRange(pos,pos);}
+});
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openModal(b.dataset.add));
 novoClienteBtn.onclick=()=>openNovoClienteModal();
 if(window.clientesStatusFiltro) clientesStatusFiltro.onchange=renderClientes;
@@ -3424,7 +3443,7 @@ modalX.onclick=modalCancel.onclick=closeModal;
 modalBg.onclick=e=>{if(e.target===modalBg)closeModal()};
 modalSave.onclick=async()=>{
  if(modalState.type==='planoFiuzaEdit'){
- const {id}=modalState,grupo=modalForm.querySelector('[data-field="grupo"]').value.trim(),conta=modalForm.querySelector('[data-field="conta"]').value.trim(),tipo=modalForm.querySelector('[data-field="tipo"]').value,considerar_dre=modalForm.querySelector('[data-field="considerar_dre"]').checked;
+ const {id}=modalState,grupo=textoFiuza(modalForm.querySelector('[data-field="grupo"]').value.trim()),conta=textoFiuza(modalForm.querySelector('[data-field="conta"]').value.trim()),tipo=modalForm.querySelector('[data-field="tipo"]').value,considerar_dre=modalForm.querySelector('[data-field="considerar_dre"]').checked;
  if(!grupo||!conta){notify('Informe grupo e conta.');return}
  if(planoAtual().some(x=>String(x.conta||'').toLowerCase()===conta.toLowerCase()&&String(x.id)!==String(id))){notify('Conta já cadastrada.');return}
  store.planoFiuza??=structuredClone(store.plano||[]);const item=id?store.planoFiuza.find(x=>String(x.id)===String(id)):null;
@@ -3476,7 +3495,7 @@ modalSave.onclick=async()=>{
  }
  if(type==='fluxoManual'){
    const get=f=>modalForm.querySelector('[data-field="'+f+'"]')?.value||'';
-   const data=get('data'),tipo=get('tipo'),banco=get('banco'),fornecedor=get('fornecedor').trim(),historico=get('historico').trim(),plano=get('plano_contas'),valor=get('valor').trim();
+   const data=get('data'),tipo=get('tipo'),banco=get('banco'),fornecedor=isFiuzaSelected()?textoFiuza(get('fornecedor').trim()):get('fornecedor').trim(),historico=isFiuzaSelected()?textoFiuza(get('historico').trim()):get('historico').trim(),plano=get('plano_contas'),valor=get('valor').trim();
    if(!data||!tipo||!banco||!historico||!plano||!(numeroValor(valor)>0)){notify('Preencha data, tipo, banco, histórico, plano de contas e um valor maior que zero.');return}
    const empresa=selectedCompanyName();
    if(!empresa||empresa==='Todas as empresas'){notify('Selecione uma empresa específica.');return}
@@ -3627,6 +3646,7 @@ modalSave.onclick=async()=>{
    try{if(contractFile)await uploadContratoCliente(obj,contractFile)}
    catch(e){notify(e.message||'Erro ao anexar contrato.');return}
  }
+ if(isFiuzaSelected()&&type==='fiuzaClientes')padronizarCamposFiuza(obj,['nome','responsavel','contato','observacoes_contrato','motivo_inativacao']);
  if(!id)store[type].push(obj);
  persist();closeModal();notify(id?'Alteração salva.':'Cadastro criado.');
 };
@@ -4126,6 +4146,7 @@ launchSave.onclick=async()=>{
       delete obj.fiuza_cliente_id;delete obj.competencia_fiuza;delete obj.valor_diaria;delete obj.diarias_projetadas;delete obj.valor_projetado;delete obj.diarias_realizadas;delete obj.valor_real;delete obj.diferenca_projetado_real;
     }
   }
+  if(isFiuzaSelected())padronizarCamposFiuza(obj,['fornecedor','cliente','descricao','categoria']);
   if(!launchState.id){
     if(launchState.recorrente){
       const freq=window.lfRecorrencia?.value||'mensal';
