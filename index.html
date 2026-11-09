@@ -1354,7 +1354,19 @@ function renderFinanceiros(){
 }
 function gerarRelatorioFinanceiro(tipo){
   if(!window.jspdf?.jsPDF){notify('Gerador de PDF indisponível. Atualize a página e tente novamente.');return}
-  const rows=filtrarFinanceiro(tipo);
+  const chaveVencimento=v=>{
+    const raw=String(v||'').trim();
+    const iso=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(iso)return iso[1]+iso[2].padStart(2,'0')+iso[3].padStart(2,'0');
+    const br=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(br)return br[3]+br[2].padStart(2,'0')+br[1].padStart(2,'0');
+    return '99999999';
+  };
+  const rows=filtrarFinanceiro(tipo).slice().sort((a,b)=>{
+    const datas=chaveVencimento(a.vencimento).localeCompare(chaveVencimento(b.vencimento));
+    if(datas)return datas;
+    return String(a.fornecedor||a.cliente||'').localeCompare(String(b.fornecedor||b.cliente||''),'pt-BR');
+  });
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const empresa=selectedCompanyName()||'Todas as empresas';
